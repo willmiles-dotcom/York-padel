@@ -24,7 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .stat{background:#f5f5f3;border-radius:10px;padding:14px}
 .stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
-.stat-val{font-size:24px;font-weight:600;color:#1a1a1a}
+.stat-val{font-size:24px;font-weight:600}
 .stat-val.green{color:#1D9E75}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8e8e4;text-transform:uppercase;letter-spacing:0.4px}
@@ -49,6 +49,7 @@ tr:last-child td{border-bottom:none}
 .btn:active{opacity:0.7}
 .btn.primary{background:#1D9E75;color:#fff;border-color:#1D9E75}
 .btn.danger{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}
+.btn.warning{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
 .btn.sm{padding:6px 12px;font-size:12px;border-radius:8px}
 .btn.full{width:100%}
 .row-flex{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
@@ -58,11 +59,6 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 .form-label{font-size:12px;color:#666;margin-bottom:5px;display:block;font-weight:500}
 .session-card{cursor:pointer}
 .session-card:active{background:#f5f5f3}
-.round-row{display:flex;align-items:center;gap:6px;padding:10px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
-.round-row:last-child{border-bottom:none}
-.vs{font-size:11px;color:#aaa}
-.score{font-weight:600;min-width:24px;text-align:center;font-size:15px}
-.score.winner{color:#1D9E75}
 .tab-pills{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
 .tab-pills::-webkit-scrollbar{display:none}
 .tab-pills button{padding:6px 14px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;color:#666;white-space:nowrap}
@@ -81,21 +77,39 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 .loading{text-align:center;padding:40px;color:#aaa}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;white-space:nowrap}
 .toast.show{display:block}
-.elo-change-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ee}
-.elo-change-row:last-child{border-bottom:none}
-.americano-pts{font-weight:600;color:#1D9E75;font-size:15px}
 .back-btn{display:flex;align-items:center;gap:6px;color:#1D9E75;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:14px;background:none;border:none;padding:0}
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
 .info-row:last-child{border-bottom:none}
 .info-label{color:#888}
 .player-initials{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
-.edit-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0ee;gap:10px}
+.edit-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0ee;gap:10px}
 .edit-row:last-child{border-bottom:none}
-.edit-row-label{font-size:13px;color:#888;min-width:80px}
+.edit-row-label{font-size:13px;color:#888;min-width:90px}
 .edit-row input,.edit-row select{flex:1;padding:6px 10px;font-size:13px;border-radius:8px}
 .player-list-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0ee;cursor:pointer}
 .player-list-row:last-child{border-bottom:none}
 .player-list-row:active{opacity:0.6}
+
+/* Americano specific */
+.player-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;margin:4px}
+.player-chip.selected{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56}
+.player-chip.selected .chip-remove{color:#0F6E56}
+.chip-remove{font-size:16px;line-height:1;color:#aaa}
+.court-block{border:1px solid #e8e8e4;border-radius:12px;overflow:hidden;margin-bottom:12px}
+.court-header{background:#f5f5f3;padding:10px 14px;font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;justify-content:space-between}
+.court-match{padding:14px}
+.team-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.team-row:last-child{margin-bottom:0}
+.team-names{font-weight:500;font-size:14px;flex:1}
+.score-input{width:60px;padding:8px;text-align:center;font-size:18px;font-weight:600;border:1px solid #ddd;border-radius:8px;-webkit-appearance:none}
+.score-input:focus{outline:none;border-color:#1D9E75}
+.vs-divider{text-align:center;color:#aaa;font-size:12px;padding:4px 0;border-top:1px solid #f0f0ee;border-bottom:1px solid #f0f0ee;margin:8px 0}
+.elo-result-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.elo-result-row:last-child{border-bottom:none}
+.running-elo{display:flex;align-items:center;gap:6px}
+.round-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f5f5f3;border-radius:10px;margin-bottom:8px;cursor:pointer}
+.round-scores-summary{font-size:13px;color:#aaa}
+.session-live-badge{display:inline-block;background:#FAEEDA;color:#854F0B;border:1px solid #FAC775;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
 </style>
 </head>
 <body>
@@ -112,6 +126,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
   </div>
   <div class="content">
 
+    <!-- LEADERBOARD -->
     <div class="page active" id="page-leaderboard">
       <div class="stat-grid">
         <div class="stat"><div class="stat-label">Active members</div><div class="stat-val green" id="s-active">—</div></div>
@@ -130,6 +145,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
       </div>
     </div>
 
+    <!-- PLAYERS -->
     <div class="page" id="page-players">
       <div class="filter-row">
         <input type="text" id="player-search" placeholder="Search..." oninput="renderPlayers()">
@@ -146,6 +162,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
       </div>
     </div>
 
+    <!-- SESSIONS -->
     <div class="page" id="page-sessions">
       <div class="row-flex">
         <div style="font-weight:600;font-size:16px">Sessions</div>
@@ -154,16 +171,19 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
       <div id="sessions-list"><div class="loading">Loading...</div></div>
     </div>
 
+    <!-- SESSION DETAIL / LIVE -->
     <div class="page" id="page-session-detail">
       <button class="back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(3)'))">← Back</button>
       <div id="session-detail-content"></div>
     </div>
 
+    <!-- PLAYER PROFILE -->
     <div class="page" id="page-player-profile">
-      <button class="back-btn" id="player-back-btn" onclick="showPage('players',document.querySelector('#main-nav button:nth-child(2)'))">← Back</button>
+      <button class="back-btn" onclick="showPage('players',document.querySelector('#main-nav button:nth-child(2)'))">← Back</button>
       <div id="player-profile-content"></div>
     </div>
 
+    <!-- COMMITTEE -->
     <div class="page" id="page-committee">
       <div class="stat-grid">
         <div class="stat"><div class="stat-label">Total players</div><div class="stat-val" id="c-total">—</div></div>
@@ -185,8 +205,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <button class="btn primary full" onclick="addPlayer()">Add player</button>
       </div>
       <div class="card">
-        <div class="section-head">Edit existing players</div>
-        <p style="font-size:13px;color:#888;margin-bottom:12px">Tap any player to edit their details.</p>
+        <div class="section-head">Edit players</div>
         <input type="text" id="committee-search" placeholder="Search players..." oninput="renderCommitteePlayerList()" style="margin-bottom:12px">
         <div id="committee-player-list"><div class="loading">Loading...</div></div>
       </div>
@@ -227,9 +246,10 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
     <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
-      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="doubles_americano">Doubles Americano</option><option value="normal">Normal</option><option value="round_robin">Round robin</option></select></div>
+      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="doubles_americano">Doubles Americano</option><option value="normal">Normal</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" placeholder="e.g. York Sport Centre"></div>
+    <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="ns-points" value="16" min="1"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn full" onclick="closeModal('new-session-modal')">Cancel</button>
       <button class="btn primary full" onclick="saveNewSession()">Create</button>
@@ -248,12 +268,22 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
     <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select></div>
     <div class="edit-row"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
     <div class="edit-row"><span class="edit-row-label">Active</span><select id="edit-active"><option value="true">Yes</option><option value="false">No</option></select></div>
-    <div class="edit-row"><span class="edit-row-label">Provisional</span><select id="edit-provisional"><option value="true">Yes</option><option value="false">No</option></select></div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn full" onclick="closeModal('edit-player-modal')">Cancel</button>
       <button class="btn primary full" onclick="savePlayerEdit()">Save</button>
     </div>
-    <button class="btn danger full" style="margin-top:10px" onclick="togglePlayerActive()">Toggle active/inactive</button>
+    <button class="btn danger full" style="margin-top:10px" onclick="togglePlayerActive()">Toggle active / inactive</button>
+  </div>
+</div>
+
+<!-- ADD PLAYER TO SESSION MODAL -->
+<div class="modal-overlay" id="add-to-session-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Add player to session</h3>
+    <input type="text" id="session-player-search" placeholder="Search players..." oninput="renderSessionPlayerSearch()" style="margin-bottom:12px">
+    <div id="session-player-search-list"></div>
+    <button class="btn full" style="margin-top:12px" onclick="closeModal('add-to-session-modal')">Done</button>
   </div>
 </div>
 
@@ -264,8 +294,546 @@ const SUPABASE_URL='https://kzqbukjcimuqliwdhpsd.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cWJ1a2pjaW11cWxpd2RocHNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjA4ODUsImV4cCI6MjA5Nzc5Njg4NX0.0t_ZS9JImubHWvsKQjm-9EFFCd0efJVr-jzlXZyvcEA';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
+const K=16;
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
+let activeSessionId=null;
+let sessionPlayers=[];
+let sessionRounds=[];
+let sessionEloState={};
+let pointsPerRound=16;
 
+// ── ELO ENGINE ──────────────────────────────────────────────
+function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
+
+function calcRoundElo(t1ids,t2ids,s1,s2,eloState){
+  const total=s1+s2;
+  if(total===0)return{};
+  const score1=s1/total,score2=s2/total;
+  const avgR1=t1ids.reduce((a,id)=>a+(eloState[id]||1000),0)/t1ids.length;
+  const avgR2=t2ids.reduce((a,id)=>a+(eloState[id]||1000),0)/t2ids.length;
+  const exp1=expectedScore(avgR1,avgR2);
+  const exp2=expectedScore(avgR2,avgR1);
+  const changes={};
+  t1ids.forEach(id=>{changes[id]=Math.round(K*(score1-exp1))});
+  t2ids.forEach(id=>{changes[id]=Math.round(K*(score2-exp2))});
+  return changes;
+}
+
+// ── PAIRING ALGORITHM ──────────────────────────────────────
+function generateNextRound(playerIds,completedRounds){
+  const ids=[...playerIds];
+  const n=ids.length;
+  const courts=Math.floor(n/4);
+  const sitting=n%4;
+  // track pair history to avoid repeats
+  const pairCount={};
+  completedRounds.forEach(r=>{
+    const pairs=[[r.t1[0],r.t1[1]],[r.t2[0],r.t2[1]]];
+    pairs.forEach(([a,b])=>{
+      const k=[a,b].sort().join('|');
+      pairCount[k]=(pairCount[k]||0)+1;
+    });
+  });
+  // sort by total points descending for balanced courts
+  const pts={};
+  ids.forEach(id=>pts[id]=0);
+  completedRounds.forEach(r=>{
+    (r.t1||[]).forEach(id=>pts[id]+=(r.s1||0));
+    (r.t2||[]).forEach(id=>pts[id]+=(r.s2||0));
+  });
+  const sorted=[...ids].sort((a,b)=>pts[b]-pts[a]);
+  // simple round-robin style: rotate sitting players
+  const sitCount={};
+  ids.forEach(id=>sitCount[id]=0);
+  completedRounds.forEach(r=>{
+    ids.forEach(id=>{
+      if(!(r.t1||[]).includes(id)&&!(r.t2||[]).includes(id))sitCount[id]++;
+    });
+  });
+  // who sits this round — those who've sat least
+  const sitters=sitting>0?[...sorted].sort((a,b)=>sitCount[a]-sitCount[b]).slice(0,sitting):[];
+  const playing=sorted.filter(id=>!sitters.includes(id));
+  const matches=[];
+  for(let i=0;i<courts;i++){
+    const four=playing.slice(i*4,i*4+4);
+    if(four.length<4)break;
+    // try to pair people who haven't played together recently
+    let bestPair=[four[0],four[2]];
+    let bestOpp=[four[1],four[3]];
+    // just use top/bottom split for simplicity
+    matches.push({t1:[four[0],four[1]],t2:[four[2],four[3]],s1:null,s2:null});
+  }
+  return{matches,sitters};
+}
+
+// ── DATA ────────────────────────────────────────────────────
+function eloClass(e){return e>=1075?'elo-high':e<=925?'elo-low':'elo-mid'}
+function pName(id){return pMap[id]?pMap[id].name:id.slice(-4)}
+function pFirst(id){return pMap[id]?pMap[id].name.split(' ')[0]:id.slice(-4)}
+function initials(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
+
+async function loadData(){
+  try{
+    const[pr,sr]=await Promise.all([
+      sb.from('players').select('*').order('elo_rating',{ascending:false}),
+      sb.from('sessions').select('*').order('date',{ascending:false})
+    ]);
+    if(pr.error)throw pr.error;
+    if(sr.error)throw sr.error;
+    PLAYERS=pr.data||[];SESSIONS=sr.data||[];
+    PLAYERS.forEach(p=>pMap[p.id]=p);
+    renderLeaderboard();renderPlayers();renderSessions();
+    if(accessLevel==='committee')renderCommitteeStats();
+  }catch(e){console.error(e);showToast('DB connection error')}
+}
+
+// ── LEADERBOARD ─────────────────────────────────────────────
+function renderLeaderboard(){
+  let list=[...PLAYERS].filter(p=>p.is_active!==false);
+  if(leaderTab==='upper')list=list.filter(p=>p.group_name==='upper');
+  else if(leaderTab==='lower')list=list.filter(p=>p.group_name==='lower');
+  list.sort((a,b)=>b.elo_rating-a.elo_rating);
+  document.getElementById('s-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
+  document.getElementById('s-sessions').textContent=SESSIONS.filter(s=>s.status==='completed').length;
+  document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false).length;
+  document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false).length;
+  document.getElementById('leader-body').innerHTML=list.map((p,i)=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
+    <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
+    <td><span class="player-name">${p.name}</span></td>
+    <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
+    <td style="color:#aaa">${p.matches_won||0}/${p.games_played||0}</td>
+  </tr>`).join('');
+}
+function setLeaderTab(tab,btn){
+  leaderTab=tab;
+  document.querySelectorAll('.tab-pills button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');renderLeaderboard();
+}
+
+// ── PLAYERS ─────────────────────────────────────────────────
+function renderPlayers(){
+  const q=(document.getElementById('player-search').value||'').toLowerCase();
+  const g=document.getElementById('player-group').value;
+  let list=[...PLAYERS].filter(p=>{
+    if(q&&!p.name.toLowerCase().includes(q))return false;
+    if(g&&p.group_name!==g)return false;
+    return true;
+  }).sort((a,b)=>b.elo_rating-a.elo_rating);
+  document.getElementById('player-body').innerHTML=list.map(p=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
+    <td><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
+    <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
+    <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
+    <td style="color:#aaa">${p.games_played||0}</td>
+  </tr>`).join('');
+}
+
+function showPlayerProfile(pid){
+  const p=pMap[pid];if(!p)return;
+  const ic=p.gender==='female'?'#FBEAF0':'#E6F1FB';
+  const it=p.gender==='female'?'#993556':'#185FA5';
+  const sess=SESSIONS.filter(s=>Array.isArray(s.attendees)&&s.attendees.includes(pid)&&s.status==='completed');
+  const editBtn=accessLevel==='committee'?`<button class="btn sm" onclick="openEditModal('${pid}')">Edit</button>`:'';
+  document.getElementById('player-profile-content').innerHTML=`
+    <div class="card" style="display:flex;align-items:center;gap:14px">
+      <div class="player-initials" style="background:${ic};color:${it};width:52px;height:52px;font-size:18px">${initials(p.name)}</div>
+      <div style="flex:1">
+        <div style="font-size:18px;font-weight:600">${p.name}</div>
+        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;align-items:center">
+          <span class="badge ${p.group_name||'unassigned'}">${p.group_name||'Unassigned'}</span>
+          ${p.flagged?`<span class="badge flag">${p.flag_type}</span>`:''}
+          ${!p.is_active?'<span class="badge prov">Inactive</span>':''}
+          ${editBtn}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-head">Stats</div>
+      <div class="info-row"><span class="info-label">ELO rating</span><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></div>
+      <div class="info-row"><span class="info-label">Games played</span><span>${p.games_played||0}</span></div>
+      <div class="info-row"><span class="info-label">Matches won</span><span>${p.matches_won||0}</span></div>
+      <div class="info-row"><span class="info-label">Gender</span><span style="text-transform:capitalize">${p.gender||'—'}</span></div>
+    </div>
+    <div class="card">
+      <div class="section-head">Sessions attended (${sess.length})</div>
+      ${sess.length?sess.map(s=>{
+        const ec=Array.isArray(s.elo_changes)?s.elo_changes.find(c=>c.pid===pid):null;
+        return`<div class="info-row"><span>${s.title}</span><span>${ec?`<span class="${ec.change>=0?'change-pos':'change-neg'}">${ec.change>=0?'+':''}${ec.change}</span>`:'—'}</span></div>`;
+      }).join(''):'<div style="color:#aaa;font-size:13px">No sessions yet.</div>'}
+    </div>`;
+  showPage('player-profile',null,true);
+}
+
+// ── SESSIONS LIST ────────────────────────────────────────────
+function renderSessions(){
+  const sorted=[...SESSIONS].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('sessions-list').innerHTML=sorted.length?sorted.map(s=>`
+    <div class="card session-card" onclick="showSessionDetail('${s.id}')">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;margin-bottom:3px">${s.title}</div>
+          <div style="font-size:12px;color:#aaa">${s.date} · ${s.location||'TBC'}</div>
+          <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
+            <span class="badge ${s.status}">${s.status}</span>
+            <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
+            ${s.status==='in_progress'?'<span class="session-live-badge">● LIVE</span>':''}
+          </div>
+        </div>
+        <span style="color:#ccc;font-size:22px;margin-left:10px">›</span>
+      </div>
+    </div>`).join(''):'<div class="empty-state">No sessions yet.</div>';
+}
+
+// ── SESSION DETAIL ───────────────────────────────────────────
+function showSessionDetail(sid){
+  const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
+  if(s.format==='doubles_americano'&&(s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
+    loadLiveSession(s);
+  } else {
+    renderCompletedSession(s);
+  }
+  showPage('session-detail',null,true);
+}
+
+function renderCompletedSession(s){
+  const rounds=s.rounds||[];
+  const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
+  let html=`<div class="card">
+    <div style="font-size:18px;font-weight:600;margin-bottom:4px">${s.title}</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.date} · ${s.location||'TBC'} · ${s.points_to_play||16} pts/round</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="badge ${s.status}">${s.status}</span>
+      <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
+      ${s.elo_applied?'<span class="badge completed">ELO applied</span>':''}
+    </div>
+  </div>`;
+  if(s.attendees&&s.attendees.length){
+    html+=`<div class="card"><div class="section-head">Attendees (${s.attendees.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}</span>`).join('')}</div></div>`;
+  }
+  if(s.elo_changes&&s.elo_changes.length){
+    const sc=[...s.elo_changes].sort((a,b)=>b.change-a.change);
+    html+=`<div class="card"><div class="section-head">ELO changes</div>${sc.map(c=>`
+      <div class="elo-result-row"><span style="font-weight:500">${c.name}</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="${c.change>=0?'change-pos':'change-neg'}">${c.change>=0?'+':''}${c.change}</span>
+        <span class="elo-pill ${eloClass(c.final)}">${c.final}</span>
+      </div></div>`).join('')}</div>`;
+  }
+  if(rounds.length){
+    const scores={};
+    rounds.forEach(round=>{
+      (round.t1||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(round.s1||0)});
+      (round.t2||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(round.s2||0)});
+    });
+    const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    html+=`<div class="card"><div class="section-head">Americano standings</div>${ranked.map(([id,pts],i)=>`
+      <div class="elo-result-row"><div style="display:flex;align-items:center;gap:10px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pName(id)}</span></div><span style="font-weight:600;color:#1D9E75;font-size:15px">${pts}</span></div>`).join('')}</div>`;
+    let rh='<div class="card"><div class="section-head">Round results</div>';
+    for(let r=1;r<=maxR;r++){
+      const ms=rounds.filter(x=>x.r===r);
+      rh+=`<div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Round ${r}</div>`;
+      ms.forEach(m=>{
+        const w1=(m.s1||0)>(m.s2||0),w2=(m.s2||0)>(m.s1||0);
+        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
+          <div style="flex:1">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
+          <span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w1?'#1D9E75':'#1a1a1a'}">${m.s1||0}</span>
+          <span style="color:#aaa;font-size:11px">—</span>
+          <span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w2?'#1D9E75':'#1a1a1a'}">${m.s2||0}</span>
+          <div style="flex:1;text-align:right">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
+        </div>`;
+      });
+    }
+    rh+='</div>';
+    html+=rh;
+  }
+  document.getElementById('session-detail-content').innerHTML=html;
+}
+
+// ── LIVE SESSION ─────────────────────────────────────────────
+function loadLiveSession(s){
+  activeSessionId=s.id;
+  sessionPlayers=Array.isArray(s.attendees)?[...s.attendees]:[];
+  sessionRounds=Array.isArray(s.rounds)?[...s.rounds]:[];
+  pointsPerRound=s.points_to_play||16;
+  // rebuild elo state from current player ratings
+  sessionEloState={};
+  PLAYERS.forEach(p=>{sessionEloState[p.id]=p.elo_rating});
+  // re-apply any already-saved round elo changes
+  sessionRounds.forEach(r=>{
+    if(r.elo_changes){
+      Object.entries(r.elo_changes).forEach(([id,ch])=>{
+        sessionEloState[id]=(sessionEloState[id]||1000)+ch;
+      });
+    }
+  });
+  renderLiveSession();
+}
+
+function renderLiveSession(){
+  const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
+  const roundNum=sessionRounds.length+1;
+  let html=`<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div style="font-size:18px;font-weight:600">${s.title}</div>
+      <span class="session-live-badge">● LIVE</span>
+    </div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:12px">${s.date} · ${s.points_to_play||16} pts/round</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
+      ${sessionRounds.length>0?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
+    </div>
+  </div>`;
+
+  // Current players
+  html+=`<div class="card">
+    <div class="section-head">Playing now (${sessionPlayers.length})</div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px">
+      ${sessionPlayers.map(id=>`<span class="badge ${(pMap[id]||{}).group_name||'prov'}" style="cursor:pointer" onclick="removeFromSession('${id}')">${pFirst(id)} ×</span>`).join('')}
+    </div>
+    ${sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
+  </div>`;
+
+  // Past rounds summary
+  if(sessionRounds.length>0){
+    const scores={};
+    sessionRounds.forEach(r=>{
+      (r.t1||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(r.s1||0)});
+      (r.t2||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(r.s2||0)});
+    });
+    const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
+    html+=`<div class="card"><div class="section-head">Standings after ${sessionRounds.length} round${sessionRounds.length>1?'s':''}</div>
+      ${ranked.map(([id,pts],i)=>`<div class="elo-result-row">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="rank-num ${i<3?'top':''}">${i+1}</span>
+          <span style="font-weight:500">${pFirst(id)}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-weight:600;color:#1D9E75">${pts} pts</span>
+          <span class="elo-pill ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // Generate next round
+  if(sessionPlayers.length>=4){
+    const{matches,sitters}=generateNextRound(sessionPlayers,sessionRounds);
+    const rId='round-'+roundNum;
+    html+=`<div class="card">
+      <div class="section-head">Round ${roundNum} — enter scores</div>
+      ${sitters.length>0?`<div style="font-size:12px;color:#aaa;margin-bottom:10px">Sitting out: ${sitters.map(id=>pFirst(id)).join(', ')}</div>`:''}
+      <div id="${rId}">
+        ${matches.map((m,mi)=>`
+          <div class="court-block" style="margin-bottom:12px">
+            <div class="court-header">Court ${mi+1}</div>
+            <div class="court-match">
+              <div class="team-row">
+                <div class="team-names">${m.t1.map(id=>pFirst(id)).join(' & ')}</div>
+                <input type="number" class="score-input" id="s1-${mi}" min="0" max="${pointsPerRound}" placeholder="0">
+              </div>
+              <div class="vs-divider">vs</div>
+              <div class="team-row">
+                <div class="team-names">${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
+                <input type="number" class="score-input" id="s2-${mi}" min="0" max="${pointsPerRound}" placeholder="0">
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <button class="btn primary full" onclick="submitRound(${JSON.stringify(matches).replace(/"/g,'&quot;')},${roundNum})">Save round ${roundNum} & apply ELO</button>
+    </div>`;
+  }
+
+  document.getElementById('session-detail-content').innerHTML=html;
+}
+
+async function submitRound(matches,roundNum){
+  const newRounds=[];
+  const eloChangesThisRound={};
+  for(let mi=0;mi<matches.length;mi++){
+    const s1=parseInt(document.getElementById('s1-'+mi).value)||0;
+    const s2=parseInt(document.getElementById('s2-'+mi).value)||0;
+    const m=matches[mi];
+    const changes=calcRoundElo(m.t1,m.t2,s1,s2,sessionEloState);
+    Object.entries(changes).forEach(([id,ch])=>{
+      eloChangesThisRound[id]=(eloChangesThisRound[id]||0)+ch;
+    });
+    newRounds.push({r:roundNum,t1:m.t1,t2:m.t2,s1,s2,elo_changes:changes});
+  }
+  // apply to live elo state
+  Object.entries(eloChangesThisRound).forEach(([id,ch])=>{
+    sessionEloState[id]=(sessionEloState[id]||1000)+ch;
+  });
+  sessionRounds=[...sessionRounds,...newRounds];
+  // save to supabase
+  const allAttendees=[...new Set([...sessionPlayers,...sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])])])];
+  const{error}=await sb.from('sessions').update({
+    rounds:sessionRounds,
+    attendees:allAttendees,
+    status:'in_progress'
+  }).eq('id',activeSessionId);
+  if(error){showToast('Save error: '+error.message);return;}
+  // update local
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0){SESSIONS[idx].rounds=sessionRounds;SESSIONS[idx].attendees=allAttendees;SESSIONS[idx].status='in_progress';}
+  showToast('Round '+roundNum+' saved!');
+  renderLiveSession();
+}
+
+async function completeSession(){
+  if(!confirm('Complete this session and apply all ELO changes to player ratings?'))return;
+  // build final elo changes per player
+  const startElo={};
+  PLAYERS.forEach(p=>{startElo[p.id]=p.elo_rating});
+  const finalChanges=[];
+  const allPlaying=[...new Set(sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])]))];
+  allPlaying.forEach(id=>{
+    const start=startElo[id]||1000;
+    const final=sessionEloState[id]||start;
+    const change=final-start;
+    finalChanges.push({pid:id,name:pName(id),change,final});
+  });
+  // count games and wins per player
+  const gamesCount={},winsCount={};
+  sessionRounds.forEach(r=>{
+    const w1=(r.s1||0)>(r.s2||0),w2=(r.s2||0)>(r.s1||0);
+    (r.t1||[]).forEach(id=>{gamesCount[id]=(gamesCount[id]||0)+1;if(w1)winsCount[id]=(winsCount[id]||0)+1;});
+    (r.t2||[]).forEach(id=>{gamesCount[id]=(gamesCount[id]||0)+1;if(w2)winsCount[id]=(winsCount[id]||0)+1;});
+  });
+  const allAttendees=[...new Set([...sessionPlayers,...allPlaying])];
+  // update session
+  const{error:se}=await sb.from('sessions').update({
+    status:'completed',elo_applied:true,
+    attendees:allAttendees,
+    rounds:sessionRounds,
+    elo_changes:finalChanges
+  }).eq('id',activeSessionId);
+  if(se){showToast('Error: '+se.message);return;}
+  // update each player's elo, games_played, matches_won
+  for(const id of allPlaying){
+    const p=pMap[id];if(!p)continue;
+    const newElo=sessionEloState[id]||p.elo_rating;
+    const newGames=(p.games_played||0)+(gamesCount[id]||0);
+    const newWins=(p.matches_won||0)+(winsCount[id]||0);
+    await sb.from('players').update({elo_rating:newElo,games_played:newGames,matches_won:newWins}).eq('id',id);
+    p.elo_rating=newElo;p.games_played=newGames;p.matches_won=newWins;
+  }
+  // update local session
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0){Object.assign(SESSIONS[idx],{status:'completed',elo_applied:true,attendees:allAttendees,rounds:sessionRounds,elo_changes:finalChanges});}
+  showToast('Session complete! ELO updated.');
+  activeSessionId=null;sessionPlayers=[];sessionRounds=[];sessionEloState={};
+  await loadData();
+  renderCompletedSession(SESSIONS.find(x=>x.status==='completed'&&SESSIONS[idx])||SESSIONS[idx]);
+}
+
+function removeFromSession(pid){
+  sessionPlayers=sessionPlayers.filter(id=>id!==pid);
+  renderLiveSession();
+}
+
+function renderSessionPlayerSearch(){
+  const q=(document.getElementById('session-player-search').value||'').toLowerCase();
+  const list=[...PLAYERS].filter(p=>p.is_active!==false&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('session-player-search-list').innerHTML=list.map(p=>{
+    const inSession=sessionPlayers.includes(p.id);
+    return`<div class="player-list-row" onclick="toggleSessionPlayer('${p.id}')">
+      <span style="font-weight:500">${p.name}</span>
+      <span style="font-size:13px;color:${inSession?'#1D9E75':'#aaa'};font-weight:600">${inSession?'✓ In session':'+ Add'}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggleSessionPlayer(pid){
+  if(sessionPlayers.includes(pid)){
+    sessionPlayers=sessionPlayers.filter(id=>id!==pid);
+  } else {
+    sessionPlayers.push(pid);
+  }
+  renderSessionPlayerSearch();
+  renderLiveSession();
+}
+
+// ── COMMITTEE ────────────────────────────────────────────────
+function renderCommitteeStats(){
+  document.getElementById('c-total').textContent=PLAYERS.length;
+  document.getElementById('c-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
+  document.getElementById('c-sess').textContent=SESSIONS.length;
+  const fl=PLAYERS.filter(p=>p.flagged);
+  document.getElementById('c-flagged').textContent=fl.length;
+  document.getElementById('flagged-list').innerHTML=fl.length?fl.map(p=>`<div class="elo-result-row"><span>${p.name}</span><span class="badge flag">${p.flag_type}</span></div>`).join(''):'<div style="font-size:13px;color:#aaa">No players flagged.</div>';
+  renderCommitteePlayerList();
+}
+
+function renderCommitteePlayerList(){
+  const q=(document.getElementById('committee-search').value||'').toLowerCase();
+  let list=[...PLAYERS].filter(p=>!q||p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('committee-player-list').innerHTML=list.map(p=>`
+    <div class="player-list-row" onclick="openEditModal('${p.id}')">
+      <div><span style="font-weight:500">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:6px;font-size:10px">Inactive</span>':''}</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="badge ${p.group_name||'unassigned'}">${p.group_name||'—'}</span>
+        <span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
+        <span style="color:#ccc">›</span>
+      </div>
+    </div>`).join('');
+}
+
+function openEditModal(pid){
+  const p=pMap[pid];if(!p)return;
+  document.getElementById('edit-player-id').value=pid;
+  document.getElementById('edit-modal-title').textContent='Edit: '+p.name;
+  document.getElementById('edit-name').value=p.name;
+  document.getElementById('edit-gender').value=p.gender||'male';
+  document.getElementById('edit-group').value=p.group_name||'unassigned';
+  document.getElementById('edit-elo').value=p.elo_rating||1000;
+  document.getElementById('edit-active').value=p.is_active===false?'false':'true';
+  openModal('edit-player-modal');
+}
+
+async function savePlayerEdit(){
+  const pid=document.getElementById('edit-player-id').value;
+  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true'};
+  const{error}=await sb.from('players').update(updates).eq('id',pid);
+  if(error){showToast('Error: '+error.message);return;}
+  Object.assign(pMap[pid],updates);PLAYERS=PLAYERS.map(p=>p.id===pid?{...p,...updates}:p);
+  closeModal('edit-player-modal');showToast('Saved!');
+  renderLeaderboard();renderPlayers();renderCommitteeStats();
+}
+
+async function togglePlayerActive(){
+  const pid=document.getElementById('edit-player-id').value;
+  const p=pMap[pid];if(!p)return;
+  const newActive=p.is_active===false;
+  const{error}=await sb.from('players').update({is_active:newActive}).eq('id',pid);
+  if(error){showToast('Error: '+error.message);return;}
+  p.is_active=newActive;PLAYERS=PLAYERS.map(pl=>pl.id===pid?{...pl,is_active:newActive}:pl);
+  closeModal('edit-player-modal');showToast(p.name+' marked '+(newActive?'active':'inactive'));
+  renderLeaderboard();renderPlayers();renderCommitteeStats();
+}
+
+async function addPlayer(){
+  const name=document.getElementById('new-name').value.trim();
+  if(!name){showToast('Enter a name');return;}
+  const player={id:'p-'+Date.now(),name,gender:document.getElementById('new-gender').value,elo_rating:1000,group_name:document.getElementById('new-group').value,games_played:0,matches_won:0,provisional:true,flagged:false,is_active:true};
+  const{error}=await sb.from('players').insert([player]);
+  if(error){showToast('Error: '+error.message);return;}
+  PLAYERS.push(player);pMap[player.id]=player;
+  document.getElementById('new-name').value='';
+  showToast(name+' added!');renderCommitteeStats();renderLeaderboard();renderPlayers();
+}
+
+async function saveNewSession(){
+  const title=document.getElementById('ns-title').value.trim();
+  const date=document.getElementById('ns-date').value;
+  if(!title||!date){showToast('Title and date required');return;}
+  const pts=parseInt(document.getElementById('ns-points').value)||16;
+  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:pts,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[]};
+  const{error}=await sb.from('sessions').insert([session]);
+  if(error){showToast('Error: '+error.message);return;}
+  SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
+}
+
+// ── SEED DATA ────────────────────────────────────────────────
 const SEED_PLAYERS=[
   {id:"69ad845f55b9fc4d5cae2033",name:"Raman Sharma",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
   {id:"69ad84479c13fd5b5e0a28e0",name:"Rowan Luff",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
@@ -318,273 +886,17 @@ const SEED_PLAYERS=[
   {id:"69a86bf51bdcb3700a964d31",name:"Hayden Stewart",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true}
 ];
 
-const SEED_SESSIONS=[
-  {id:"69ab463780c742c7a6e7e3b3",title:"Sunday Session — Upper (Mar 8)",date:"2026-03-08",type:"training",format:"doubles_americano",location:"YSJ Sports Fields",status:"completed",elo_applied:true,attendees:["69a86bf51bdcb3700a964d3d","69a86bf51bdcb3700a964d13","69a86bf51bdcb3700a964d18","69a86bf51bdcb3700a964d33","69a86bf51bdcb3700a964d26","69a86bf51bdcb3700a964d22","69a86bf51bdcb3700a964d20","69a86bf51bdcb3700a964d19","69a86bf51bdcb3700a964d2e","69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d1a","69a86bf51bdcb3700a964d2b"],elo_changes:[],rounds:[{r:1,t1:["69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d3d"],s1:9,t2:["69a86bf51bdcb3700a964d33","69a86bf51bdcb3700a964d2e"],s2:7},{r:1,t1:["69a86bf51bdcb3700a964d2b","69a86bf51bdcb3700a964d26"],s1:7,t2:["69a86bf51bdcb3700a964d22","69a86bf51bdcb3700a964d20"],s2:9},{r:1,t1:["69a86bf51bdcb3700a964d1a","69a86bf51bdcb3700a964d19"],s1:2,t2:["69a86bf51bdcb3700a964d18","69a86bf51bdcb3700a964d13"],s2:14},{r:2,t1:["69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d33"],s1:7,t2:["69a86bf51bdcb3700a964d2b","69a86bf51bdcb3700a964d22"],s2:9},{r:2,t1:["69a86bf51bdcb3700a964d3d","69a86bf51bdcb3700a964d2e"],s1:2,t2:["69a86bf51bdcb3700a964d26","69a86bf51bdcb3700a964d20"],s2:14},{r:2,t1:["69a86bf51bdcb3700a964d1a","69a86bf51bdcb3700a964d18"],s1:6,t2:["69a86bf51bdcb3700a964d19","69a86bf51bdcb3700a964d13"],s2:10},{r:3,t1:["69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d2e"],s1:5,t2:["69a86bf51bdcb3700a964d1a","69a86bf51bdcb3700a964d13"],s2:11},{r:3,t1:["69a86bf51bdcb3700a964d3d","69a86bf51bdcb3700a964d33"],s1:11,t2:["69a86bf51bdcb3700a964d19","69a86bf51bdcb3700a964d18"],s2:5},{r:3,t1:["69a86bf51bdcb3700a964d2b","69a86bf51bdcb3700a964d20"],s1:2,t2:["69a86bf51bdcb3700a964d26","69a86bf51bdcb3700a964d22"],s2:14},{r:4,t1:["69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d2b"],s1:3,t2:["69a86bf51bdcb3700a964d3d","69a86bf51bdcb3700a964d19"],s2:13},{r:4,t1:["69a86bf51bdcb3700a964d33","69a86bf51bdcb3700a964d22"],s1:8,t2:["69a86bf51bdcb3700a964d2e","69a86bf51bdcb3700a964d1a"],s2:8},{r:4,t1:["69a86bf51bdcb3700a964d26","69a86bf51bdcb3700a964d20"],s1:10,t2:["69a86bf51bdcb3700a964d18","69a86bf51bdcb3700a964d13"],s2:6},{r:5,t1:["69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d22"],s1:7,t2:["69a86bf51bdcb3700a964d3d","69a86bf51bdcb3700a964d18"],s2:9},{r:5,t1:["69a86bf51bdcb3700a964d33","69a86bf51bdcb3700a964d2b"],s1:5,t2:["69a86bf51bdcb3700a964d2e","69a86bf51bdcb3700a964d13"],s2:11},{r:5,t1:["69a86bf51bdcb3700a964d26","69a86bf51bdcb3700a964d20"],s1:16,t2:["69a86bf51bdcb3700a964d1a","69a86bf51bdcb3700a964d19"],s2:0},{r:6,t1:["69a86bf51bdcb3700a964d3f","69a86bf51bdcb3700a964d19"],s1:8,t2:["69a86bf51bdcb3700a964d2e","69a86bf51bdcb3700a964d26"],s2:8},{r:6,t1:["69a86bf51bdcb3700a964d3d","69a86bf51bdcb3700a964d2b"],s1:12,t2:["69a86bf51bdcb3700a964d33","69a86bf51bdcb3700a964d1a"],s2:4},{r:6,t1:["69a86bf51bdcb3700a964d22","69a86bf51bdcb3700a964d18"],s1:8,t2:["69a86bf51bdcb3700a964d20","69a86bf51bdcb3700a964d13"],s2:8}]},
-  {id:"69a872ff3e6901c6cfbe8d18",title:"Sunday Session — Lower (Mar 8)",date:"2026-03-08",type:"training",format:"doubles_americano",location:"YSJ Sports Fields",status:"completed",elo_applied:true,attendees:["69a86bf51bdcb3700a964d35","69a86bf51bdcb3700a964d25","69a86bf51bdcb3700a964d1b","69a86bf51bdcb3700a964d24","69ad845f55b9fc4d5cae2033","69ad84479c13fd5b5e0a28e0","69a86bf51bdcb3700a964d17","69a86bf51bdcb3700a964d2d","69a86bf51bdcb3700a964d1e"],elo_changes:[],rounds:[{r:1,t1:["69a86bf51bdcb3700a964d35","69a86bf51bdcb3700a964d2d"],s1:6,t2:["69a86bf51bdcb3700a964d25","69a86bf51bdcb3700a964d24"],s2:10},{r:1,t1:["69a86bf51bdcb3700a964d1b","69ad845f55b9fc4d5cae2033"],s1:11,t2:["69a86bf51bdcb3700a964d17","69ad84479c13fd5b5e0a28e0"],s2:5},{r:2,t1:["69a86bf51bdcb3700a964d35","69a86bf51bdcb3700a964d25"],s1:8,t2:["69a86bf51bdcb3700a964d1b","69a86bf51bdcb3700a964d17"],s2:8},{r:2,t1:["69a86bf51bdcb3700a964d2d","69a86bf51bdcb3700a964d24"],s1:6,t2:["69ad845f55b9fc4d5cae2033","69ad84479c13fd5b5e0a28e0"],s2:10},{r:3,t1:["69a86bf51bdcb3700a964d1e","69a86bf51bdcb3700a964d35"],s1:6,t2:["69a86bf51bdcb3700a964d2d","69a86bf51bdcb3700a964d1b"],s2:10},{r:3,t1:["69a86bf51bdcb3700a964d25","69a86bf51bdcb3700a964d24"],s1:6,t2:["69ad845f55b9fc4d5cae2033","69a86bf51bdcb3700a964d17"],s2:10},{r:4,t1:["69a86bf51bdcb3700a964d17","69a86bf51bdcb3700a964d1e"],s1:9,t2:["69ad84479c13fd5b5e0a28e0","69a86bf51bdcb3700a964d2d"],s2:7},{r:4,t1:["69a86bf51bdcb3700a964d35","69a86bf51bdcb3700a964d24"],s1:7,t2:["69a86bf51bdcb3700a964d25","69a86bf51bdcb3700a964d1b"],s2:9},{r:5,t1:["69ad845f55b9fc4d5cae2033","69a86bf51bdcb3700a964d1e"],s1:8,t2:["69a86bf51bdcb3700a964d35","69a86bf51bdcb3700a964d1b"],s2:8},{r:5,t1:["69ad84479c13fd5b5e0a28e0","69a86bf51bdcb3700a964d24"],s1:8,t2:["69a86bf51bdcb3700a964d2d","69a86bf51bdcb3700a964d25"],s2:8},{r:6,t1:["69a86bf51bdcb3700a964d17","69a86bf51bdcb3700a964d35"],s1:11,t2:["69a86bf51bdcb3700a964d1e","69ad84479c13fd5b5e0a28e0"],s2:5},{r:6,t1:["69ad845f55b9fc4d5cae2033","69a86bf51bdcb3700a964d25"],s1:12,t2:["69a86bf51bdcb3700a964d2d","69a86bf51bdcb3700a964d24"],s2:4}]},
-  {id:"69b1684e981c65446916b5a9",title:"Newcastle & YSJ Inter-uni",date:"2026-03-11",type:"inter_uni",format:"inter_uni_tournament",location:"YSJ Sports Fields",status:"completed",elo_applied:false,attendees:["69a86bf51bdcb3700a964d26","69a86bf51bdcb3700a964d13","69a86bf51bdcb3700a964d22","69ac86802e96ab322c307813","69a86bf51bdcb3700a964d2e","69a86bf51bdcb3700a964d1a","69a86bf51bdcb3700a964d33","69a86bf51bdcb3700a964d18","69a86bf51bdcb3700a964d2b"],elo_changes:[],rounds:[]}
-];
-
-function eloClass(e){return e>=1075?'elo-high':e<=925?'elo-low':'elo-mid'}
-function pName(id){return pMap[id]?pMap[id].name:id.slice(-4)}
-function initials(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500)}
-
-async function loadData(){
-  try{
-    const[pr,sr]=await Promise.all([
-      sb.from('players').select('*').order('elo_rating',{ascending:false}),
-      sb.from('sessions').select('*').order('date',{ascending:false})
-    ]);
-    if(pr.error)throw pr.error;
-    if(sr.error)throw sr.error;
-    PLAYERS=pr.data||[];SESSIONS=sr.data||[];
-    PLAYERS.forEach(p=>pMap[p.id]=p);
-    renderLeaderboard();renderPlayers();renderSessions();
-    if(accessLevel==='committee')renderCommitteeStats();
-  }catch(e){console.error(e);showToast('DB connection error')}
-}
-
-function renderLeaderboard(){
-  let list=[...PLAYERS].filter(p=>p.is_active!==false);
-  if(leaderTab==='upper')list=list.filter(p=>p.group_name==='upper');
-  else if(leaderTab==='lower')list=list.filter(p=>p.group_name==='lower');
-  list.sort((a,b)=>b.elo_rating-a.elo_rating);
-  document.getElementById('s-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
-  document.getElementById('s-sessions').textContent=SESSIONS.filter(s=>s.status==='completed').length;
-  document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false).length;
-  document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false).length;
-  document.getElementById('leader-body').innerHTML=list.map((p,i)=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
-    <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
-    <td><span class="player-name">${p.name}</span>${p.provisional?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">P</span>':''}</td>
-    <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
-    <td style="color:#aaa">${p.matches_won||0}/${p.games_played||0}</td>
-  </tr>`).join('');
-}
-
-function setLeaderTab(tab,btn){
-  leaderTab=tab;
-  document.querySelectorAll('.tab-pills button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');renderLeaderboard();
-}
-
-function renderPlayers(){
-  const q=(document.getElementById('player-search').value||'').toLowerCase();
-  const g=document.getElementById('player-group').value;
-  let list=[...PLAYERS].filter(p=>{
-    if(q&&!p.name.toLowerCase().includes(q))return false;
-    if(g&&p.group_name!==g)return false;
-    return true;
-  }).sort((a,b)=>b.elo_rating-a.elo_rating);
-  document.getElementById('player-body').innerHTML=list.map(p=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
-    <td><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
-    <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
-    <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
-    <td style="color:#aaa">${p.games_played||0}</td>
-  </tr>`).join('');
-}
-
-function showPlayerProfile(pid){
-  const p=pMap[pid];if(!p)return;
-  const ic=p.gender==='female'?'#FBEAF0':'#E6F1FB';
-  const it=p.gender==='female'?'#993556':'#185FA5';
-  const sess=SESSIONS.filter(s=>Array.isArray(s.attendees)&&s.attendees.includes(pid)&&s.status==='completed');
-  const editBtn=accessLevel==='committee'?`<button class="btn sm" style="margin-left:auto" onclick="openEditModal('${pid}')">Edit</button>`:'';
-  document.getElementById('player-profile-content').innerHTML=`
-    <div class="card" style="display:flex;align-items:center;gap:14px">
-      <div class="player-initials" style="background:${ic};color:${it};width:52px;height:52px;font-size:18px">${initials(p.name)}</div>
-      <div style="flex:1">
-        <div style="font-size:18px;font-weight:600">${p.name}</div>
-        <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap;align-items:center">
-          <span class="badge ${p.group_name||'unassigned'}">${p.group_name||'Unassigned'}</span>
-          ${p.provisional?'<span class="badge prov">Provisional</span>':''}
-          ${p.flagged?`<span class="badge flag">${p.flag_type}</span>`:''}
-          ${!p.is_active?'<span class="badge prov">Inactive</span>':''}
-          ${editBtn}
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="section-head">Stats</div>
-      <div class="info-row"><span class="info-label">ELO rating</span><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></div>
-      <div class="info-row"><span class="info-label">Games played</span><span>${p.games_played||0}</span></div>
-      <div class="info-row"><span class="info-label">Matches won</span><span>${p.matches_won||0}</span></div>
-      <div class="info-row"><span class="info-label">Gender</span><span style="text-transform:capitalize">${p.gender||'—'}</span></div>
-    </div>
-    <div class="card">
-      <div class="section-head">Session history (${sess.length})</div>
-      ${sess.length?sess.map(s=>`<div class="info-row"><span>${s.title}</span><span class="badge prov">${s.date}</span></div>`).join(''):'<div style="color:#aaa;font-size:13px">No sessions yet.</div>'}
-    </div>`;
-  showPage('player-profile',null,true);
-}
-
-function openEditModal(pid){
-  const p=pMap[pid];if(!p)return;
-  document.getElementById('edit-player-id').value=pid;
-  document.getElementById('edit-modal-title').textContent='Edit: '+p.name;
-  document.getElementById('edit-name').value=p.name;
-  document.getElementById('edit-gender').value=p.gender||'male';
-  document.getElementById('edit-group').value=p.group_name||'unassigned';
-  document.getElementById('edit-elo').value=p.elo_rating||1000;
-  document.getElementById('edit-active').value=p.is_active===false?'false':'true';
-  document.getElementById('edit-provisional').value=p.provisional?'true':'false';
-  openModal('edit-player-modal');
-}
-
-async function savePlayerEdit(){
-  const pid=document.getElementById('edit-player-id').value;
-  const updates={
-    name:document.getElementById('edit-name').value.trim(),
-    gender:document.getElementById('edit-gender').value,
-    group_name:document.getElementById('edit-group').value,
-    elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,
-    is_active:document.getElementById('edit-active').value==='true',
-    provisional:document.getElementById('edit-provisional').value==='true'
-  };
-  const{error}=await sb.from('players').update(updates).eq('id',pid);
-  if(error){showToast('Error: '+error.message);return;}
-  Object.assign(pMap[pid],updates);
-  PLAYERS=PLAYERS.map(p=>p.id===pid?{...p,...updates}:p);
-  closeModal('edit-player-modal');
-  showToast('Player updated!');
-  renderLeaderboard();renderPlayers();renderCommitteeStats();
-  showPlayerProfile(pid);
-}
-
-async function togglePlayerActive(){
-  const pid=document.getElementById('edit-player-id').value;
-  const p=pMap[pid];if(!p)return;
-  const newActive=p.is_active===false?true:false;
-  const{error}=await sb.from('players').update({is_active:newActive}).eq('id',pid);
-  if(error){showToast('Error: '+error.message);return;}
-  p.is_active=newActive;PLAYERS=PLAYERS.map(pl=>pl.id===pid?{...pl,is_active:newActive}:pl);
-  closeModal('edit-player-modal');
-  showToast(p.name+' marked '+(newActive?'active':'inactive'));
-  renderLeaderboard();renderPlayers();renderCommitteeStats();
-}
-
-function renderSessions(){
-  const sorted=[...SESSIONS].sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById('sessions-list').innerHTML=sorted.length?sorted.map(s=>`
-    <div class="card session-card" onclick="showSessionDetail('${s.id}')">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;margin-bottom:3px">${s.title}</div>
-          <div style="font-size:12px;color:#aaa">${s.date} · ${s.location||'TBC'}</div>
-          <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
-            <span class="badge ${s.status}">${s.status}</span>
-            <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
-          </div>
-        </div>
-        <span style="color:#ccc;font-size:22px;margin-left:10px">›</span>
-      </div>
-    </div>`).join(''):'<div class="empty-state">No sessions yet.</div>';
-}
-
-function showSessionDetail(sid){
-  const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
-  const rounds=s.rounds||[];
-  const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
-  let html=`<div class="card">
-    <div style="font-size:18px;font-weight:600;margin-bottom:4px">${s.title}</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.date} · ${s.location||'TBC'}</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <span class="badge ${s.status}">${s.status}</span>
-      <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
-      ${s.elo_applied?'<span class="badge completed">ELO applied</span>':''}
-    </div>
-  </div>`;
-  if(s.attendees&&s.attendees.length){
-    html+=`<div class="card"><div class="section-head">Attendees (${s.attendees.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}</span>`).join('')}</div></div>`;
-  }
-  if(s.elo_changes&&s.elo_changes.length){
-    const sc=[...s.elo_changes].sort((a,b)=>b.change-a.change);
-    html+=`<div class="card"><div class="section-head">ELO changes</div>${sc.map(c=>`<div class="elo-change-row"><span>${c.name}</span><div style="display:flex;align-items:center;gap:8px"><span class="${c.change>=0?'change-pos':'change-neg'}">${c.change>=0?'+':''}${c.change}</span><span class="elo-pill ${eloClass(c.final)}">${c.final}</span></div></div>`).join('')}</div>`;
-  }
-  if(rounds.length&&s.format==='doubles_americano'){
-    const scores={};
-    rounds.forEach(round=>{
-      (round.t1||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=round.s1||0});
-      (round.t2||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=round.s2||0});
-    });
-    const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-    html+=`<div class="card"><div class="section-head">Standings</div>${ranked.map(([id,pts],i)=>`<div class="elo-change-row"><div style="display:flex;align-items:center;gap:10px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pName(id)}</span></div><span class="americano-pts">${pts}</span></div>`).join('')}</div>`;
-    let rh='<div class="card"><div class="section-head">Round results</div>';
-    for(let r=1;r<=maxR;r++){
-      const ms=rounds.filter(x=>x.r===r);
-      rh+=`<div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Round ${r}</div>`;
-      ms.forEach(m=>{
-        const w1=(m.s1||0)>(m.s2||0),w2=(m.s2||0)>(m.s1||0);
-        rh+=`<div class="round-row"><div style="flex:1">${(m.t1||[]).map(id=>pName(id).split(' ')[0]).join(' & ')}</div><span class="score ${w1?'winner':''}">${m.s1||0}</span><span class="vs">—</span><span class="score ${w2?'winner':''}">${m.s2||0}</span><div style="flex:1;text-align:right">${(m.t2||[]).map(id=>pName(id).split(' ')[0]).join(' & ')}</div></div>`;
-      });
-    }
-    html+=rh+'</div>';
-  }
-  document.getElementById('session-detail-content').innerHTML=html;
-  showPage('session-detail',null,true);
-}
-
-function renderCommitteeStats(){
-  document.getElementById('c-total').textContent=PLAYERS.length;
-  document.getElementById('c-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
-  document.getElementById('c-sess').textContent=SESSIONS.length;
-  const fl=PLAYERS.filter(p=>p.flagged);
-  document.getElementById('c-flagged').textContent=fl.length;
-  document.getElementById('flagged-list').innerHTML=fl.length?fl.map(p=>`<div class="elo-change-row"><span>${p.name}</span><span class="badge flag">${p.flag_type}</span></div>`).join(''):'<div style="font-size:13px;color:#aaa">No players flagged.</div>';
-  renderCommitteePlayerList();
-}
-
-function renderCommitteePlayerList(){
-  const q=(document.getElementById('committee-search').value||'').toLowerCase();
-  let list=[...PLAYERS].filter(p=>!q||p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
-  document.getElementById('committee-player-list').innerHTML=list.map(p=>`
-    <div class="player-list-row" onclick="openEditModal('${p.id}')">
-      <div>
-        <span style="font-weight:500">${p.name}</span>
-        ${!p.is_active?'<span class="badge prov" style="margin-left:6px;font-size:10px">Inactive</span>':''}
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="badge ${p.group_name||'unassigned'}">${p.group_name||'—'}</span>
-        <span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
-        <span style="color:#ccc">›</span>
-      </div>
-    </div>`).join('');
-}
-
-async function addPlayer(){
-  const name=document.getElementById('new-name').value.trim();
-  if(!name){showToast('Enter a name');return;}
-  const player={id:'p-'+Date.now(),name,gender:document.getElementById('new-gender').value,elo_rating:1000,group_name:document.getElementById('new-group').value,games_played:0,matches_won:0,provisional:true,flagged:false,is_active:true};
-  const{error}=await sb.from('players').insert([player]);
-  if(error){showToast('Error: '+error.message);return;}
-  PLAYERS.push(player);pMap[player.id]=player;
-  document.getElementById('new-name').value='';
-  showToast(name+' added!');renderCommitteeStats();renderLeaderboard();renderPlayers();
-}
-
-async function saveNewSession(){
-  const title=document.getElementById('ns-title').value.trim();
-  const date=document.getElementById('ns-date').value;
-  if(!title||!date){showToast('Title and date required');return;}
-  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[]};
-  const{error}=await sb.from('sessions').insert([session]);
-  if(error){showToast('Error: '+error.message);return;}
-  SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
-}
-
 async function seedAll(){
-  if(!confirm('Import 49 players (ELO reset to 1000) and historical sessions? This will overwrite existing data.'))return;
-  showToast('Importing players...');
-  const{error:pe}=await sb.from('players').upsert(SEED_PLAYERS);
-  if(pe){showToast('Error: '+pe.message);return;}
-  showToast('Importing sessions...');
-  const{error:se}=await sb.from('sessions').upsert(SEED_SESSIONS);
-  if(se){showToast('Error: '+se.message);return;}
-  const card=document.getElementById('seed-card');
-  if(card)card.remove();
+  if(!confirm('Import 49 players (all ELO reset to 1000) into Supabase? This will overwrite existing player data.'))return;
+  showToast('Importing...');
+  const{error}=await sb.from('players').upsert(SEED_PLAYERS);
+  if(error){showToast('Error: '+error.message);return;}
+  const sc=document.getElementById('seed-card');if(sc)sc.remove();
   showToast('Done! Reloading...');
   setTimeout(loadData,1200);
 }
 
+// ── NAVIGATION ───────────────────────────────────────────────
 function showPage(id,btn,noNav){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
@@ -593,7 +905,7 @@ function showPage(id,btn,noNav){
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
 function setAccessTab(level){
-  document.querySelectorAll('.tab-pills button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#access-modal .tab-pills button').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+level).classList.add('active');
   document.getElementById('committee-login-form').style.display=level==='committee'?'block':'none';
   if(level==='member'){applyAccess('member');closeModal('access-modal');}
