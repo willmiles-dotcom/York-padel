@@ -162,6 +162,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
           <option value="unassigned">Unassigned</option>
         </select>
       </div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin:-6px 0 14px"><input type="checkbox" id="player-show-archived" onchange="renderPlayers()" style="width:auto">Show archived</label>
       <div class="card" id="bulk-actions-bar" style="display:none">
         <div class="section-head"><span id="bulk-selected-count">0</span> selected</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -442,7 +443,9 @@ let selectedPlayerIds=new Set();
 function renderPlayers(){
   const q=(document.getElementById('player-search').value||'').toLowerCase();
   const g=document.getElementById('player-group').value;
+  const showArchived=document.getElementById('player-show-archived').checked;
   let list=[...PLAYERS].filter(p=>{
+    if(!showArchived&&p.is_active===false)return false;
     if(q&&!p.name.toLowerCase().includes(q))return false;
     if(g&&p.group_name!==g)return false;
     return true;
@@ -469,7 +472,8 @@ function togglePlayerSelect(pid,checked){
 function toggleSelectAllVisible(checked){
   const q=(document.getElementById('player-search').value||'').toLowerCase();
   const g=document.getElementById('player-group').value;
-  const visible=PLAYERS.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!g||p.group_name===g));
+  const showArchived=document.getElementById('player-show-archived').checked;
+  const visible=PLAYERS.filter(p=>(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))&&(!g||p.group_name===g));
   visible.forEach(p=>{if(checked)selectedPlayerIds.add(p.id);else selectedPlayerIds.delete(p.id)});
   renderPlayers();
 }
@@ -822,22 +826,33 @@ function removeFromSession(pid){
 
 function renderSessionPlayerSearch(){
   const q=(document.getElementById('session-player-search').value||'').toLowerCase();
-  const list=[...PLAYERS].filter(p=>p.is_active!==false&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  const list=[...PLAYERS].filter(p=>!q||p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('session-player-search-list').innerHTML=list.map(p=>{
     const inSession=sessionPlayers.includes(p.id);
     return`<div class="player-list-row" onclick="toggleSessionPlayer('${p.id}')">
-      <span style="font-weight:500">${p.name}</span>
+      <span style="font-weight:500">${p.name}${p.is_active===false?'<span class="badge prov" style="margin-left:6px;font-size:10px;padding:1px 5px">Inactive</span>':''}</span>
       <span style="font-size:13px;color:${inSession?'#1D9E75':'#aaa'};font-weight:600">${inSession?'✓ In session':'+ Add'}</span>
     </div>`;
   }).join('');
 }
 
-function toggleSessionPlayer(pid){
+async function toggleSessionPlayer(pid){
   if(sessionPlayers.includes(pid)){
     sessionPlayers=sessionPlayers.filter(id=>id!==pid);
-  } else {
-    sessionPlayers.push(pid);
+    renderSessionPlayerSearch();
+    renderLiveSession();
+    return;
   }
+  const p=pMap[pid];
+  if(p&&p.is_active===false){
+    if(!confirm(p.name+' is currently inactive. Reactivate them and add to this session?'))return;
+    const{error}=await sb.from('players').update({is_active:true}).eq('id',pid);
+    if(error){showToast('Error: '+error.message);return;}
+    p.is_active=true;PLAYERS=PLAYERS.map(pl=>pl.id===pid?{...pl,is_active:true}:pl);
+    renderLeaderboard();renderPlayers();
+    if(accessLevel==='committee')renderCommitteeStats();
+  }
+  sessionPlayers.push(pid);
   renderSessionPlayerSearch();
   renderLiveSession();
 }
