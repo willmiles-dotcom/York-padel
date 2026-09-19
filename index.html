@@ -301,6 +301,11 @@ const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 const K=16;
+let authMod=null;
+import('./js/auth.js').then(m=>{
+  authMod=m;
+  authMod.initAuth(sb,hasSession=>{applyAccess(hasSession?'committee':'member')});
+});
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
 let activeSessionId=null;
 let sessionPlayers=[];
@@ -914,10 +919,16 @@ function setAccessTab(level){
   document.querySelectorAll('#access-modal .tab-pills button').forEach(b=>b.classList.remove('active'));
   document.getElementById('tab-'+level).classList.add('active');
   document.getElementById('committee-login-form').style.display=level==='committee'?'block':'none';
-  if(level==='member'){applyAccess('member');closeModal('access-modal');}
+  if(level==='member'){
+    if(authMod)authMod.signOutCommittee(sb);
+    applyAccess('member');closeModal('access-modal');
+  }
 }
-function tryLogin(){
-  if(document.getElementById('committee-pw').value==='yorkpadel2025'){
+async function tryLogin(){
+  if(!authMod){showToast('Still loading, try again in a moment');return;}
+  const pw=document.getElementById('committee-pw').value;
+  const res=await authMod.signInCommittee(sb,pw);
+  if(res.ok){
     applyAccess('committee');closeModal('access-modal');
     document.getElementById('login-error').style.display='none';
     document.getElementById('committee-pw').value='';
