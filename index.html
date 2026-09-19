@@ -374,6 +374,15 @@ function shuffle(arr){
   return a;
 }
 
+function groupMatchesByRound(completedRounds){
+  const byNum={};
+  completedRounds.forEach(r=>{
+    if(!byNum[r.r])byNum[r.r]=[];
+    byNum[r.r].push(r);
+  });
+  return Object.values(byNum);
+}
+
 function generateNextRound(playerIds,completedRounds,maxCourts){
   const ids=[...playerIds];
   const n=ids.length;
@@ -381,11 +390,14 @@ function generateNextRound(playerIds,completedRounds,maxCourts){
   if(maxCourts)courts=Math.min(courts,maxCourts);
   const sitting=n-courts*4;
   // rotate sitting players — those who've sat out least sit this round
+  // (checked per round, not per match, so multi-court rounds don't
+  // falsely count a player as sitting out the courts they weren't on)
   const sitCount={};
   ids.forEach(id=>sitCount[id]=0);
-  completedRounds.forEach(r=>{
+  groupMatchesByRound(completedRounds).forEach(matchesInRound=>{
     ids.forEach(id=>{
-      if(!(r.t1||[]).includes(id)&&!(r.t2||[]).includes(id))sitCount[id]++;
+      const played=matchesInRound.some(r=>(r.t1||[]).includes(id)||(r.t2||[]).includes(id));
+      if(!played)sitCount[id]++;
     });
   });
   const byLeastSatOut=[...ids].sort((a,b)=>sitCount[a]-sitCount[b]);
@@ -408,10 +420,10 @@ function generateNextPairRound(pairs,completedRounds,maxCourts){
   const pairKey=p=>[...p].sort().join('|');
   const sitCount={};
   pairs.forEach(p=>sitCount[pairKey(p)]=0);
-  completedRounds.forEach(r=>{
+  groupMatchesByRound(completedRounds).forEach(matchesInRound=>{
     pairs.forEach(p=>{
       const k=pairKey(p);
-      const played=pairKey(r.t1||[])===k||pairKey(r.t2||[])===k;
+      const played=matchesInRound.some(r=>pairKey(r.t1||[])===k||pairKey(r.t2||[])===k);
       if(!played)sitCount[k]++;
     });
   });
@@ -730,7 +742,8 @@ function loadLiveSession(s){
 function renderLiveSession(){
   const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
   const isPaired=s.format==='paired_americano';
-  const roundNum=sessionRounds.length+1;
+  const roundsPlayed=sessionRounds.length?Math.max(...sessionRounds.map(r=>r.r)):0;
+  const roundNum=roundsPlayed+1;
   let html=`<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div style="font-size:18px;font-weight:600">${s.title}</div>
@@ -776,7 +789,7 @@ function renderLiveSession(){
       (r.t2||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(r.s2||0)});
     });
     const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-    html+=`<div class="card"><div class="section-head">Standings after ${sessionRounds.length} round${sessionRounds.length>1?'s':''}</div>
+    html+=`<div class="card"><div class="section-head">Standings after ${roundsPlayed} round${roundsPlayed>1?'s':''}</div>
       ${ranked.map(([id,pts],i)=>`<div class="elo-result-row">
         <div style="display:flex;align-items:center;gap:8px">
           <span class="rank-num ${i<3?'top':''}">${i+1}</span>
