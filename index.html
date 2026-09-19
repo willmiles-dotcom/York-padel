@@ -301,6 +301,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
       <button class="btn primary full" onclick="savePlayerEdit()">Save</button>
     </div>
     <button class="btn danger full" style="margin-top:10px" onclick="togglePlayerActive()">Toggle active / inactive</button>
+    <button class="btn danger full" style="margin-top:10px;display:none" id="unlink-account-btn" onclick="unlinkPlayerAccount()">Unlink account</button>
   </div>
 </div>
 
@@ -1124,7 +1125,19 @@ function openEditModal(pid){
   document.getElementById('edit-group').value=p.group_name||'unassigned';
   document.getElementById('edit-elo').value=p.elo_rating||1000;
   document.getElementById('edit-active').value=p.is_active===false?'false':'true';
+  document.getElementById('unlink-account-btn').style.display=p.user_id?'block':'none';
   openModal('edit-player-modal');
+}
+
+async function unlinkPlayerAccount(){
+  const pid=document.getElementById('edit-player-id').value;
+  const p=pMap[pid];if(!p)return;
+  if(!confirm('Unlink the account currently linked to '+p.name+'? Whoever claimed this profile will need to claim it again (or the right person can claim it instead).'))return;
+  const{error}=await sb.from('players').update({user_id:null}).eq('id',pid);
+  if(error){showToast('Error: '+error.message);return;}
+  p.user_id=null;PLAYERS=PLAYERS.map(pl=>pl.id===pid?{...pl,user_id:null}:pl);
+  document.getElementById('unlink-account-btn').style.display='none';
+  showToast('Account unlinked from '+p.name);
 }
 
 async function savePlayerEdit(){
