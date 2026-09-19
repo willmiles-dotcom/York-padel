@@ -274,10 +274,13 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
     <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
-      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="doubles_americano">Doubles Americano</option><option value="normal">Normal</option></select></div>
+      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" placeholder="e.g. York Sport Centre"></div>
-    <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="ns-points" value="16" min="1"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="ns-points" value="16" min="1"></div>
+      <div class="form-row"><label class="form-label">Max courts (optional)</label><input type="number" id="ns-max-courts" placeholder="Auto" min="1"></div>
+    </div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn full" onclick="closeModal('new-session-modal')">Cancel</button>
       <button class="btn primary full" onclick="saveNewSession()">Create</button>
@@ -334,8 +337,11 @@ let RANKINGS_ENABLED=true;
 let activeSessionId=null;
 let sessionPlayers=[];
 let sessionRounds=[];
+let sessionPairs=[];
 let sessionEloState={};
 let pointsPerRound=16;
+let maxCourts=null;
+let selectedForPairing=null;
 
 // ── ELO ENGINE ──────────────────────────────────────────────
 function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
@@ -355,29 +361,22 @@ function calcRoundElo(t1ids,t2ids,s1,s2,eloState){
 }
 
 // ── PAIRING ALGORITHM ──────────────────────────────────────
-function generateNextRound(playerIds,completedRounds){
+function shuffle(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function generateNextRound(playerIds,completedRounds,maxCourts){
   const ids=[...playerIds];
   const n=ids.length;
-  const courts=Math.floor(n/4);
-  const sitting=n%4;
-  // track pair history to avoid repeats
-  const pairCount={};
-  completedRounds.forEach(r=>{
-    const pairs=[[r.t1[0],r.t1[1]],[r.t2[0],r.t2[1]]];
-    pairs.forEach(([a,b])=>{
-      const k=[a,b].sort().join('|');
-      pairCount[k]=(pairCount[k]||0)+1;
-    });
-  });
-  // sort by total points descending for balanced courts
-  const pts={};
-  ids.forEach(id=>pts[id]=0);
-  completedRounds.forEach(r=>{
-    (r.t1||[]).forEach(id=>pts[id]+=(r.s1||0));
-    (r.t2||[]).forEach(id=>pts[id]+=(r.s2||0));
-  });
-  const sorted=[...ids].sort((a,b)=>pts[b]-pts[a]);
-  // simple round-robin style: rotate sitting players
+  let courts=Math.floor(n/4);
+  if(maxCourts)courts=Math.min(courts,maxCourts);
+  const sitting=n-courts*4;
+  // rotate sitting players — those who've sat out least sit this round
   const sitCount={};
   ids.forEach(id=>sitCount[id]=0);
   completedRounds.forEach(r=>{
@@ -385,18 +384,42 @@ function generateNextRound(playerIds,completedRounds){
       if(!(r.t1||[]).includes(id)&&!(r.t2||[]).includes(id))sitCount[id]++;
     });
   });
-  // who sits this round — those who've sat least
-  const sitters=sitting>0?[...sorted].sort((a,b)=>sitCount[a]-sitCount[b]).slice(0,sitting):[];
-  const playing=sorted.filter(id=>!sitters.includes(id));
+  const byLeastSatOut=[...ids].sort((a,b)=>sitCount[a]-sitCount[b]);
+  const sitters=sitting>0?byLeastSatOut.slice(0,sitting):[];
+  const playing=shuffle(ids.filter(id=>!sitters.includes(id)));
   const matches=[];
   for(let i=0;i<courts;i++){
     const four=playing.slice(i*4,i*4+4);
     if(four.length<4)break;
-    // try to pair people who haven't played together recently
-    let bestPair=[four[0],four[2]];
-    let bestOpp=[four[1],four[3]];
-    // just use top/bottom split for simplicity
     matches.push({t1:[four[0],four[1]],t2:[four[2],four[3]],s1:null,s2:null});
+  }
+  return{matches,sitters};
+}
+
+function generateNextPairRound(pairs,completedRounds,maxCourts){
+  const n=pairs.length;
+  let courts=Math.floor(n/2);
+  if(maxCourts)courts=Math.min(courts,maxCourts);
+  const sitting=n-courts*2;
+  const pairKey=p=>[...p].sort().join('|');
+  const sitCount={};
+  pairs.forEach(p=>sitCount[pairKey(p)]=0);
+  completedRounds.forEach(r=>{
+    pairs.forEach(p=>{
+      const k=pairKey(p);
+      const played=pairKey(r.t1||[])===k||pairKey(r.t2||[])===k;
+      if(!played)sitCount[k]++;
+    });
+  });
+  const byLeastSatOut=[...pairs].sort((a,b)=>sitCount[pairKey(a)]-sitCount[pairKey(b)]);
+  const sitters=sitting>0?byLeastSatOut.slice(0,sitting):[];
+  const sitterKeys=new Set(sitters.map(pairKey));
+  const playing=shuffle(pairs.filter(p=>!sitterKeys.has(pairKey(p))));
+  const matches=[];
+  for(let i=0;i<courts;i++){
+    const two=playing.slice(i*2,i*2+2);
+    if(two.length<2)break;
+    matches.push({t1:two[0],t2:two[1],s1:null,s2:null});
   }
   return{matches,sitters};
 }
@@ -613,7 +636,7 @@ function renderSessions(){
 // ── SESSION DETAIL ───────────────────────────────────────────
 function showSessionDetail(sid){
   const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
-  if(s.format==='doubles_americano'&&(s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
+  if((s.format==='doubles_americano'||s.format==='paired_americano')&&(s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
     loadLiveSession(s);
   } else {
     renderCompletedSession(s);
@@ -680,7 +703,10 @@ function loadLiveSession(s){
   activeSessionId=s.id;
   sessionPlayers=Array.isArray(s.attendees)?[...s.attendees]:[];
   sessionRounds=Array.isArray(s.rounds)?[...s.rounds]:[];
+  sessionPairs=Array.isArray(s.pairs)?[...s.pairs]:[];
   pointsPerRound=s.points_to_play||16;
+  maxCourts=s.max_courts||null;
+  selectedForPairing=null;
   // rebuild elo state from current player ratings
   sessionEloState={};
   PLAYERS.forEach(p=>{sessionEloState[p.id]=p.elo_rating});
@@ -697,6 +723,7 @@ function loadLiveSession(s){
 
 function renderLiveSession(){
   const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
+  const isPaired=s.format==='paired_americano';
   const roundNum=sessionRounds.length+1;
   let html=`<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
@@ -716,8 +743,24 @@ function renderLiveSession(){
     <div style="display:flex;flex-wrap:wrap;gap:4px">
       ${sessionPlayers.map(id=>`<span class="badge ${(pMap[id]||{}).group_name||'prov'}" style="cursor:pointer" onclick="removeFromSession('${id}')">${pFirst(id)} ×</span>`).join('')}
     </div>
-    ${sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
+    ${!isPaired&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
+
+  // Fixed pairs (Doubles Americano only)
+  if(isPaired){
+    const pairedIds=new Set(sessionPairs.flat());
+    const unpaired=sessionPlayers.filter(id=>!pairedIds.has(id));
+    html+=`<div class="card">
+      <div class="section-head">Pairs (${sessionPairs.length})</div>
+      ${sessionPairs.map((pair,pi)=>`<div class="elo-result-row">
+        <span style="font-weight:500">${pair.map(id=>pFirst(id)).join(' & ')}</span>
+        <span class="chip-remove" style="cursor:pointer" onclick="removeSessionPair(${pi})">×</span>
+      </div>`).join('')}
+      ${unpaired.length?`<div class="section-head" style="margin-top:14px">Tap two players to pair them</div>
+        <div>${unpaired.map(id=>`<span class="player-chip ${selectedForPairing===id?'selected':''}" onclick="tapPairingChip('${id}')">${pFirst(id)}${selectedForPairing===id?' <span class="chip-remove">✕</span>':''}</span>`).join('')}</div>`:''}
+      ${sessionPairs.length<2?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 2 pairs to generate a round.</div>':''}
+    </div>`;
+  }
 
   // Past rounds summary
   if(sessionRounds.length>0){
@@ -742,12 +785,13 @@ function renderLiveSession(){
   }
 
   // Generate next round
-  if(sessionPlayers.length>=4){
-    const{matches,sitters}=generateNextRound(sessionPlayers,sessionRounds);
+  if(isPaired?sessionPairs.length>=2:sessionPlayers.length>=4){
+    const{matches,sitters}=isPaired?generateNextPairRound(sessionPairs,sessionRounds,maxCourts):generateNextRound(sessionPlayers,sessionRounds,maxCourts);
+    const sitterText=isPaired?sitters.map(pair=>pair.map(id=>pFirst(id)).join(' & ')).join(', '):sitters.map(id=>pFirst(id)).join(', ');
     const rId='round-'+roundNum;
     html+=`<div class="card">
       <div class="section-head">Round ${roundNum} — enter scores</div>
-      ${sitters.length>0?`<div style="font-size:12px;color:#aaa;margin-bottom:10px">Sitting out: ${sitters.map(id=>pFirst(id)).join(', ')}</div>`:''}
+      ${sitters.length>0?`<div style="font-size:12px;color:#aaa;margin-bottom:10px">Sitting out: ${sitterText}</div>`:''}
       <div id="${rId}">
         ${matches.map((m,mi)=>`
           <div class="court-block" style="margin-bottom:12px">
@@ -770,6 +814,36 @@ function renderLiveSession(){
   }
 
   document.getElementById('session-detail-content').innerHTML=html;
+}
+
+async function persistSessionPairs(){
+  const{error}=await sb.from('sessions').update({pairs:sessionPairs}).eq('id',activeSessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0)SESSIONS[idx].pairs=sessionPairs;
+}
+
+function tapPairingChip(id){
+  if(selectedForPairing===id){
+    selectedForPairing=null;
+    renderLiveSession();
+    return;
+  }
+  if(selectedForPairing===null){
+    selectedForPairing=id;
+    renderLiveSession();
+    return;
+  }
+  sessionPairs=[...sessionPairs,[selectedForPairing,id]];
+  selectedForPairing=null;
+  persistSessionPairs();
+  renderLiveSession();
+}
+
+function removeSessionPair(pi){
+  sessionPairs=sessionPairs.filter((_,i)=>i!==pi);
+  persistSessionPairs();
+  renderLiveSession();
 }
 
 async function submitRound(matches,roundNum){
@@ -856,6 +930,9 @@ async function completeSession(){
 
 function removeFromSession(pid){
   sessionPlayers=sessionPlayers.filter(id=>id!==pid);
+  const hadPair=sessionPairs.some(pair=>pair.includes(pid));
+  sessionPairs=sessionPairs.filter(pair=>!pair.includes(pid));
+  if(hadPair)persistSessionPairs();
   renderLiveSession();
 }
 
@@ -968,7 +1045,8 @@ async function saveNewSession(){
   const date=document.getElementById('ns-date').value;
   if(!title||!date){showToast('Title and date required');return;}
   const pts=parseInt(document.getElementById('ns-points').value)||16;
-  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:pts,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[]};
+  const maxCourtsVal=parseInt(document.getElementById('ns-max-courts').value)||null;
+  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:pts,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[]};
   const{error}=await sb.from('sessions').insert([session]);
   if(error){showToast('Error: '+error.message);return;}
   SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
