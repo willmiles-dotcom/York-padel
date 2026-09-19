@@ -1207,7 +1207,7 @@ function renderCommitteeStats(){
 async function renderPendingClaims(){
   const{data,error}=await sb.rpc('list_pending_claims');
   const el=document.getElementById('pending-claims-list');
-  if(error){el.innerHTML='<div style="font-size:13px;color:#aaa">Could not load pending requests.</div>';return;}
+  if(error){console.error('list_pending_claims error:',error);el.innerHTML='<div style="font-size:13px;color:#A32D2D">Could not load pending requests: '+error.message+'</div>';return;}
   const list=data||[];
   el.innerHTML=list.length?list.map(r=>`<div class="elo-result-row">
     <div><div style="font-weight:500">${r.player_name}</div><div style="font-size:12px;color:#888">${r.requester_email}</div></div>
