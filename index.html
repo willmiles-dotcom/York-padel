@@ -1355,6 +1355,8 @@ async function attemptCommitteeLogin(){
 }
 
 function renderAuthScreen(){
+  const showCommitteeTab=window.location.hash==='#committee';
+  if(!showCommitteeTab)authTab='member';
   let memberBody;
   if(memberAuthMode==='check-email'){
     memberBody=`<div style="font-size:13px;color:#666;text-align:center;padding:12px 0">Check your @york.ac.uk email to confirm your account, then log in below.</div>
@@ -1374,16 +1376,16 @@ function renderAuthScreen(){
       <div style="font-size:24px;font-weight:700;margin-bottom:4px"><span style="color:var(--gold)">York</span> Padel Club</div>
       <div style="font-size:13px;color:#bbb;margin-bottom:28px;text-align:center">Sign in to view rankings, players and sessions</div>
       <div style="background:#fff;color:#1a1a1a;border-radius:16px;padding:20px;width:100%;max-width:380px">
-        <div class="tab-pills" style="margin-bottom:16px">
+        ${showCommitteeTab?`<div class="tab-pills" style="margin-bottom:16px">
           <button class="${authTab==='member'?'active':''}" onclick="setAuthTab('member')">Member</button>
           <button class="${authTab==='committee'?'active':''}" onclick="setAuthTab('committee')">Committee</button>
-        </div>
+        </div>`:''}
         <div style="display:${authTab==='member'?'block':'none'}">${memberBody}</div>
-        <div style="display:${authTab==='committee'?'block':'none'}">
+        ${showCommitteeTab?`<div style="display:${authTab==='committee'?'block':'none'}">
           <div class="form-row"><label class="form-label">Committee password</label><input type="password" id="committee-pw" placeholder="Committee password"></div>
           <div id="committee-auth-error" style="color:#A32D2D;font-size:13px;display:none;margin-bottom:8px">Incorrect password</div>
           <button class="btn primary full" onclick="attemptCommitteeLogin()">Unlock</button>
-        </div>
+        </div>`:''}
       </div>
       <a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="btn full" style="margin-top:20px;max-width:380px;background:var(--gold);color:var(--black);border-color:var(--gold);text-decoration:none;font-weight:600">Buy a membership</a>
     </div>`;
