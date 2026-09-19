@@ -216,6 +216,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
         <div style="font-weight:600;font-size:16px">Sessions</div>
         <button class="btn primary sm" id="new-session-btn" style="display:none" onclick="openModal('new-session-modal')">+ New</button>
       </div>
+      <label id="sessions-show-archived-row" style="display:none;align-items:center;gap:6px;font-size:13px;color:#666;margin-bottom:14px"><input type="checkbox" id="sessions-show-archived" onchange="renderSessions()" style="width:auto">Show deleted</label>
       <div id="sessions-list"><div class="loading">Loading...</div></div>
     </div>
 
@@ -297,10 +298,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
       <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" placeholder="e.g. York Sport Centre"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="ns-points" value="16" min="1"></div>
-      <div class="form-row"><label class="form-label">Max courts (optional)</label><input type="number" id="ns-max-courts" placeholder="Auto" min="1"></div>
-    </div>
+    <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" placeholder="e.g. 3" min="1"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn full" onclick="closeModal('new-session-modal')">Cancel</button>
       <button class="btn primary full" onclick="saveNewSession()">Create</button>
@@ -703,9 +701,10 @@ function showPlayerProfile(pid){
 
 // ── SESSIONS LIST ────────────────────────────────────────────
 function renderSessions(){
-  const sorted=[...SESSIONS].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const showArchived=document.getElementById('sessions-show-archived').checked;
+  const sorted=[...SESSIONS].filter(s=>showArchived||!s.archived).sort((a,b)=>new Date(b.date)-new Date(a.date));
   document.getElementById('sessions-list').innerHTML=sorted.length?sorted.map(s=>`
-    <div class="card session-card" onclick="showSessionDetail('${s.id}')">
+    <div class="card session-card" onclick="showSessionDetail('${s.id}')" style="${s.archived?'opacity:0.6':''}">
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;margin-bottom:3px">${s.title}</div>
@@ -713,6 +712,7 @@ function renderSessions(){
           <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
             <span class="badge ${s.status}">${s.status}</span>
             ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
+            ${s.archived?'<span class="badge flag">Deleted</span>':''}
             ${s.status==='in_progress'?'<span class="session-live-badge">● LIVE</span>':''}
           </div>
         </div>
@@ -722,9 +722,23 @@ function renderSessions(){
 }
 
 // ── SESSION DETAIL ───────────────────────────────────────────
+async function toggleSessionArchived(sid,archived){
+  const msg=archived
+    ?'Delete this session? It will be hidden from the sessions list. Any ELO changes already applied from this session will NOT be reversed.'
+    :'Restore this session? It will reappear in the sessions list.';
+  if(!confirm(msg))return;
+  const{error}=await sb.from('sessions').update({archived}).eq('id',sid);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===sid);
+  if(idx>=0)SESSIONS[idx].archived=archived;
+  showToast(archived?'Session deleted':'Session restored');
+  showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'));
+  renderSessions();
+}
+
 function showSessionDetail(sid){
   const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
-  if((s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
+  if(!s.archived&&(s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
     loadLiveSession(s);
   } else {
     renderCompletedSession(s);
@@ -743,7 +757,9 @@ function renderCompletedSession(s){
       <span class="badge ${s.status}">${s.status}</span>
       ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
       ${s.elo_applied?'<span class="badge completed ranking-ui">ELO applied</span>':''}
+      ${s.archived?'<span class="badge flag">Deleted</span>':''}
     </div>
+    ${accessLevel==='committee'?`<button class="btn danger sm" style="margin-top:10px" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button>`:''}
   </div>`;
   if(s.attendees&&s.attendees.length){
     html+=`<div class="card"><div class="section-head">Attendees (${s.attendees.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}</span>`).join('')}</div></div>`;
@@ -893,10 +909,12 @@ function replaySessionElo(){
 }
 
 async function setSessionFormat(sessionId,format){
-  const{error}=await sb.from('sessions').update({format}).eq('id',sessionId);
+  const pts=parseInt(document.getElementById('set-format-points').value)||16;
+  const{error}=await sb.from('sessions').update({format,points_to_play:pts}).eq('id',sessionId);
   if(error){showToast('Error: '+error.message);return;}
   const idx=SESSIONS.findIndex(x=>x.id===sessionId);
-  if(idx>=0)SESSIONS[idx].format=format;
+  if(idx>=0){SESSIONS[idx].format=format;SESSIONS[idx].points_to_play=pts;}
+  pointsPerRound=pts;
   showToast('Format set!');
   renderLiveSession();
 }
@@ -915,6 +933,7 @@ function renderLiveSession(){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
       ${sessionRounds.length>0?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
+      <button class="btn sm danger" onclick="toggleSessionArchived('${s.id}',true)">Delete session</button>
     </div>
   </div>`;
 
@@ -932,6 +951,7 @@ function renderLiveSession(){
     html+=`<div class="card">
       <div class="section-head">Set format</div>
       <p style="font-size:13px;color:#888;margin-bottom:12px">Pick a format to start recording rounds. Players can still check themselves in before this is set.</p>
+      <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="set-format-points" value="16" min="1"></div>
       <div style="display:flex;gap:8px">
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','doubles_americano')">Singles Americano</button>
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','paired_americano')">Doubles Americano</button>
@@ -1333,9 +1353,9 @@ async function saveNewSession(){
   const title=document.getElementById('ns-title').value.trim();
   const date=document.getElementById('ns-date').value;
   if(!title||!date){showToast('Title and date required');return;}
-  const pts=parseInt(document.getElementById('ns-points').value)||16;
   const maxCourtsVal=parseInt(document.getElementById('ns-max-courts').value)||null;
-  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:pts,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[]};
+  if(!maxCourtsVal){showToast('Number of courts is required');return;}
+  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
   const{error}=await sb.from('sessions').insert([session]);
   if(error){showToast('Error: '+error.message);return;}
   SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
@@ -1409,9 +1429,11 @@ function applyAccess(level){
   }
   document.getElementById('nav-committee').style.display=level==='committee'?'':'none';
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
+  document.getElementById('sessions-show-archived-row').style.display=level==='committee'?'flex':'none';
   if(level!=='committee')selectedPlayerIds=new Set();
   renderPlayers();
   renderHome();
+  renderSessions();
   if(level==='committee')renderCommitteeStats();
 }
 
