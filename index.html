@@ -6,32 +6,33 @@
 <title>York Padel Club</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#1D9E75">
+<meta name="theme-color" content="#1A1A1A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="York Padel">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+:root{--gold:#C9A227;--black:#1A1A1A;--bg:#F7F5EF}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3;min-height:100vh}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1a1a1a;background:var(--bg);min-height:100vh}
 .app{display:flex;flex-direction:column;min-height:100vh;max-width:600px;margin:0 auto;background:#fff}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #e8e8e4;background:#fff;position:sticky;top:0;z-index:50}
-.logo{font-size:17px;font-weight:600;letter-spacing:-0.5px}
-.logo span{color:#1D9E75}
-.access-badge{font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid #ddd;color:#666;background:#fff}
-.access-badge.committee{background:#E1F5EE;color:#0F6E56;border-color:#5DCAA5}
-.nav{display:flex;border-bottom:1px solid #e8e8e4;background:#fff;overflow-x:auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #000;background:var(--black);position:sticky;top:0;z-index:50}
+.logo{font-size:17px;font-weight:600;letter-spacing:-0.5px;color:#fff}
+.logo span{color:var(--gold)}
+.access-badge{font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid #555;color:#ddd;background:transparent}
+.access-badge.committee{background:var(--gold);color:var(--black);border-color:var(--gold);font-weight:600}
+.nav{display:flex;border-bottom:1px solid #000;background:var(--black);overflow-x:auto}
 .nav::-webkit-scrollbar{display:none}
-.nav button{flex:1;min-width:70px;padding:12px 8px;border:none;background:transparent;font-size:13px;cursor:pointer;color:#888;border-bottom:2px solid transparent;white-space:nowrap}
-.nav button.active{color:#1D9E75;border-bottom-color:#1D9E75;font-weight:500}
+.nav button{flex:1;min-width:70px;padding:12px 8px;border:none;background:transparent;font-size:13px;cursor:pointer;color:#999;border-bottom:2px solid transparent;white-space:nowrap}
+.nav button.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
 .content{padding:16px;flex:1;padding-bottom:40px}
 .page{display:none}.page.active{display:block}
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:16px;margin-bottom:12px}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
-.stat{background:#f5f5f3;border-radius:10px;padding:14px}
+.stat{background:var(--bg);border-radius:10px;padding:14px}
 .stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
 .stat-val{font-size:24px;font-weight:600}
-.stat-val.green{color:#1D9E75}
+.stat-val.green{color:var(--gold)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8e8e4;text-transform:uppercase;letter-spacing:0.4px}
 td{padding:10px 8px;border-bottom:1px solid #f0f0ee}
@@ -55,14 +56,14 @@ body.rankings-off .ranking-ui{display:none!important}
 .section-head{font-size:11px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-weight:500}
 .btn:active{opacity:0.7}
-.btn.primary{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.btn.primary{background:var(--gold);color:var(--black);border-color:var(--gold);font-weight:600}
 .btn.danger{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}
 .btn.warning{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
 .btn.sm{padding:6px 12px;font-size:12px;border-radius:8px}
 .btn.full{width:100%}
 .row-flex{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
 input,select,textarea{padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:14px;background:#fff;color:#1a1a1a;width:100%}
-input:focus,select:focus{outline:none;border-color:#1D9E75}
+input:focus,select:focus{outline:none;border-color:var(--gold)}
 .form-row{margin-bottom:12px}
 .form-label{font-size:12px;color:#666;margin-bottom:5px;display:block;font-weight:500}
 .session-card{cursor:pointer}
@@ -70,7 +71,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 .tab-pills{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
 .tab-pills::-webkit-scrollbar{display:none}
 .tab-pills button{padding:6px 14px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;color:#666;white-space:nowrap}
-.tab-pills button.active{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.tab-pills button.active{background:var(--black);color:var(--gold);border-color:var(--black)}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
 .modal{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
@@ -79,13 +80,13 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 .filter-row{display:flex;gap:8px;margin-bottom:14px}
 .filter-row input,.filter-row select{flex:1;min-width:0}
 .rank-num{font-size:14px;font-weight:600;color:#bbb;min-width:22px;display:inline-block}
-.rank-num.top{color:#1D9E75}
+.rank-num.top{color:var(--gold)}
 .player-name{font-weight:500;font-size:14px}
 .empty-state{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
 .loading{text-align:center;padding:40px;color:#aaa}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;white-space:nowrap}
 .toast.show{display:block}
-.back-btn{display:flex;align-items:center;gap:6px;color:#1D9E75;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:14px;background:none;border:none;padding:0}
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--black);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px;background:none;border:none;padding:0}
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
 .info-row:last-child{border-bottom:none}
 .info-label{color:#888}
@@ -110,7 +111,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 .team-row:last-child{margin-bottom:0}
 .team-names{font-weight:500;font-size:14px;flex:1}
 .score-input{width:60px;padding:8px;text-align:center;font-size:18px;font-weight:600;border:1px solid #ddd;border-radius:8px;-webkit-appearance:none}
-.score-input:focus{outline:none;border-color:#1D9E75}
+.score-input:focus{outline:none;border-color:var(--gold)}
 .vs-divider{text-align:center;color:#aaa;font-size:12px;padding:4px 0;border-top:1px solid #f0f0ee;border-bottom:1px solid #f0f0ee;margin:8px 0}
 .elo-result-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
 .elo-result-row:last-child{border-bottom:none}
@@ -121,10 +122,20 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 </style>
 </head>
 <body>
-<div class="app">
+
+<div id="boot-loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#aaa;background:var(--bg)">Loading…</div>
+
+<div id="auth-screen" style="display:none"></div>
+
+<div id="claim-screen" style="display:none"></div>
+
+<div class="app" id="app-root" style="display:none">
   <div class="topbar">
     <div class="logo"><span>York</span> Padel Club</div>
-    <span class="access-badge" id="access-badge" onclick="openModal('access-modal')">Member</span>
+    <div style="display:flex;align-items:center;gap:8px">
+      <span class="access-badge" id="access-badge" style="display:none"></span>
+      <button class="btn sm" onclick="doLogout()">Log out</button>
+    </div>
   </div>
   <div class="nav" id="main-nav">
     <button class="active ranking-ui" onclick="showPage('leaderboard',this)">Rankings</button>
@@ -251,24 +262,6 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
   </div>
 </div>
 
-<!-- ACCESS MODAL -->
-<div class="modal-overlay" id="access-modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h3>Access level</h3>
-    <div class="tab-pills" style="margin-bottom:16px">
-      <button class="active" onclick="setAccessTab('member')" id="tab-member">Member</button>
-      <button onclick="setAccessTab('committee')" id="tab-committee">Committee</button>
-    </div>
-    <div id="committee-login-form" style="display:none">
-      <div class="form-row"><label class="form-label">Password</label><input type="password" id="committee-pw" placeholder="Committee password"></div>
-      <div id="login-error" style="color:#A32D2D;font-size:13px;display:none;margin-bottom:8px">Incorrect password</div>
-      <button class="btn primary full" onclick="tryLogin()">Unlock</button>
-    </div>
-    <button class="btn full" style="margin-top:12px" onclick="closeModal('access-modal')">Close</button>
-  </div>
-</div>
-
 <!-- NEW SESSION MODAL -->
 <div class="modal-overlay" id="new-session-modal">
   <div class="modal">
@@ -329,13 +322,55 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
 const SUPABASE_URL='https://kzqbukjcimuqliwdhpsd.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cWJ1a2pjaW11cWxpd2RocHNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjA4ODUsImV4cCI6MjA5Nzc5Njg4NX0.0t_ZS9JImubHWvsKQjm-9EFFCd0efJVr-jzlXZyvcEA';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const MEMBERSHIP_PURCHASE_URL='#'; // TODO: replace with the real York SU padel membership product link
 
 const K=16;
 let authMod=null;
+let currentSession=null;
+let authTab='member';
+let memberAuthMode='login';
 import('./js/auth.js').then(m=>{
   authMod=m;
-  authMod.initAuth(sb,hasSession=>{applyAccess(hasSession?'committee':'member')});
+  authMod.initAuth(sb,session=>{currentSession=session;handleAuthChange();});
 });
+
+async function handleAuthChange(){
+  document.getElementById('boot-loading').style.display='none';
+  if(!currentSession){
+    document.getElementById('app-root').style.display='none';
+    document.getElementById('claim-screen').style.display='none';
+    renderAuthScreen();
+    document.getElementById('auth-screen').style.display='block';
+    return;
+  }
+  if(authMod.isCommitteeSession(currentSession)){
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('claim-screen').style.display='none';
+    document.getElementById('app-root').style.display='flex';
+    applyAccess('committee');
+    loadData();
+    return;
+  }
+  // member session — must claim a player profile before entering the app
+  const{data}=await sb.from('players').select('id').eq('user_id',currentSession.user.id).maybeSingle();
+  if(!data){
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app-root').style.display='none';
+    await renderClaimScreen();
+    document.getElementById('claim-screen').style.display='block';
+    return;
+  }
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('claim-screen').style.display='none';
+  document.getElementById('app-root').style.display='flex';
+  applyAccess('member');
+  loadData();
+}
+
+async function doLogout(){
+  await authMod.signOut(sb);
+}
+
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
 let RANKINGS_ENABLED=true;
 let activeSessionId=null;
@@ -1192,38 +1227,146 @@ function showPage(id,btn,noNav){
 }
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
-function setAccessTab(level){
-  document.querySelectorAll('#access-modal .tab-pills button').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+level).classList.add('active');
-  document.getElementById('committee-login-form').style.display=level==='committee'?'block':'none';
-  if(level==='member'){
-    if(authMod)authMod.signOutCommittee(sb);
-    applyAccess('member');closeModal('access-modal');
-  }
-}
-async function tryLogin(){
-  if(!authMod){showToast('Still loading, try again in a moment');return;}
-  const pw=document.getElementById('committee-pw').value;
-  const res=await authMod.signInCommittee(sb,pw);
-  if(res.ok){
-    applyAccess('committee');closeModal('access-modal');
-    document.getElementById('login-error').style.display='none';
-    document.getElementById('committee-pw').value='';
-  }else{document.getElementById('login-error').style.display='block';}
-}
 function applyAccess(level){
   accessLevel=level;
   const b=document.getElementById('access-badge');
-  b.textContent=level==='committee'?'Committee':'Member';
-  b.className='access-badge'+(level==='committee'?' committee':'');
+  if(level==='committee'){
+    b.textContent='Committee';
+    b.className='access-badge committee';
+    b.style.display='inline-block';
+  }else{
+    b.style.display='none';
+  }
   document.getElementById('nav-committee').style.display=level==='committee'?'':'none';
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
   if(level!=='committee')selectedPlayerIds=new Set();
   renderPlayers();
   if(level==='committee')renderCommitteeStats();
 }
+
+// ── AUTH SCREEN ──────────────────────────────────────────────
+function setAuthTab(tab){
+  authTab=tab;
+  renderAuthScreen();
+}
+
+function toggleMemberMode(){
+  memberAuthMode=memberAuthMode==='login'?'signup':'login';
+  renderAuthScreen();
+}
+
+async function attemptMemberLogin(){
+  if(!authMod){showToast('Still loading, try again in a moment');return;}
+  const email=document.getElementById('member-email').value.trim();
+  const password=document.getElementById('member-password').value;
+  const res=await authMod.signInMember(sb,email,password);
+  const errEl=document.getElementById('member-auth-error');
+  if(res.ok){errEl.style.display='none';}
+  else{errEl.textContent=res.error;errEl.style.display='block';}
+}
+
+async function attemptMemberSignup(){
+  if(!authMod){showToast('Still loading, try again in a moment');return;}
+  const email=document.getElementById('member-email').value.trim();
+  const password=document.getElementById('member-password').value;
+  const errEl=document.getElementById('member-auth-error');
+  if(!/@york\.ac\.uk$/i.test(email)){
+    errEl.textContent='Please use your @york.ac.uk email address.';
+    errEl.style.display='block';
+    return;
+  }
+  const res=await authMod.signUpMember(sb,email,password);
+  if(res.ok){
+    memberAuthMode='check-email';
+    renderAuthScreen();
+  }else{
+    errEl.textContent=res.error;
+    errEl.style.display='block';
+  }
+}
+
+function backToMemberLogin(){
+  memberAuthMode='login';
+  renderAuthScreen();
+}
+
+async function attemptCommitteeLogin(){
+  if(!authMod){showToast('Still loading, try again in a moment');return;}
+  const pw=document.getElementById('committee-pw').value;
+  const res=await authMod.signInCommittee(sb,pw);
+  const errEl=document.getElementById('committee-auth-error');
+  if(res.ok){errEl.style.display='none';}
+  else{errEl.style.display='block';}
+}
+
+function renderAuthScreen(){
+  let memberBody;
+  if(memberAuthMode==='check-email'){
+    memberBody=`<div style="font-size:13px;color:#666;text-align:center;padding:12px 0">Check your @york.ac.uk email to confirm your account, then log in below.</div>
+      <button class="btn full" onclick="backToMemberLogin()">Back to log in</button>`;
+  }else{
+    const isSignup=memberAuthMode==='signup';
+    memberBody=`
+      <div class="form-row"><label class="form-label">University email</label><input type="email" id="member-email" placeholder="you@york.ac.uk"></div>
+      <div class="form-row"><label class="form-label">Password</label><input type="password" id="member-password" placeholder="Password"></div>
+      <div id="member-auth-error" style="color:#A32D2D;font-size:13px;display:none;margin-bottom:8px"></div>
+      <button class="btn primary full" onclick="${isSignup?'attemptMemberSignup()':'attemptMemberLogin()'}">${isSignup?'Sign up':'Log in'}</button>
+      <button class="btn full" style="margin-top:8px" onclick="toggleMemberMode()">${isSignup?'Already have an account? Log in':'New here? Sign up'}</button>
+      ${isSignup?'<div style="font-size:12px;color:#888;margin-top:8px;text-align:center">Use your @york.ac.uk email address</div>':''}`;
+  }
+  document.getElementById('auth-screen').innerHTML=`
+    <div style="min-height:100vh;background:var(--black);color:#fff;display:flex;flex-direction:column;align-items:center;padding:48px 20px">
+      <div style="font-size:24px;font-weight:700;margin-bottom:4px"><span style="color:var(--gold)">York</span> Padel Club</div>
+      <div style="font-size:13px;color:#bbb;margin-bottom:28px;text-align:center">Sign in to view rankings, players and sessions</div>
+      <div style="background:#fff;color:#1a1a1a;border-radius:16px;padding:20px;width:100%;max-width:380px">
+        <div class="tab-pills" style="margin-bottom:16px">
+          <button class="${authTab==='member'?'active':''}" onclick="setAuthTab('member')">Member</button>
+          <button class="${authTab==='committee'?'active':''}" onclick="setAuthTab('committee')">Committee</button>
+        </div>
+        <div style="display:${authTab==='member'?'block':'none'}">${memberBody}</div>
+        <div style="display:${authTab==='committee'?'block':'none'}">
+          <div class="form-row"><label class="form-label">Committee password</label><input type="password" id="committee-pw" placeholder="Committee password"></div>
+          <div id="committee-auth-error" style="color:#A32D2D;font-size:13px;display:none;margin-bottom:8px">Incorrect password</div>
+          <button class="btn primary full" onclick="attemptCommitteeLogin()">Unlock</button>
+        </div>
+      </div>
+      <a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="btn full" style="margin-top:20px;max-width:380px;background:var(--gold);color:var(--black);border-color:var(--gold);text-decoration:none;font-weight:600">Buy a membership</a>
+    </div>`;
+}
+
+// ── CLAIM PLAYER SCREEN ──────────────────────────────────────
+let unclaimedPlayers=[];
+
+async function renderClaimScreen(){
+  document.getElementById('claim-screen').innerHTML=`
+    <div style="min-height:100vh;background:var(--bg);padding:24px 16px">
+      <div style="max-width:420px;margin:0 auto">
+        <div style="font-size:18px;font-weight:700;margin-bottom:4px">Which player are you?</div>
+        <div style="font-size:13px;color:#888;margin-bottom:16px">Pick your name to link it to this account. If you can't find yourself, ask committee to add you first.</div>
+        <input type="text" id="claim-search" placeholder="Search players..." oninput="renderClaimList()">
+        <div class="card" style="padding:0;overflow:hidden;margin-top:14px" id="claim-results"></div>
+        <button class="btn full" style="margin-top:16px" onclick="doLogout()">Log out</button>
+      </div>
+    </div>`;
+  const{data}=await sb.from('players').select('*').is('user_id',null).order('name');
+  unclaimedPlayers=data||[];
+  renderClaimList();
+}
+
+function renderClaimList(){
+  const q=(document.getElementById('claim-search').value||'').toLowerCase();
+  const filtered=q?unclaimedPlayers.filter(p=>p.name.toLowerCase().includes(q)):unclaimedPlayers;
+  document.getElementById('claim-results').innerHTML=filtered.length?filtered.map(p=>`<div class="player-list-row" onclick="attemptClaim('${p.id}')"><span style="font-weight:500">${p.name}</span><span style="color:#ccc">›</span></div>`).join(''):'<div class="empty-state">No unclaimed players match.</div>';
+}
+
+async function attemptClaim(playerId){
+  const{error}=await sb.rpc('claim_player',{target_id:playerId});
+  if(error){showToast('Error: '+error.message);return;}
+  showToast('Profile linked!');
+  handleAuthChange();
+}
+
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});});
-loadData();
 </script>
 </body>
 </html>
