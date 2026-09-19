@@ -45,6 +45,7 @@ tr:last-child td{border-bottom:none}
 .badge.completed{background:#E1F5EE;color:#0F6E56}
 .badge.upcoming{background:#FAEEDA;color:#854F0B}
 .elo-pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px}
+body.rankings-off .ranking-ui{display:none!important}
 .elo-high{background:#E1F5EE;color:#0F6E56}
 .elo-mid{background:#FAEEDA;color:#854F0B}
 .elo-low{background:#FCEBEB;color:#A32D2D}
@@ -125,7 +126,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
     <span class="access-badge" id="access-badge" onclick="openModal('access-modal')">Member</span>
   </div>
   <div class="nav" id="main-nav">
-    <button class="active" onclick="showPage('leaderboard',this)">Rankings</button>
+    <button class="active ranking-ui" onclick="showPage('leaderboard',this)">Rankings</button>
     <button onclick="showPage('players',this)">Players</button>
     <button onclick="showPage('sessions',this)">Sessions</button>
     <button id="nav-committee" style="display:none" onclick="showPage('committee',this)">Committee</button>
@@ -146,7 +147,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <button onclick="setLeaderTab('lower',this)">Lower</button>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>#</th><th>Player</th><th>ELO</th><th>W/G</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Player</th><th class="ranking-ui">ELO</th><th>W/G</th></tr></thead>
         <tbody id="leader-body"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody></table>
       </div>
     </div>
@@ -166,7 +167,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
       <div class="card" id="bulk-actions-bar" style="display:none">
         <div class="section-head"><span id="bulk-selected-count">0</span> selected</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-          <button class="btn sm" onclick="bulkResetElo()">Reset ELO to 1000</button>
+          <button class="btn sm ranking-ui" onclick="bulkResetElo()">Reset ELO to 1000</button>
           <select id="bulk-gender-select" style="width:auto"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
           <button class="btn sm" onclick="bulkSetGender()">Set gender</button>
           <select id="bulk-group-select" style="width:auto"><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select>
@@ -177,7 +178,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         </div>
       </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th id="player-select-col-head" style="display:none;width:28px"><input type="checkbox" id="select-all-visible" onchange="toggleSelectAllVisible(this.checked)"></th><th>Player</th><th>Group</th><th>ELO</th><th>Games</th></tr></thead>
+        <table><thead><tr><th id="player-select-col-head" style="display:none;width:28px"><input type="checkbox" id="select-all-visible" onchange="toggleSelectAllVisible(this.checked)"></th><th>Player</th><th>Group</th><th class="ranking-ui">ELO</th><th>Games</th></tr></thead>
         <tbody id="player-body"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody></table>
       </div>
     </div>
@@ -210,6 +211,11 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <div class="stat"><div class="stat-label">Active</div><div class="stat-val green" id="c-active">—</div></div>
         <div class="stat"><div class="stat-label">Sessions</div><div class="stat-val" id="c-sess">—</div></div>
         <div class="stat"><div class="stat-label">Flagged</div><div class="stat-val" id="c-flagged">—</div></div>
+      </div>
+      <div class="card">
+        <div class="section-head">Rankings</div>
+        <p style="font-size:13px;color:#888;margin-bottom:12px">Rankings are currently <strong id="rankings-status-text">ON</strong>. Turning this off hides the leaderboard and ELO everywhere and stops calculating rating changes for new rounds — no data is deleted, and turning it back on resumes normally.</p>
+        <button class="btn full" id="rankings-toggle-btn" onclick="toggleRankingsEnabled()">Turn rankings off</button>
       </div>
       <div class="card">
         <div class="section-head">Flagged players</div>
@@ -287,7 +293,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
     <div class="edit-row"><span class="edit-row-label">Name</span><input type="text" id="edit-name"></div>
     <div class="edit-row"><span class="edit-row-label">Gender</span><select id="edit-gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
     <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select></div>
-    <div class="edit-row"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
+    <div class="edit-row ranking-ui"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
     <div class="edit-row"><span class="edit-row-label">Active</span><select id="edit-active"><option value="true">Yes</option><option value="false">No</option></select></div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn full" onclick="closeModal('edit-player-modal')">Cancel</button>
@@ -322,6 +328,7 @@ import('./js/auth.js').then(m=>{
   authMod.initAuth(sb,hasSession=>{applyAccess(hasSession?'committee':'member')});
 });
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
+let RANKINGS_ENABLED=true;
 let activeSessionId=null;
 let sessionPlayers=[];
 let sessionRounds=[];
@@ -401,17 +408,41 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 
 async function loadData(){
   try{
-    const[pr,sr]=await Promise.all([
+    const[pr,sr,setr]=await Promise.all([
       sb.from('players').select('*').order('elo_rating',{ascending:false}),
-      sb.from('sessions').select('*').order('date',{ascending:false})
+      sb.from('sessions').select('*').order('date',{ascending:false}),
+      sb.from('settings').select('*').eq('id','global').maybeSingle()
     ]);
     if(pr.error)throw pr.error;
     if(sr.error)throw sr.error;
     PLAYERS=pr.data||[];SESSIONS=sr.data||[];
     PLAYERS.forEach(p=>pMap[p.id]=p);
+    RANKINGS_ENABLED=(setr&&!setr.error&&setr.data)?setr.data.rankings_enabled!==false:true;
+    applyRankingsVisibility();
     renderLeaderboard();renderPlayers();renderSessions();
     if(accessLevel==='committee')renderCommitteeStats();
   }catch(e){console.error(e);showToast('DB connection error')}
+}
+
+function applyRankingsVisibility(){
+  document.body.classList.toggle('rankings-off',!RANKINGS_ENABLED);
+  const btn=document.getElementById('rankings-toggle-btn');
+  if(btn)btn.textContent=RANKINGS_ENABLED?'Turn rankings off':'Turn rankings on';
+  const statusText=document.getElementById('rankings-status-text');
+  if(statusText)statusText.textContent=RANKINGS_ENABLED?'ON':'OFF';
+  if(!RANKINGS_ENABLED&&document.getElementById('page-leaderboard').classList.contains('active')){
+    showPage('players',document.querySelector('#main-nav button:nth-child(2)'));
+  }
+}
+
+async function toggleRankingsEnabled(){
+  const newVal=!RANKINGS_ENABLED;
+  const{error}=await sb.from('settings').update({rankings_enabled:newVal}).eq('id','global');
+  if(error){showToast('Error: '+error.message);return;}
+  RANKINGS_ENABLED=newVal;
+  applyRankingsVisibility();
+  renderLeaderboard();renderPlayers();renderSessions();
+  showToast('Rankings turned '+(newVal?'on':'off'));
 }
 
 // ── LEADERBOARD ─────────────────────────────────────────────
@@ -427,7 +458,7 @@ function renderLeaderboard(){
   document.getElementById('leader-body').innerHTML=list.map((p,i)=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
     <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
     <td><span class="player-name">${p.name}</span></td>
-    <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
+    <td class="ranking-ui"><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
     <td style="color:#aaa">${p.matches_won||0}/${p.games_played||0}</td>
   </tr>`).join('');
 }
@@ -456,7 +487,7 @@ function renderPlayers(){
     ${isCommittee?`<td onclick="event.stopPropagation()"><input type="checkbox" ${selectedPlayerIds.has(p.id)?'checked':''} onchange="togglePlayerSelect('${p.id}',this.checked)"></td>`:''}
     <td><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
     <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
-    <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
+    <td class="ranking-ui"><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
     <td style="color:#aaa">${p.games_played||0}</td>
   </tr>`).join('');
   if(isCommittee)document.getElementById('select-all-visible').checked=list.length>0&&list.every(p=>selectedPlayerIds.has(p.id));
@@ -542,7 +573,7 @@ function showPlayerProfile(pid){
     </div>
     <div class="card">
       <div class="section-head">Stats</div>
-      <div class="info-row"><span class="info-label">ELO rating</span><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></div>
+      <div class="info-row ranking-ui"><span class="info-label">ELO rating</span><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></div>
       <div class="info-row"><span class="info-label">Games played</span><span>${p.games_played||0}</span></div>
       <div class="info-row"><span class="info-label">Matches won</span><span>${p.matches_won||0}</span></div>
       <div class="info-row"><span class="info-label">Gender</span><span style="text-transform:capitalize">${p.gender||'—'}</span></div>
@@ -551,7 +582,7 @@ function showPlayerProfile(pid){
       <div class="section-head">Sessions attended (${sess.length})</div>
       ${sess.length?sess.map(s=>{
         const ec=Array.isArray(s.elo_changes)?s.elo_changes.find(c=>c.pid===pid):null;
-        return`<div class="info-row"><span>${s.title}</span><span>${ec?`<span class="${ec.change>=0?'change-pos':'change-neg'}">${ec.change>=0?'+':''}${ec.change}</span>`:'—'}</span></div>`;
+        return`<div class="info-row"><span>${s.title}</span><span class="ranking-ui">${ec?`<span class="${ec.change>=0?'change-pos':'change-neg'}">${ec.change>=0?'+':''}${ec.change}</span>`:'—'}</span></div>`;
       }).join(''):'<div style="color:#aaa;font-size:13px">No sessions yet.</div>'}
     </div>`;
   showPage('player-profile',null,true);
@@ -597,7 +628,7 @@ function renderCompletedSession(s){
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="badge ${s.status}">${s.status}</span>
       <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
-      ${s.elo_applied?'<span class="badge completed">ELO applied</span>':''}
+      ${s.elo_applied?'<span class="badge completed ranking-ui">ELO applied</span>':''}
     </div>
   </div>`;
   if(s.attendees&&s.attendees.length){
@@ -605,7 +636,7 @@ function renderCompletedSession(s){
   }
   if(s.elo_changes&&s.elo_changes.length){
     const sc=[...s.elo_changes].sort((a,b)=>b.change-a.change);
-    html+=`<div class="card"><div class="section-head">ELO changes</div>${sc.map(c=>`
+    html+=`<div class="card ranking-ui"><div class="section-head">ELO changes</div>${sc.map(c=>`
       <div class="elo-result-row"><span style="font-weight:500">${c.name}</span>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="${c.change>=0?'change-pos':'change-neg'}">${c.change>=0?'+':''}${c.change}</span>
@@ -702,7 +733,7 @@ function renderLiveSession(){
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           <span style="font-weight:600;color:#1D9E75">${pts} pts</span>
-          <span class="elo-pill ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>
+          <span class="elo-pill ranking-ui ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>
         </div>
       </div>`).join('')}
     </div>`;
@@ -732,7 +763,7 @@ function renderLiveSession(){
             </div>
           </div>`).join('')}
       </div>
-      <button class="btn primary full" onclick="submitRound(${JSON.stringify(matches).replace(/"/g,'&quot;')},${roundNum})">Save round ${roundNum} & apply ELO</button>
+      <button class="btn primary full" onclick="submitRound(${JSON.stringify(matches).replace(/"/g,'&quot;')},${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
     </div>`;
   }
 
@@ -746,7 +777,7 @@ async function submitRound(matches,roundNum){
     const s1=parseInt(document.getElementById('s1-'+mi).value)||0;
     const s2=parseInt(document.getElementById('s2-'+mi).value)||0;
     const m=matches[mi];
-    const changes=calcRoundElo(m.t1,m.t2,s1,s2,sessionEloState);
+    const changes=RANKINGS_ENABLED?calcRoundElo(m.t1,m.t2,s1,s2,sessionEloState):{};
     Object.entries(changes).forEach(([id,ch])=>{
       eloChangesThisRound[id]=(eloChangesThisRound[id]||0)+ch;
     });
@@ -773,18 +804,20 @@ async function submitRound(matches,roundNum){
 }
 
 async function completeSession(){
-  if(!confirm('Complete this session and apply all ELO changes to player ratings?'))return;
+  if(!confirm(RANKINGS_ENABLED?'Complete this session and apply all ELO changes to player ratings?':'Complete this session?'))return;
   // build final elo changes per player
   const startElo={};
   PLAYERS.forEach(p=>{startElo[p.id]=p.elo_rating});
   const finalChanges=[];
   const allPlaying=[...new Set(sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])]))];
-  allPlaying.forEach(id=>{
-    const start=startElo[id]||1000;
-    const final=sessionEloState[id]||start;
-    const change=final-start;
-    finalChanges.push({pid:id,name:pName(id),change,final});
-  });
+  if(RANKINGS_ENABLED){
+    allPlaying.forEach(id=>{
+      const start=startElo[id]||1000;
+      const final=sessionEloState[id]||start;
+      const change=final-start;
+      finalChanges.push({pid:id,name:pName(id),change,final});
+    });
+  }
   // count games and wins per player
   const gamesCount={},winsCount={};
   sessionRounds.forEach(r=>{
@@ -795,7 +828,7 @@ async function completeSession(){
   const allAttendees=[...new Set([...sessionPlayers,...allPlaying])];
   // update session
   const{error:se}=await sb.from('sessions').update({
-    status:'completed',elo_applied:true,
+    status:'completed',elo_applied:RANKINGS_ENABLED,
     attendees:allAttendees,
     rounds:sessionRounds,
     elo_changes:finalChanges
@@ -804,7 +837,7 @@ async function completeSession(){
   // update each player's elo, games_played, matches_won
   for(const id of allPlaying){
     const p=pMap[id];if(!p)continue;
-    const newElo=sessionEloState[id]||p.elo_rating;
+    const newElo=RANKINGS_ENABLED?(sessionEloState[id]||p.elo_rating):p.elo_rating;
     const newGames=(p.games_played||0)+(gamesCount[id]||0);
     const newWins=(p.matches_won||0)+(winsCount[id]||0);
     await sb.from('players').update({elo_rating:newElo,games_played:newGames,matches_won:newWins}).eq('id',id);
@@ -812,8 +845,8 @@ async function completeSession(){
   }
   // update local session
   const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
-  if(idx>=0){Object.assign(SESSIONS[idx],{status:'completed',elo_applied:true,attendees:allAttendees,rounds:sessionRounds,elo_changes:finalChanges});}
-  showToast('Session complete! ELO updated.');
+  if(idx>=0){Object.assign(SESSIONS[idx],{status:'completed',elo_applied:RANKINGS_ENABLED,attendees:allAttendees,rounds:sessionRounds,elo_changes:finalChanges});}
+  showToast(RANKINGS_ENABLED?'Session complete! ELO updated.':'Session complete!');
   activeSessionId=null;sessionPlayers=[];sessionRounds=[];sessionEloState={};
   await loadData();
   renderCompletedSession(SESSIONS.find(x=>x.status==='completed'&&SESSIONS[idx])||SESSIONS[idx]);
@@ -876,7 +909,7 @@ function renderCommitteePlayerList(){
       <div><span style="font-weight:500">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:6px;font-size:10px">Inactive</span>':''}</div>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="badge ${p.group_name||'unassigned'}">${p.group_name||'—'}</span>
-        <span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
+        <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
         <span style="color:#ccc">›</span>
       </div>
     </div>`).join('');
