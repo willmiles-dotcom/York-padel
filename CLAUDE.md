@@ -37,6 +37,14 @@ The app was migrated from Base44. Its old schemas are in the Claude project file
 - Event / inter-uni: opponent university, our_score vs opponent_score, participants, and per-category (men/women/mixed) pair lineups and match results.
 - ExternalPlayer / NonMemberPlayer: players from other universities or non-members, kept separate from club members so they never affect club ELO.
 
+## Implementation notes (current code)
+
+- Page switching is done by toggling a `.active` CSS class on `.page` divs (`showPage()`) — there's no router.
+- `calcRoundElo()`: each team's rating is the average of its two partners; the "result" fed into the standard ELO formula is the score ratio (`s1/(s1+s2)`), not a binary win/loss. K=16 per the hard rule above.
+- `generateNextRound()`: sitters are whoever has sat out the fewest rounds so far; everyone else is sorted by cumulative points and split top/bottom into courts. It also computes `pairCount` (times two players have partnered) but does not currently use it to avoid repeat pairings — worth flagging if asked to reduce repeat partnerships, since that tracking looks like an unfinished hook rather than an active constraint.
+- Session `status` flow: `upcoming` → `in_progress` (once the first round is submitted) → `completed` (via `completeSession()` — the only point ELO changes are actually written to the `players` table). Mid-session, ELO deltas live only in local `sessionEloState` plus `rounds[].elo_changes` on the session row; `loadLiveSession()` replays those on load to reconstruct current ratings after a refresh.
+- `SEED_PLAYERS` / `seedAll()` (committee-only) upserts by `id`, so re-running the one-time import overwrites existing player rows rather than duplicating them.
+
 ## Roadmap (in order)
 
 1. PWA support (manifest + icons) so it installs from Safari via "Add to Home Screen", plus auth clean-up.
