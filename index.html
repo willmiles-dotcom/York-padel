@@ -233,6 +233,10 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
         <button class="btn full" id="rankings-toggle-btn" onclick="toggleRankingsEnabled()">Turn rankings off</button>
       </div>
       <div class="card">
+        <div class="section-head">Pending account requests</div>
+        <div id="pending-claims-list"><div style="font-size:13px;color:#aaa">Loading...</div></div>
+      </div>
+      <div class="card">
         <div class="section-head">Flagged players</div>
         <div id="flagged-list"><div style="font-size:13px;color:#aaa">No players flagged.</div></div>
       </div>
@@ -296,6 +300,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
     <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
     <div class="edit-row ranking-ui"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
     <div class="edit-row"><span class="edit-row-label">Active</span><select id="edit-active"><option value="true">Yes</option><option value="false">No</option></select></div>
+    <div class="edit-row"><span class="edit-row-label">Committee access</span><select id="edit-committee"><option value="false">No</option><option value="true">Yes</option></select></div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn full" onclick="closeModal('edit-player-modal')">Cancel</button>
       <button class="btn primary full" onclick="savePlayerEdit()">Save</button>
@@ -344,6 +349,17 @@ async function handleAuthChange(){
     document.getElementById('auth-screen').style.display='block';
     return;
   }
+  // already linked to a player — that row's is_committee decides access level
+  const{data:linked}=await sb.from('players').select('*').eq('user_id',currentSession.user.id).maybeSingle();
+  if(linked){
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('claim-screen').style.display='none';
+    document.getElementById('app-root').style.display='flex';
+    applyAccess(linked.is_committee?'committee':'member');
+    loadData();
+    return;
+  }
+  // shared committee login — emergency fallback, not linked to any player row
   if(authMod.isCommitteeSession(currentSession)){
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('claim-screen').style.display='none';
@@ -352,20 +368,15 @@ async function handleAuthChange(){
     loadData();
     return;
   }
-  // member session — must claim a player profile before entering the app
-  const{data}=await sb.from('players').select('id').eq('user_id',currentSession.user.id).maybeSingle();
-  if(!data){
-    document.getElementById('auth-screen').style.display='none';
-    document.getElementById('app-root').style.display='none';
-    await renderClaimScreen();
-    document.getElementById('claim-screen').style.display='block';
-    return;
-  }
   document.getElementById('auth-screen').style.display='none';
-  document.getElementById('claim-screen').style.display='none';
-  document.getElementById('app-root').style.display='flex';
-  applyAccess('member');
-  loadData();
+  document.getElementById('app-root').style.display='none';
+  const{data:pending}=await sb.from('players').select('id,name').eq('pending_user_id',currentSession.user.id).maybeSingle();
+  if(pending){
+    renderPendingScreen(pending.name);
+  }else{
+    await renderClaimScreen();
+  }
+  document.getElementById('claim-screen').style.display='block';
 }
 
 async function doLogout(){
@@ -1099,6 +1110,36 @@ function renderCommitteeStats(){
   document.getElementById('c-flagged').textContent=fl.length;
   document.getElementById('flagged-list').innerHTML=fl.length?fl.map(p=>`<div class="elo-result-row"><span>${p.name}</span><span class="badge flag">${p.flag_type}</span></div>`).join(''):'<div style="font-size:13px;color:#aaa">No players flagged.</div>';
   renderCommitteePlayerList();
+  renderPendingClaims();
+}
+
+async function renderPendingClaims(){
+  const{data,error}=await sb.rpc('list_pending_claims');
+  const el=document.getElementById('pending-claims-list');
+  if(error){el.innerHTML='<div style="font-size:13px;color:#aaa">Could not load pending requests.</div>';return;}
+  const list=data||[];
+  el.innerHTML=list.length?list.map(r=>`<div class="elo-result-row">
+    <div><div style="font-weight:500">${r.player_name}</div><div style="font-size:12px;color:#888">${r.requester_email}</div></div>
+    <div style="display:flex;gap:6px">
+      <button class="btn sm" onclick="approveClaimRequest('${r.player_id}')">Approve</button>
+      <button class="btn sm danger" onclick="rejectClaimRequest('${r.player_id}')">Reject</button>
+    </div>
+  </div>`).join(''):'<div style="font-size:13px;color:#aaa">No pending requests.</div>';
+}
+
+async function approveClaimRequest(playerId){
+  const{error}=await sb.rpc('approve_claim',{target_id:playerId});
+  if(error){showToast('Error: '+error.message);return;}
+  showToast('Request approved');
+  await loadData();
+}
+
+async function rejectClaimRequest(playerId){
+  if(!confirm('Reject this request? They can request again or someone else can claim this player.'))return;
+  const{error}=await sb.rpc('reject_claim',{target_id:playerId});
+  if(error){showToast('Error: '+error.message);return;}
+  showToast('Request rejected');
+  renderPendingClaims();
 }
 
 function renderCommitteePlayerList(){
@@ -1125,6 +1166,7 @@ function openEditModal(pid){
   document.getElementById('edit-group').value=p.group_name||'unassigned';
   document.getElementById('edit-elo').value=p.elo_rating||1000;
   document.getElementById('edit-active').value=p.is_active===false?'false':'true';
+  document.getElementById('edit-committee').value=p.is_committee?'true':'false';
   document.getElementById('unlink-account-btn').style.display=p.user_id?'block':'none';
   openModal('edit-player-modal');
 }
@@ -1142,7 +1184,7 @@ async function unlinkPlayerAccount(){
 
 async function savePlayerEdit(){
   const pid=document.getElementById('edit-player-id').value;
-  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true'};
+  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true',is_committee:document.getElementById('edit-committee').value==='true'};
   const{error}=await sb.from('players').update(updates).eq('id',pid);
   if(error){showToast('Error: '+error.message);return;}
   Object.assign(pMap[pid],updates);PLAYERS=PLAYERS.map(p=>p.id===pid?{...p,...updates}:p);
@@ -1355,13 +1397,13 @@ async function renderClaimScreen(){
     <div style="min-height:100vh;background:var(--bg);padding:24px 16px">
       <div style="max-width:420px;margin:0 auto">
         <div style="font-size:18px;font-weight:700;margin-bottom:4px">Which player are you?</div>
-        <div style="font-size:13px;color:#888;margin-bottom:16px">Pick your name to link it to this account. If you can't find yourself, ask committee to add you first.</div>
+        <div style="font-size:13px;color:#888;margin-bottom:16px">Pick your name to send committee a request to link it to this account. If you can't find yourself, ask committee to add you first.</div>
         <input type="text" id="claim-search" placeholder="Search players..." oninput="renderClaimList()">
         <div class="card" style="padding:0;overflow:hidden;margin-top:14px" id="claim-results"></div>
         <button class="btn full" style="margin-top:16px" onclick="doLogout()">Log out</button>
       </div>
     </div>`;
-  const{data}=await sb.from('players').select('*').is('user_id',null).order('name');
+  const{data}=await sb.from('players').select('*').is('user_id',null).is('pending_user_id',null).order('name');
   unclaimedPlayers=data||[];
   renderClaimList();
 }
@@ -1369,14 +1411,25 @@ async function renderClaimScreen(){
 function renderClaimList(){
   const q=(document.getElementById('claim-search').value||'').toLowerCase();
   const filtered=q?unclaimedPlayers.filter(p=>p.name.toLowerCase().includes(q)):unclaimedPlayers;
-  document.getElementById('claim-results').innerHTML=filtered.length?filtered.map(p=>`<div class="player-list-row" onclick="attemptClaim('${p.id}')"><span style="font-weight:500">${p.name}</span><span style="color:#ccc">›</span></div>`).join(''):'<div class="empty-state">No unclaimed players match.</div>';
+  document.getElementById('claim-results').innerHTML=filtered.length?filtered.map(p=>`<div class="player-list-row" onclick="attemptRequestClaim('${p.id}')"><span style="font-weight:500">${p.name}</span><span style="color:#ccc">›</span></div>`).join(''):'<div class="empty-state">No unclaimed players match.</div>';
 }
 
-async function attemptClaim(playerId){
-  const{error}=await sb.rpc('claim_player',{target_id:playerId});
+async function attemptRequestClaim(playerId){
+  const{error}=await sb.rpc('request_claim',{target_id:playerId});
   if(error){showToast('Error: '+error.message);return;}
-  showToast('Profile linked!');
+  showToast('Request sent!');
   handleAuthChange();
+}
+
+function renderPendingScreen(name){
+  document.getElementById('claim-screen').innerHTML=`
+    <div style="min-height:100vh;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="max-width:380px;text-align:center">
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">Request sent</div>
+        <div style="font-size:13px;color:#888;margin-bottom:20px">Your request to link this account to <strong>${name}</strong> is waiting for committee approval.</div>
+        <button class="btn full" onclick="doLogout()">Log out</button>
+      </div>
+    </div>`;
 }
 
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});});
