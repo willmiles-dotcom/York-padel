@@ -232,7 +232,8 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
       </div>
       <div class="card">
         <div class="section-head">Edit players</div>
-        <input type="text" id="committee-search" placeholder="Search players..." oninput="renderCommitteePlayerList()" style="margin-bottom:12px">
+        <input type="text" id="committee-search" placeholder="Search players..." oninput="renderCommitteePlayerList()">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin:8px 0 12px"><input type="checkbox" id="committee-show-archived" onchange="renderCommitteePlayerList()" style="width:auto">Show archived</label>
         <div id="committee-player-list"><div class="loading">Loading...</div></div>
       </div>
       <div class="card">
@@ -308,7 +309,8 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>Add player to session</h3>
-    <input type="text" id="session-player-search" placeholder="Search players..." oninput="renderSessionPlayerSearch()" style="margin-bottom:12px">
+    <input type="text" id="session-player-search" placeholder="Search players..." oninput="renderSessionPlayerSearch()">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin:8px 0 12px"><input type="checkbox" id="session-show-archived" onchange="renderSessionPlayerSearch()" style="width:auto">Show archived</label>
     <div id="session-player-search-list"></div>
     <button class="btn full" style="margin-top:12px" onclick="closeModal('add-to-session-modal')">Done</button>
   </div>
@@ -859,7 +861,8 @@ function removeFromSession(pid){
 
 function renderSessionPlayerSearch(){
   const q=(document.getElementById('session-player-search').value||'').toLowerCase();
-  const list=[...PLAYERS].filter(p=>!q||p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  const showArchived=document.getElementById('session-show-archived').checked;
+  const list=[...PLAYERS].filter(p=>(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('session-player-search-list').innerHTML=list.map(p=>{
     const inSession=sessionPlayers.includes(p.id);
     return`<div class="player-list-row" onclick="toggleSessionPlayer('${p.id}')">
@@ -903,7 +906,8 @@ function renderCommitteeStats(){
 
 function renderCommitteePlayerList(){
   const q=(document.getElementById('committee-search').value||'').toLowerCase();
-  let list=[...PLAYERS].filter(p=>!q||p.name.toLowerCase().includes(q)).sort((a,b)=>a.name.localeCompare(b.name));
+  const showArchived=document.getElementById('committee-show-archived').checked;
+  let list=[...PLAYERS].filter(p=>(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('committee-player-list').innerHTML=list.map(p=>`
     <div class="player-list-row" onclick="openEditModal('${p.id}')">
       <div><span style="font-weight:500">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:6px;font-size:10px">Inactive</span>':''}</div>
