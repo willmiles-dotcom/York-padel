@@ -1,6 +1,6 @@
 -- Phase 1b: replace the client-side committee password with real Supabase Auth.
 -- Run this in the Supabase SQL editor AFTER you've created the committee account
--- in Authentication > Users (email: will.r.miles@gmail.com).
+-- in Authentication > Users (email: padel@yorksu.org).
 --
 -- Before this migration: anon has blanket write grants (`grant all ... to anon`),
 -- and the "committee" gate is just a JS string comparison — anyone can write via

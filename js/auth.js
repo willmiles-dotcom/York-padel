@@ -1,6 +1,6 @@
 // Shared committee login. There is one committee account in Supabase Auth;
 // members never see this module do anything (public read only).
-const COMMITTEE_EMAIL = 'will.r.miles@gmail.com';
+const COMMITTEE_EMAIL = 'padel@yorksu.org';
 
 export function initAuth(sb, onSessionChange) {
   sb.auth.onAuthStateChange((_event, session) => onSessionChange(!!session));
