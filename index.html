@@ -29,6 +29,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .page{display:none}.page.active{display:block}
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:16px;margin-bottom:12px}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{background:#fff;border:1px solid #e8e8e4;border-radius:14px;padding:28px 12px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;color:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:80px}
+.tile:active{background:var(--bg)}
 .stat{background:var(--bg);border-radius:10px;padding:14px}
 .stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
 .stat-val{font-size:24px;font-weight:600}
@@ -138,15 +141,21 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
     </div>
   </div>
   <div class="nav" id="main-nav">
-    <button class="active ranking-ui" onclick="showPage('leaderboard',this)">Rankings</button>
+    <button class="active" onclick="showPage('home',this)">Home</button>
+    <button class="ranking-ui" onclick="showPage('leaderboard',this)">Rankings</button>
     <button onclick="showPage('players',this)">Players</button>
     <button onclick="showPage('sessions',this)">Sessions</button>
     <button id="nav-committee" style="display:none" onclick="showPage('committee',this)">Committee</button>
   </div>
   <div class="content">
 
+    <!-- HOME -->
+    <div class="page active" id="page-home">
+      <div class="tile-grid" id="home-tiles"></div>
+    </div>
+
     <!-- LEADERBOARD -->
-    <div class="page active" id="page-leaderboard">
+    <div class="page" id="page-leaderboard">
       <div class="stat-grid">
         <div class="stat"><div class="stat-label">Active members</div><div class="stat-val green" id="s-active">—</div></div>
         <div class="stat"><div class="stat-label">Sessions played</div><div class="stat-val" id="s-sessions">—</div></div>
@@ -209,13 +218,20 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 
     <!-- SESSION DETAIL / LIVE -->
     <div class="page" id="page-session-detail">
-      <button class="back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(3)'))">← Back</button>
+      <button class="back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">← Back</button>
       <div id="session-detail-content"></div>
+    </div>
+
+    <!-- CHECK IN -->
+    <div class="page" id="page-checkin">
+      <button class="back-btn" onclick="showPage('home',document.querySelector('#main-nav button:nth-child(1)'))">← Back</button>
+      <div style="font-weight:600;font-size:16px;margin-bottom:14px">Check in</div>
+      <div id="checkin-content"><div class="loading">Loading...</div></div>
     </div>
 
     <!-- PLAYER PROFILE -->
     <div class="page" id="page-player-profile">
-      <button class="back-btn" onclick="showPage('players',document.querySelector('#main-nav button:nth-child(2)'))">← Back</button>
+      <button class="back-btn" onclick="showPage('players',document.querySelector('#main-nav button:nth-child(3)'))">← Back</button>
       <div id="player-profile-content"></div>
     </div>
 
@@ -395,6 +411,8 @@ let pointsPerRound=16;
 let maxCourts=null;
 let selectedForPairing=null;
 let editingRoundNum=null;
+let viewingCompletedSessionId=null;
+let editingCompletedRoundNum=null;
 
 // ── ELO ENGINE ──────────────────────────────────────────────
 function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
@@ -521,7 +539,7 @@ function applyRankingsVisibility(){
   const statusText=document.getElementById('rankings-status-text');
   if(statusText)statusText.textContent=RANKINGS_ENABLED?'ON':'OFF';
   if(!RANKINGS_ENABLED&&document.getElementById('page-leaderboard').classList.contains('active')){
-    showPage('players',document.querySelector('#main-nav button:nth-child(2)'));
+    showPage('players',document.querySelector('#main-nav button:nth-child(3)'));
   }
 }
 
@@ -712,6 +730,7 @@ function showSessionDetail(sid){
 }
 
 function renderCompletedSession(s){
+  viewingCompletedSessionId=s.id;
   const rounds=s.rounds||[];
   const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
   let html=`<div class="card">
@@ -747,22 +766,94 @@ function renderCompletedSession(s){
     let rh='<div class="card"><div class="section-head">Round results</div>';
     for(let r=1;r<=maxR;r++){
       const ms=rounds.filter(x=>x.r===r);
-      rh+=`<div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Round ${r}</div>`;
-      ms.forEach(m=>{
+      const isEditing=accessLevel==='committee'&&editingCompletedRoundNum===r;
+      rh+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px">
+        <span style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px">Round ${r}</span>
+        ${accessLevel==='committee'?(isEditing?`<button class="btn sm" onclick="cancelEditCompletedRound()">Cancel</button>`:`<button class="btn sm" onclick="startEditCompletedRound(${r})">Edit</button>`):''}
+      </div>`;
+      ms.forEach((m,mi)=>{
         const w1=(m.s1||0)>(m.s2||0),w2=(m.s2||0)>(m.s1||0);
         rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
           <div style="flex:1">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
-          <span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w1?'#1D9E75':'#1a1a1a'}">${m.s1||0}</span>
+          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s1-${r}-${mi}" value="${m.s1||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w1?'#1D9E75':'#1a1a1a'}">${m.s1||0}</span>`}
           <span style="color:#aaa;font-size:11px">—</span>
-          <span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w2?'#1D9E75':'#1a1a1a'}">${m.s2||0}</span>
+          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s2-${r}-${mi}" value="${m.s2||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w2?'#1D9E75':'#1a1a1a'}">${m.s2||0}</span>`}
           <div style="flex:1;text-align:right">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
         </div>`;
       });
+      if(isEditing){
+        rh+=`<button class="btn primary sm full" style="margin:8px 0" onclick="saveEditedCompletedRound(${r})">Save round ${r}</button>`;
+      }
     }
     rh+='</div>';
     html+=rh;
   }
   document.getElementById('session-detail-content').innerHTML=html;
+}
+
+function startEditCompletedRound(r){
+  if(!confirm('Edit round '+r+'? This will adjust affected players\' current ELO by the difference. If they\'ve played rated sessions since this one, their rating may not be perfectly accurate afterward.'))return;
+  editingCompletedRoundNum=r;
+  renderCompletedSession(SESSIONS.find(x=>x.id===viewingCompletedSessionId));
+}
+
+function cancelEditCompletedRound(){
+  editingCompletedRoundNum=null;
+  renderCompletedSession(SESSIONS.find(x=>x.id===viewingCompletedSessionId));
+}
+
+async function saveEditedCompletedRound(r){
+  const sid=viewingCompletedSessionId;
+  const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
+  const rounds=(s.rounds||[]).map(x=>({...x}));
+  const matches=rounds.filter(x=>x.r===r);
+  matches.forEach((m,mi)=>{
+    m.s1=parseInt(document.getElementById('completed-edit-s1-'+r+'-'+mi).value)||0;
+    m.s2=parseInt(document.getElementById('completed-edit-s2-'+r+'-'+mi).value)||0;
+  });
+
+  // derive each player's rating as it stood before this session (current
+  // rating minus this session's previously-recorded contribution), then
+  // replay the whole session forward from there with the corrected score
+  const oldChanges={};
+  (s.elo_changes||[]).forEach(c=>{oldChanges[c.pid]=c.change});
+  const allPlayed=[...new Set(rounds.flatMap(x=>[...(x.t1||[]),...(x.t2||[])]))];
+  const eloState={};
+  allPlayed.forEach(id=>{
+    const current=(pMap[id]||{}).elo_rating||1000;
+    eloState[id]=current-(oldChanges[id]||0);
+  });
+
+  const roundNums=[...new Set(rounds.map(x=>x.r))].sort((a,b)=>a-b);
+  roundNums.forEach(rn=>{
+    rounds.filter(x=>x.r===rn).forEach(m=>{
+      const changes=RANKINGS_ENABLED?calcRoundElo(m.t1,m.t2,m.s1||0,m.s2||0,eloState):{};
+      m.elo_changes=changes;
+      Object.entries(changes).forEach(([id,ch])=>{eloState[id]=(eloState[id]||1000)+ch});
+    });
+  });
+
+  const newFinalChanges=allPlayed.map(id=>({pid:id,name:pName(id),change:(eloState[id]||1000)-((pMap[id]||{}).elo_rating||1000)+(oldChanges[id]||0),final:eloState[id]}));
+
+  const{error:se}=await sb.from('sessions').update({rounds,elo_changes:newFinalChanges}).eq('id',sid);
+  if(se){showToast('Error: '+se.message);return;}
+
+  if(RANKINGS_ENABLED){
+    for(const id of allPlayed){
+      const p=pMap[id];if(!p)continue;
+      const newRating=eloState[id]||1000;
+      const{error:pe}=await sb.from('players').update({elo_rating:newRating}).eq('id',id);
+      if(pe){showToast('Error updating '+p.name+': '+pe.message);continue;}
+      p.elo_rating=newRating;
+    }
+  }
+
+  const idx=SESSIONS.findIndex(x=>x.id===sid);
+  if(idx>=0){SESSIONS[idx].rounds=rounds;SESSIONS[idx].elo_changes=newFinalChanges;}
+  editingCompletedRoundNum=null;
+  showToast('Round '+r+' updated'+(RANKINGS_ENABLED?' and ELO adjusted':''));
+  renderCompletedSession(SESSIONS[idx]);
+  renderLeaderboard();renderPlayers();
 }
 
 // ── LIVE SESSION ─────────────────────────────────────────────
@@ -1296,7 +1387,48 @@ function applyAccess(level){
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
   if(level!=='committee')selectedPlayerIds=new Set();
   renderPlayers();
+  renderHome();
   if(level==='committee')renderCommitteeStats();
+}
+
+// ── HOME ─────────────────────────────────────────────────────
+function renderHome(){
+  const tiles=[
+    {label:'Rankings',cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
+    {label:'Players',action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
+    {label:'Sessions',action:"showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))"},
+    {label:'Check in',action:"showPage('checkin',null,true);renderCheckinScreen()"},
+  ];
+  if(accessLevel==='committee'){
+    tiles.push({label:'Committee',action:"showPage('committee',document.querySelector('#main-nav button:nth-child(5)'))"});
+  }
+  document.getElementById('home-tiles').innerHTML=tiles.map(t=>`<div class="tile ${t.cls||''}" onclick="${t.action}">${t.label}</div>`).join('')
+    +`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile">York Padel Club</a>`;
+}
+
+// ── CHECK IN ─────────────────────────────────────────────────
+async function renderCheckinScreen(){
+  document.getElementById('checkin-content').innerHTML='<div class="loading">Loading...</div>';
+  const today=new Date().toISOString().slice(0,10);
+  const{data}=await sb.from('sessions').select('*').eq('date',today).in('status',['upcoming','in_progress']);
+  const list=data||[];
+  const{data:me}=await sb.from('players').select('id').eq('user_id',currentSession.user.id).maybeSingle();
+  const myId=me?me.id:null;
+  document.getElementById('checkin-content').innerHTML=list.length?list.map(s=>{
+    const checkedIn=myId&&Array.isArray(s.attendees)&&s.attendees.includes(myId);
+    return`<div class="card">
+      <div style="font-weight:600;margin-bottom:4px">${s.title}</div>
+      <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.location||'TBC'}</div>
+      ${checkedIn?'<span class="badge completed">✓ Checked in</span>':`<button class="btn primary full" onclick="doCheckIn('${s.id}')">Check in</button>`}
+    </div>`;
+  }).join(''):'<div class="empty-state">No sessions today.</div>';
+}
+
+async function doCheckIn(sessionId){
+  const{error}=await sb.rpc('check_in_session',{target_session:sessionId});
+  if(error){showToast('Error: '+error.message);return;}
+  showToast('Checked in!');
+  renderCheckinScreen();
 }
 
 // ── AUTH SCREEN ──────────────────────────────────────────────
