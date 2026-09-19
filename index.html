@@ -162,9 +162,22 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
           <option value="unassigned">Unassigned</option>
         </select>
       </div>
+      <div class="card" id="bulk-actions-bar" style="display:none">
+        <div class="section-head"><span id="bulk-selected-count">0</span> selected</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn sm" onclick="bulkResetElo()">Reset ELO to 1000</button>
+          <select id="bulk-gender-select" style="width:auto"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
+          <button class="btn sm" onclick="bulkSetGender()">Set gender</button>
+          <select id="bulk-group-select" style="width:auto"><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select>
+          <button class="btn sm" onclick="bulkSetGroup()">Set group</button>
+          <button class="btn sm warning" onclick="bulkArchive(false)">Archive selected</button>
+          <button class="btn sm" onclick="bulkArchive(true)">Unarchive selected</button>
+          <button class="btn sm" onclick="clearPlayerSelection()">Clear selection</button>
+        </div>
+      </div>
       <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>Player</th><th>Group</th><th>ELO</th><th>Games</th></tr></thead>
-        <tbody id="player-body"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody></table>
+        <table><thead><tr><th id="player-select-col-head" style="display:none;width:28px"><input type="checkbox" id="select-all-visible" onchange="toggleSelectAllVisible(this.checked)"></th><th>Player</th><th>Group</th><th>ELO</th><th>Games</th></tr></thead>
+        <tbody id="player-body"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody></table>
       </div>
     </div>
 
@@ -215,10 +228,11 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <input type="text" id="committee-search" placeholder="Search players..." oninput="renderCommitteePlayerList()" style="margin-bottom:12px">
         <div id="committee-player-list"><div class="loading">Loading...</div></div>
       </div>
-      <div class="card" id="seed-card">
-        <div class="section-head">First time setup</div>
-        <p style="font-size:13px;color:#888;margin-bottom:12px">Import all players (ELO reset to 1000) and historical sessions. Run once only.</p>
-        <button class="btn full" style="background:#E1F5EE;color:#0F6E56;border-color:#9FE1CB" onclick="seedAll()">Import all data to Supabase</button>
+      <div class="card">
+        <div class="section-head">Import roster</div>
+        <p style="font-size:13px;color:#888;margin-bottom:12px">Paste one player per line: <code>Name</code> or <code>Name, gender, group</code>. Anyone already in the system is matched by name (and unarchived if needed) instead of duplicated; anyone active but missing from this list gets archived.</p>
+        <textarea id="import-roster-text" rows="6" placeholder="Jane Smith, female, upper&#10;John Doe" style="resize:vertical"></textarea>
+        <button class="btn full" style="margin-top:10px" onclick="importRoster()">Import roster</button>
       </div>
     </div>
 
@@ -423,6 +437,8 @@ function setLeaderTab(tab,btn){
 }
 
 // ── PLAYERS ─────────────────────────────────────────────────
+let selectedPlayerIds=new Set();
+
 function renderPlayers(){
   const q=(document.getElementById('player-search').value||'').toLowerCase();
   const g=document.getElementById('player-group').value;
@@ -431,12 +447,74 @@ function renderPlayers(){
     if(g&&p.group_name!==g)return false;
     return true;
   }).sort((a,b)=>b.elo_rating-a.elo_rating);
+  const isCommittee=accessLevel==='committee';
+  document.getElementById('player-select-col-head').style.display=isCommittee?'table-cell':'none';
   document.getElementById('player-body').innerHTML=list.map(p=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
+    ${isCommittee?`<td onclick="event.stopPropagation()"><input type="checkbox" ${selectedPlayerIds.has(p.id)?'checked':''} onchange="togglePlayerSelect('${p.id}',this.checked)"></td>`:''}
     <td><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
     <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
     <td><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
     <td style="color:#aaa">${p.games_played||0}</td>
   </tr>`).join('');
+  if(isCommittee)document.getElementById('select-all-visible').checked=list.length>0&&list.every(p=>selectedPlayerIds.has(p.id));
+  renderBulkBar();
+}
+
+function togglePlayerSelect(pid,checked){
+  if(checked)selectedPlayerIds.add(pid);else selectedPlayerIds.delete(pid);
+  renderBulkBar();
+  document.getElementById('select-all-visible').checked=false;
+}
+
+function toggleSelectAllVisible(checked){
+  const q=(document.getElementById('player-search').value||'').toLowerCase();
+  const g=document.getElementById('player-group').value;
+  const visible=PLAYERS.filter(p=>(!q||p.name.toLowerCase().includes(q))&&(!g||p.group_name===g));
+  visible.forEach(p=>{if(checked)selectedPlayerIds.add(p.id);else selectedPlayerIds.delete(p.id)});
+  renderPlayers();
+}
+
+function clearPlayerSelection(){
+  selectedPlayerIds=new Set();
+  renderPlayers();
+}
+
+function renderBulkBar(){
+  const bar=document.getElementById('bulk-actions-bar');
+  if(accessLevel==='committee'&&selectedPlayerIds.size>0){
+    bar.style.display='block';
+    document.getElementById('bulk-selected-count').textContent=selectedPlayerIds.size;
+  }else{
+    bar.style.display='none';
+  }
+}
+
+async function bulkUpdatePlayers(updates,confirmMsg){
+  const ids=[...selectedPlayerIds];
+  if(!ids.length)return;
+  if(!confirm(confirmMsg))return;
+  const{error}=await sb.from('players').update(updates).in('id',ids);
+  if(error){showToast('Error: '+error.message);return;}
+  ids.forEach(id=>{if(pMap[id])Object.assign(pMap[id],updates)});
+  PLAYERS=PLAYERS.map(p=>ids.includes(p.id)?{...p,...updates}:p);
+  selectedPlayerIds=new Set();
+  showToast('Updated '+ids.length+' player(s)');
+  renderLeaderboard();renderPlayers();renderCommitteeStats();
+}
+
+function bulkResetElo(){
+  bulkUpdatePlayers({elo_rating:1000},`Reset ELO to 1000 for ${selectedPlayerIds.size} player(s)?`);
+}
+function bulkSetGender(){
+  const gender=document.getElementById('bulk-gender-select').value;
+  bulkUpdatePlayers({gender},`Set gender to "${gender}" for ${selectedPlayerIds.size} player(s)?`);
+}
+function bulkSetGroup(){
+  const group_name=document.getElementById('bulk-group-select').value;
+  bulkUpdatePlayers({group_name},`Set group to "${group_name}" for ${selectedPlayerIds.size} player(s)?`);
+}
+function bulkArchive(active){
+  bulkUpdatePlayers({is_active:active},`${active?'Unarchive':'Archive'} ${selectedPlayerIds.size} player(s)?`);
 }
 
 function showPlayerProfile(pid){
@@ -844,67 +922,52 @@ async function saveNewSession(){
   SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
 }
 
-// ── SEED DATA ────────────────────────────────────────────────
-const SEED_PLAYERS=[
-  {id:"69ad845f55b9fc4d5cae2033",name:"Raman Sharma",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69ad84479c13fd5b5e0a28e0",name:"Rowan Luff",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69ac86802e96ab322c307813",name:"Joel Fletcher",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:false},
-  {id:"69a86c332ed5fdba6b74211e",name:"Isaac Tamplin",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d34",name:"Finley Kiel",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d35",name:"Emma Withers",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d36",name:"Edward Clay",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d37",name:"Damien Salim",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d38",name:"Caitlin Jones",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d39",name:"Ava Instance",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d3a",name:"Ashwin Korada",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d3b",name:"Arnold Laver",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d3c",name:"Ana Romero Caro",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d3d",name:"Alfie Fairmaner",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d3e",name:"Alexandra Holmes",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d3f",name:"Alex Westcott",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d32",name:"Grace Baron",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d33",name:"Fraser Mcarthur",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d12",name:"Zach Moulton",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d13",name:"Will Miles",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d14",name:"William Hubbard",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d15",name:"Titas Vaidila",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d16",name:"Seth Brigginshaw",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d17",name:"Rory Smith",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d18",name:"Rafferty Groat",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d19",name:"Oscar Rojas Carreno",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d1a",name:"Noah Munro",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d1b",name:"Nicole Sivakova",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d1c",name:"Nathan Pott",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d1d",name:"Natasha Mather",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d1e",name:"Molly Mcgloin",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d1f",name:"Milo Leefe",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d20",name:"Maria Shnitnikova",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d21",name:"Luke Robson",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d22",name:"Lucas Brown",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d23",name:"Loai Amer",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d24",name:"Liam Rayner",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d25",name:"Liam Parrott",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d26",name:"Leo Hare",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d27",name:"Kirstin Cunningham",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d28",name:"Ken Lim",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d29",name:"Kate Dixon",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d2a",name:"Joshua Parrott",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"unassigned",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d2b",name:"Jessica Simons",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d2c",name:"Jessica Buckley",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d2d",name:"Jamie Gardener",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d2e",name:"Jacob Butler",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"upper",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d30",name:"Hiba Fatima",gender:"female",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true},
-  {id:"69a86bf51bdcb3700a964d31",name:"Hayden Stewart",gender:"male",elo_rating:1000,games_played:0,matches_won:0,group_name:"lower",provisional:true,flagged:false,is_active:true}
-];
+// ── ROSTER IMPORT ───────────────────────────────────────────
+function parseRosterLine(line){
+  const parts=line.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!parts[0])return null;
+  const valid_gender=['male','female','other'];
+  const valid_group=['upper','lower','unassigned'];
+  const gender=parts[1]&&valid_gender.includes(parts[1].toLowerCase())?parts[1].toLowerCase():null;
+  const group=parts[2]&&valid_group.includes(parts[2].toLowerCase())?parts[2].toLowerCase():null;
+  return{name:parts[0],gender,group};
+}
 
-async function seedAll(){
-  if(!confirm('Import 49 players (all ELO reset to 1000) into Supabase? This will overwrite existing player data.'))return;
-  showToast('Importing...');
-  const{error}=await sb.from('players').upsert(SEED_PLAYERS);
-  if(error){showToast('Error: '+error.message);return;}
-  const sc=document.getElementById('seed-card');if(sc)sc.remove();
-  showToast('Done! Reloading...');
-  setTimeout(loadData,1200);
+async function importRoster(){
+  const raw=document.getElementById('import-roster-text').value;
+  const entries=raw.split('\n').map(parseRosterLine).filter(Boolean);
+  if(!entries.length){showToast('Paste at least one player first');return;}
+
+  const byName={};
+  PLAYERS.forEach(p=>{byName[p.name.trim().toLowerCase()]=p});
+
+  const upsertRows=[];
+  const matchedIds=new Set();
+  let updatedCount=0,addedCount=0;
+  entries.forEach(e=>{
+    const existing=byName[e.name.toLowerCase()];
+    if(existing){
+      matchedIds.add(existing.id);
+      upsertRows.push({...existing,is_active:true,gender:e.gender||existing.gender,group_name:e.group||existing.group_name});
+      updatedCount++;
+    }else{
+      upsertRows.push({id:crypto.randomUUID(),name:e.name,gender:e.gender,group_name:e.group||'unassigned',elo_rating:1000,games_played:0,matches_won:0,provisional:true,flagged:false,is_active:true});
+      addedCount++;
+    }
+  });
+  const idsToArchive=PLAYERS.filter(p=>p.is_active!==false&&!matchedIds.has(p.id)).map(p=>p.id);
+
+  if(!confirm(`${updatedCount} existing player(s) will be updated/unarchived, ${addedCount} new player(s) added, ${idsToArchive.length} player(s) archived. Continue?`))return;
+
+  const{error:upErr}=await sb.from('players').upsert(upsertRows);
+  if(upErr){showToast('Error: '+upErr.message);return;}
+  if(idsToArchive.length){
+    const{error:archErr}=await sb.from('players').update({is_active:false}).in('id',idsToArchive);
+    if(archErr){showToast('Error: '+archErr.message);return;}
+  }
+  document.getElementById('import-roster-text').value='';
+  showToast('Roster imported!');
+  await loadData();
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────
@@ -941,6 +1004,8 @@ function applyAccess(level){
   b.className='access-badge'+(level==='committee'?' committee':'');
   document.getElementById('nav-committee').style.display=level==='committee'?'':'none';
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
+  if(level!=='committee')selectedPlayerIds=new Set();
+  renderPlayers();
   if(level==='committee')renderCommitteeStats();
 }
 document.querySelectorAll('.modal-overlay').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')});});
