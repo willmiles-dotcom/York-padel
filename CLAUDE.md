@@ -17,6 +17,18 @@ Web app for the University of York Padel Club (~49 players, upper and lower skil
 - Americano pairings are generated ONE ROUND AT A TIME, not all upfront, so late arrivals and early departures are handled. Keep this behaviour for every format.
 - ELO changes are applied per round, and final ratings are written back to player records when a session is completed.
 
+## Editing and knock-on effects (hard rule, applies to the whole app)
+
+Everything must be easy to edit (fix a typo'd score, change a pairing, correct an attendee, rename a player) without silently breaking other data. Editing a completed score changes ELO for everyone involved and, because ELO is sequential, every later match those players played too — plus games played, wins, session final ratings, the leaderboard, and (for inter-uni) university standings. Changing attendees or pairs after rounds have been played affects those rounds' results and ELO. Deleting a player, session, match or university would leave other records pointing at nothing.
+
+Required behaviour:
+1. **Make ELO recomputable.** Store ELO changes per match/round, and provide a function that replays all ranked matches in chronological order from 1000 to rebuild ratings deterministically. Use it to preview and apply edits. Every K-factor must come from one shared place (K=16 for Americano; other formats undecided — ask before picking one).
+2. **Warn before saving.** When an edit has knock-on effects, show a confirmation that states the impact in numbers (e.g. "Changing this score will alter ratings for 4 players and 7 later matches. Sam 1032 → 1025, Priya 984 → 991 ..."). Purely cosmetic edits (a typo in a name, a location) save immediately with no warning.
+3. **Soft delete.** Never hard-delete players, sessions or matches. Archive them instead, and warn about what references them.
+4. **Audit log.** Record who changed what, when, and the old/new values, so mistakes can be traced and undone. Give the committee a simple "recent changes" view.
+5. **Undo** the last edit where feasible.
+6. Editing is committee-only. Members are read-only.
+
 ## Secrets
 
 - Never commit passwords, the Supabase service-role key, or any secret to the repo. The Supabase anon key is public by design; nothing else is.
@@ -49,7 +61,7 @@ The app was migrated from Base44. Its old schemas are in the Claude project file
 
 1. PWA support (manifest + icons) so it installs from Safari via "Add to Home Screen", plus auth clean-up.
 2. Paired Americano / round robin format (pairs stay fixed, individual Americano already exists).
-3. Inter-university match play: track individual matches between multiple university teams and roll results up into an overall university score. Scoring rule for the roll-up: TO BE DECIDED, so ask before implementing.
+3. Inter-university match play: support multiple universities in one event (not just York vs. one opponent). Each university fields a team across men/women/mixed categories, with one or more pairs per category; for each pair of universities, pairs play matches in each category. Scoring roll-up: each match won earns the university 1 point; the university with the most match wins is top; tied overall totals are shown as tied with no extra tie-break rule. Opposing players are external players (name, university, gender) stored separately so they never affect club ELO. Inter-uni matches do NOT affect club ELO by default, with an `is_ranked` toggle per event so the committee can turn it on.
 4. Pass check-in: a `pass_type` on attendance (member / single session / unpaid) with a tick box for whoever is on the door. No payment integration.
 
 ## Structure
