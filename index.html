@@ -39,6 +39,7 @@ tr:last-child td{border-bottom:none}
 .badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
 .badge.upper{background:#E1F5EE;color:#0F6E56}
 .badge.lower{background:#FAEEDA;color:#854F0B}
+.badge.competitive{background:#ECE6FA;color:#5B3FA0}
 .badge.unassigned{background:#f0f0ee;color:#666}
 .badge.prov{background:#f0f0ee;color:#666}
 .badge.flag{background:#FCEBEB;color:#A32D2D}
@@ -140,9 +141,11 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <div class="stat"><div class="stat-label">Sessions played</div><div class="stat-val" id="s-sessions">—</div></div>
         <div class="stat"><div class="stat-label">Upper group</div><div class="stat-val" id="s-upper">—</div></div>
         <div class="stat"><div class="stat-label">Lower group</div><div class="stat-val" id="s-lower">—</div></div>
+        <div class="stat"><div class="stat-label">Competitive group</div><div class="stat-val" id="s-competitive">—</div></div>
       </div>
       <div class="tab-pills">
         <button class="active" onclick="setLeaderTab('all',this)">All</button>
+        <button onclick="setLeaderTab('competitive',this)">Competitive</button>
         <button onclick="setLeaderTab('upper',this)">Upper</button>
         <button onclick="setLeaderTab('lower',this)">Lower</button>
       </div>
@@ -158,6 +161,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <input type="text" id="player-search" placeholder="Search..." oninput="renderPlayers()">
         <select id="player-group" onchange="renderPlayers()">
           <option value="">All groups</option>
+          <option value="competitive">Competitive</option>
           <option value="upper">Upper</option>
           <option value="lower">Lower</option>
           <option value="unassigned">Unassigned</option>
@@ -170,7 +174,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
           <button class="btn sm ranking-ui" onclick="bulkResetElo()">Reset ELO to 1000</button>
           <select id="bulk-gender-select" style="width:auto"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select>
           <button class="btn sm" onclick="bulkSetGender()">Set gender</button>
-          <select id="bulk-group-select" style="width:auto"><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select>
+          <select id="bulk-group-select" style="width:auto"><option value="competitive">Competitive</option><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select>
           <button class="btn sm" onclick="bulkSetGroup()">Set group</button>
           <button class="btn sm warning" onclick="bulkArchive(false)">Archive selected</button>
           <button class="btn sm" onclick="bulkArchive(true)">Unarchive selected</button>
@@ -226,7 +230,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
         <div class="form-row"><label class="form-label">Full name</label><input type="text" id="new-name" placeholder="e.g. Jane Smith"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="form-row"><label class="form-label">Gender</label><select id="new-gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
-          <div class="form-row"><label class="form-label">Group</label><select id="new-group"><option value="lower">Lower</option><option value="upper">Upper</option><option value="unassigned">Unassigned</option></select></div>
+          <div class="form-row"><label class="form-label">Group</label><select id="new-group"><option value="lower">Lower</option><option value="upper">Upper</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
         </div>
         <button class="btn primary full" onclick="addPlayer()">Add player</button>
       </div>
@@ -296,7 +300,7 @@ input:focus,select:focus{outline:none;border-color:#1D9E75}
     <input type="hidden" id="edit-player-id">
     <div class="edit-row"><span class="edit-row-label">Name</span><input type="text" id="edit-name"></div>
     <div class="edit-row"><span class="edit-row-label">Gender</span><select id="edit-gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
-    <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="unassigned">Unassigned</option></select></div>
+    <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
     <div class="edit-row ranking-ui"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
     <div class="edit-row"><span class="edit-row-label">Active</span><select id="edit-active"><option value="true">Yes</option><option value="false">No</option></select></div>
     <div style="display:flex;gap:10px;margin-top:16px">
@@ -475,11 +479,13 @@ function renderLeaderboard(){
   let list=[...PLAYERS].filter(p=>p.is_active!==false);
   if(leaderTab==='upper')list=list.filter(p=>p.group_name==='upper');
   else if(leaderTab==='lower')list=list.filter(p=>p.group_name==='lower');
+  else if(leaderTab==='competitive')list=list.filter(p=>p.group_name==='competitive');
   list.sort((a,b)=>b.elo_rating-a.elo_rating);
   document.getElementById('s-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
   document.getElementById('s-sessions').textContent=SESSIONS.filter(s=>s.status==='completed').length;
   document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false).length;
   document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false).length;
+  document.getElementById('s-competitive').textContent=PLAYERS.filter(p=>p.group_name==='competitive'&&p.is_active!==false).length;
   document.getElementById('leader-body').innerHTML=list.map((p,i)=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
     <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
     <td><span class="player-name">${p.name}</span></td>
@@ -1057,7 +1063,7 @@ function parseRosterLine(line){
   const parts=line.split(',').map(s=>s.trim()).filter(Boolean);
   if(!parts[0])return null;
   const valid_gender=['male','female','other'];
-  const valid_group=['upper','lower','unassigned'];
+  const valid_group=['competitive','upper','lower','unassigned'];
   const gender=parts[1]&&valid_gender.includes(parts[1].toLowerCase())?parts[1].toLowerCase():null;
   const group=parts[2]&&valid_group.includes(parts[2].toLowerCase())?parts[2].toLowerCase():null;
   return{name:parts[0],gender,group};
