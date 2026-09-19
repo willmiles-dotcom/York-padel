@@ -343,9 +343,11 @@ let sessionPlayers=[];
 let sessionRounds=[];
 let sessionPairs=[];
 let sessionEloState={};
+let sessionStartElo={};
 let pointsPerRound=16;
 let maxCourts=null;
 let selectedForPairing=null;
+let editingRoundNum=null;
 
 // ── ELO ENGINE ──────────────────────────────────────────────
 function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
@@ -725,18 +727,28 @@ function loadLiveSession(s){
   pointsPerRound=s.points_to_play||16;
   maxCourts=s.max_courts||null;
   selectedForPairing=null;
-  // rebuild elo state from current player ratings
-  sessionEloState={};
-  PLAYERS.forEach(p=>{sessionEloState[p.id]=p.elo_rating});
-  // re-apply any already-saved round elo changes
-  sessionRounds.forEach(r=>{
-    if(r.elo_changes){
-      Object.entries(r.elo_changes).forEach(([id,ch])=>{
+  editingRoundNum=null;
+  // snapshot each player's rating as it stood before this session, then
+  // replay all saved rounds from there so elo_changes are always derived
+  // fresh from the stored scores rather than trusted as previously saved
+  sessionStartElo={};
+  PLAYERS.forEach(p=>{sessionStartElo[p.id]=p.elo_rating});
+  replaySessionElo();
+  renderLiveSession();
+}
+
+function replaySessionElo(){
+  sessionEloState={...sessionStartElo};
+  const roundNums=[...new Set(sessionRounds.map(r=>r.r))].sort((a,b)=>a-b);
+  roundNums.forEach(rn=>{
+    sessionRounds.filter(r=>r.r===rn).forEach(m=>{
+      const changes=RANKINGS_ENABLED?calcRoundElo(m.t1,m.t2,m.s1||0,m.s2||0,sessionEloState):{};
+      m.elo_changes=changes;
+      Object.entries(changes).forEach(([id,ch])=>{
         sessionEloState[id]=(sessionEloState[id]||1000)+ch;
       });
-    }
+    });
   });
-  renderLiveSession();
 }
 
 function renderLiveSession(){
@@ -803,6 +815,32 @@ function renderLiveSession(){
     </div>`;
   }
 
+  // Past rounds (editable)
+  if(roundsPlayed>0){
+    const roundNumsDesc=[...new Set(sessionRounds.map(r=>r.r))].sort((a,b)=>b-a);
+    html+=`<div class="card"><div class="section-head">Past rounds</div>
+      ${roundNumsDesc.map(rn=>{
+        const matches=sessionRounds.filter(r=>r.r===rn);
+        const isEditing=editingRoundNum===rn;
+        return`<div style="padding:10px 0;border-bottom:1px solid #f0f0ee;${isEditing?'':'opacity:0.6'}">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span style="font-weight:600;font-size:13px">Round ${rn}</span>
+            ${isEditing?`<button class="btn sm" onclick="cancelEditRound()">Cancel</button>`:`<button class="btn sm" onclick="startEditRound(${rn})">Edit</button>`}
+          </div>
+          ${matches.map((m,mi)=>`
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px">
+              <div style="flex:1">${m.t1.map(id=>pFirst(id)).join(' & ')}</div>
+              ${isEditing?`<input type="number" class="score-input" style="width:44px;font-size:14px;padding:4px" id="edit-s1-${rn}-${mi}" value="${m.s1||0}">`:`<span style="font-weight:600;min-width:20px;text-align:center">${m.s1||0}</span>`}
+              <span style="color:#aaa">–</span>
+              ${isEditing?`<input type="number" class="score-input" style="width:44px;font-size:14px;padding:4px" id="edit-s2-${rn}-${mi}" value="${m.s2||0}">`:`<span style="font-weight:600;min-width:20px;text-align:center">${m.s2||0}</span>`}
+              <div style="flex:1;text-align:right">${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
+            </div>`).join('')}
+          ${isEditing?`<button class="btn primary sm full" style="margin-top:8px" onclick="saveEditedRound(${rn})">Save round ${rn}</button>`:''}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
   // Generate next round
   if(isPaired?sessionPairs.length>=2:sessionPlayers.length>=4){
     const{matches,sitters}=isPaired?generateNextPairRound(sessionPairs,sessionRounds,maxCourts):generateNextRound(sessionPlayers,sessionRounds,maxCourts);
@@ -862,6 +900,33 @@ function tapPairingChip(id){
 function removeSessionPair(pi){
   sessionPairs=sessionPairs.filter((_,i)=>i!==pi);
   persistSessionPairs();
+  renderLiveSession();
+}
+
+function startEditRound(rn){
+  if(!confirm('Edit round '+rn+'? This will recalculate ELO for the rest of the session.'))return;
+  editingRoundNum=rn;
+  renderLiveSession();
+}
+
+function cancelEditRound(){
+  editingRoundNum=null;
+  renderLiveSession();
+}
+
+async function saveEditedRound(rn){
+  const matches=sessionRounds.filter(r=>r.r===rn);
+  matches.forEach((m,mi)=>{
+    m.s1=parseInt(document.getElementById('edit-s1-'+rn+'-'+mi).value)||0;
+    m.s2=parseInt(document.getElementById('edit-s2-'+rn+'-'+mi).value)||0;
+  });
+  replaySessionElo();
+  const{error}=await sb.from('sessions').update({rounds:sessionRounds}).eq('id',activeSessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0)SESSIONS[idx].rounds=sessionRounds;
+  editingRoundNum=null;
+  showToast('Round '+rn+' updated'+(RANKINGS_ENABLED?' and ELO recalculated':''));
   renderLiveSession();
 }
 
