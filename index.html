@@ -30,8 +30,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:16px;margin-bottom:12px}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tile{background:#fff;border:1px solid #e8e8e4;border-radius:14px;padding:28px 12px;text-align:center;font-weight:600;font-size:15px;cursor:pointer;text-decoration:none;color:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:80px}
-.tile:active{background:var(--bg)}
+.tile{background:#fff;border:1px solid #e8e8e4;border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:transform 0.1s ease}
+.tile svg{color:var(--gold)}
+.tile:active{background:var(--bg);transform:scale(0.97)}
+.tile.external{background:var(--black);color:#fff;border-color:var(--black)}
+.tile.external:active{background:#000}
 .stat{background:var(--bg);border-radius:10px;padding:14px}
 .stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
 .stat-val{font-size:24px;font-weight:600}
@@ -291,7 +294,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
     <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
-      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option></select></div>
+      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" placeholder="e.g. York Sport Centre"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -709,7 +712,7 @@ function renderSessions(){
           <div style="font-size:12px;color:#aaa">${s.date} · ${s.location||'TBC'}</div>
           <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
             <span class="badge ${s.status}">${s.status}</span>
-            <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
+            ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
             ${s.status==='in_progress'?'<span class="session-live-badge">● LIVE</span>':''}
           </div>
         </div>
@@ -721,7 +724,7 @@ function renderSessions(){
 // ── SESSION DETAIL ───────────────────────────────────────────
 function showSessionDetail(sid){
   const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
-  if((s.format==='doubles_americano'||s.format==='paired_americano')&&(s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
+  if((s.status==='upcoming'||s.status==='in_progress')&&accessLevel==='committee'){
     loadLiveSession(s);
   } else {
     renderCompletedSession(s);
@@ -738,7 +741,7 @@ function renderCompletedSession(s){
     <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.date} · ${s.location||'TBC'} · ${s.points_to_play||16} pts/round</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="badge ${s.status}">${s.status}</span>
-      <span class="badge prov">${(s.format||'').replace(/_/g,' ')}</span>
+      ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
       ${s.elo_applied?'<span class="badge completed ranking-ui">ELO applied</span>':''}
     </div>
   </div>`;
@@ -889,6 +892,15 @@ function replaySessionElo(){
   });
 }
 
+async function setSessionFormat(sessionId,format){
+  const{error}=await sb.from('sessions').update({format}).eq('id',sessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===sessionId);
+  if(idx>=0)SESSIONS[idx].format=format;
+  showToast('Format set!');
+  renderLiveSession();
+}
+
 function renderLiveSession(){
   const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
   const isPaired=s.format==='paired_americano';
@@ -914,6 +926,18 @@ function renderLiveSession(){
     </div>
     ${!isPaired&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
+
+  // No format chosen yet — players can still check in, but rounds can't start
+  if(!s.format){
+    html+=`<div class="card">
+      <div class="section-head">Set format</div>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">Pick a format to start recording rounds. Players can still check themselves in before this is set.</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary full" onclick="setSessionFormat('${s.id}','doubles_americano')">Singles Americano</button>
+        <button class="btn primary full" onclick="setSessionFormat('${s.id}','paired_americano')">Doubles Americano</button>
+      </div>
+    </div>`;
+  }
 
   // Fixed pairs (Doubles Americano only)
   if(isPaired){
@@ -980,7 +1004,7 @@ function renderLiveSession(){
   }
 
   // Generate next round
-  if(isPaired?sessionPairs.length>=2:sessionPlayers.length>=4){
+  if(s.format&&(isPaired?sessionPairs.length>=2:sessionPlayers.length>=4)){
     const{matches,sitters}=isPaired?generateNextPairRound(sessionPairs,sessionRounds,maxCourts):generateNextRound(sessionPlayers,sessionRounds,maxCourts);
     const sitterText=isPaired?sitters.map(pair=>pair.map(id=>pFirst(id)).join(' & ')).join(', '):sitters.map(id=>pFirst(id)).join(', ');
     const rId='round-'+roundNum;
@@ -1392,18 +1416,32 @@ function applyAccess(level){
 }
 
 // ── HOME ─────────────────────────────────────────────────────
+const HOME_ICONS={
+  rankings:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg>',
+  players:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15 14.3c2.6.4 4.5 2.6 4.5 5.7"/></svg>',
+  sessions:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  checkin:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-11.5A7 7 0 0 0 5 9.5C5 14.5 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>',
+  committee:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg>',
+  external:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></svg>'
+};
+
 function renderHome(){
   const tiles=[
-    {label:'Rankings',cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
-    {label:'Players',action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
-    {label:'Sessions',action:"showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))"},
-    {label:'Check in',action:"showPage('checkin',null,true);renderCheckinScreen()"},
+    {label:'Rankings',icon:HOME_ICONS.rankings,cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
+    {label:'Players',icon:HOME_ICONS.players,action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
+    {label:'Sessions',icon:HOME_ICONS.sessions,action:"showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))"},
+    {label:'Check in',icon:HOME_ICONS.checkin,action:"showPage('checkin',null,true);renderCheckinScreen()"},
   ];
   if(accessLevel==='committee'){
-    tiles.push({label:'Committee',action:"showPage('committee',document.querySelector('#main-nav button:nth-child(5)'))"});
+    tiles.push({label:'Committee',icon:HOME_ICONS.committee,action:"showPage('committee',document.querySelector('#main-nav button:nth-child(5)'))"});
   }
-  document.getElementById('home-tiles').innerHTML=tiles.map(t=>`<div class="tile ${t.cls||''}" onclick="${t.action}">${t.label}</div>`).join('')
-    +`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile">York Padel Club</a>`;
+  document.getElementById('home-tiles').innerHTML=
+    `<div style="grid-column:1/-1;margin-bottom:6px">
+      <div style="font-size:20px;font-weight:700">Welcome</div>
+      <div style="font-size:13px;color:#888">What would you like to do?</div>
+    </div>`
+    +tiles.map(t=>`<div class="tile ${t.cls||''}" onclick="${t.action}">${t.icon}<span>${t.label}</span></div>`).join('')
+    +`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile external">${HOME_ICONS.external}<span>York Padel Club</span></a>`;
 }
 
 // ── CHECK IN ─────────────────────────────────────────────────
