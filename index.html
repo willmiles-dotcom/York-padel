@@ -340,7 +340,7 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
     <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
     <div class="edit-row ranking-ui"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
     <div class="edit-row"><span class="edit-row-label">Active</span><select id="edit-active"><option value="true">Yes</option><option value="false">No</option></select></div>
-    <div class="edit-row"><span class="edit-row-label">Committee access</span><select id="edit-committee"><option value="false">No</option><option value="true">Yes</option></select></div>
+    <div class="edit-row"><span class="edit-row-label">Membership</span><select id="edit-membership"><option value="guest">Guest</option><option value="member">Member</option><option value="committee">Committee</option></select></div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn full" onclick="closeModal('edit-player-modal')">Cancel</button>
       <button class="btn primary full" onclick="savePlayerEdit()">Save</button>
@@ -703,7 +703,6 @@ function renderPlayers(){
   const g=document.getElementById('player-group').value;
   const showArchived=document.getElementById('player-show-archived').checked;
   let list=[...PLAYERS].filter(p=>{
-    if(p.is_guest)return false;
     if(!showArchived&&p.is_active===false)return false;
     if(q&&!p.name.toLowerCase().includes(q))return false;
     if(g&&p.group_name!==g)return false;
@@ -713,7 +712,7 @@ function renderPlayers(){
   document.getElementById('player-select-col-head').style.display=isCommittee?'table-cell':'none';
   document.getElementById('player-body').innerHTML=list.map(p=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
     ${isCommittee?`<td onclick="event.stopPropagation()"><input type="checkbox" ${selectedPlayerIds.has(p.id)?'checked':''} onchange="togglePlayerSelect('${p.id}',this.checked)"></td>`:''}
-    <td><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
+    <td><span class="player-name">${p.name}</span>${p.is_guest?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Guest</span>':''}${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
     <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
     <td class="ranking-ui"><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
     <td style="color:#aaa">${p.games_played||0}</td>
@@ -1635,6 +1634,13 @@ async function completeSession(){
     await sb.from('players').update({elo_rating:newElo,games_played:newGames,matches_won:newWins}).eq('id',id);
     p.elo_rating=newElo;p.games_played=newGames;p.matches_won=newWins;
   }
+  // a guest's single-session pass expires once their session is done -
+  // soft-deactivate rather than delete, same as archiving anything else
+  for(const id of allAttendees){
+    const p=pMap[id];if(!p||!p.is_guest||p.is_active===false)continue;
+    await sb.from('players').update({is_active:false}).eq('id',id);
+    p.is_active=false;
+  }
   // update local session
   const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
   if(idx>=0){Object.assign(SESSIONS[idx],{status:'completed',elo_applied:RANKINGS_ENABLED,attendees:allAttendees,rounds:sessionRounds,elo_changes:finalChanges});}
@@ -1751,7 +1757,7 @@ function openEditModal(pid){
   document.getElementById('edit-group').value=p.group_name||'unassigned';
   document.getElementById('edit-elo').value=p.elo_rating||1000;
   document.getElementById('edit-active').value=p.is_active===false?'false':'true';
-  document.getElementById('edit-committee').value=p.is_committee?'true':'false';
+  document.getElementById('edit-membership').value=p.is_guest?'guest':p.is_committee?'committee':'member';
   document.getElementById('unlink-account-btn').style.display=p.user_id?'block':'none';
   openModal('edit-player-modal');
 }
@@ -1769,7 +1775,8 @@ async function unlinkPlayerAccount(){
 
 async function savePlayerEdit(){
   const pid=document.getElementById('edit-player-id').value;
-  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true',is_committee:document.getElementById('edit-committee').value==='true'};
+  const membership=document.getElementById('edit-membership').value;
+  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true',is_committee:membership==='committee',is_guest:membership==='guest'};
   const{error}=await sb.from('players').update(updates).eq('id',pid);
   if(error){showToast('Error: '+error.message);return;}
   Object.assign(pMap[pid],updates);PLAYERS=PLAYERS.map(p=>p.id===pid?{...p,...updates}:p);
