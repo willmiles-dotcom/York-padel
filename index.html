@@ -232,9 +232,9 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
         <button onclick="setLeaderTab('upper',this)">Upper</button>
         <button onclick="setLeaderTab('lower',this)">Lower</button>
       </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th>#</th><th>Player</th><th class="ranking-ui">ELO</th><th>W/G</th></tr></thead>
-        <tbody id="leader-body"><tr><td colspan="4" class="loading">Loading...</td></tr></tbody></table>
+      <div id="leader-top3"></div>
+      <div class="card" style="padding:0;overflow:hidden" id="leader-rest-card">
+        <div id="leader-rest"></div>
       </div>
     </div>
 
@@ -719,12 +719,29 @@ function renderLeaderboard(){
   document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false&&!p.is_guest).length;
   document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false&&!p.is_guest).length;
   document.getElementById('s-competitive').textContent=PLAYERS.filter(p=>p.group_name==='competitive'&&p.is_active!==false&&!p.is_guest).length;
-  document.getElementById('leader-body').innerHTML=list.map((p,i)=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
-    <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
-    <td><span class="player-name">${p.name}</span></td>
-    <td class="ranking-ui"><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
-    <td style="color:#aaa">${p.matches_won||0}/${p.games_played||0}</td>
-  </tr>`).join('');
+  const groupEdge=g=>g==='competitive'?'var(--competitive)':g==='upper'?'var(--upper)':g==='lower'?'var(--lower)':'transparent';
+  const top3=list.slice(0,3),rest=list.slice(3);
+
+  document.getElementById('leader-top3').innerHTML=top3.length?`<div class="card-elevated" style="padding:0;overflow:hidden">
+    ${top3.map((p,i)=>`<div onclick="showPlayerProfile('${p.id}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:${i===0?'18px 16px':'12px 16px'};border-left:3px solid ${groupEdge(p.group_name)};${i<top3.length-1?'border-bottom:1px solid var(--glass-border)':''}">
+      <span style="font-family:var(--font-display);font-variant-numeric:tabular-nums;font-weight:700;color:var(--gold);font-size:${i===0?'28px':'18px'};min-width:${i===0?'34px':'26px'}">${i+1}</span>
+      <span style="flex:1;min-width:0;font-weight:600;font-size:${i===0?'18px':'15px'}">${p.name}</span>
+      <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
+    </div>`).join('')}
+  </div>`:'';
+
+  document.getElementById('leader-rest-card').style.display=rest.length?'block':(top3.length?'none':'block');
+  document.getElementById('leader-rest').innerHTML=rest.length?rest.map((p,i)=>`
+    <div onclick="showPlayerProfile('${p.id}')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-left:3px solid ${groupEdge(p.group_name)};${i<rest.length-1?'border-bottom:1px solid rgba(255,255,255,0.08)':''}">
+      <div style="display:flex;align-items:center;gap:10px;min-width:0">
+        <span class="rank-num">${i+4}</span>
+        <span class="player-name">${p.name}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
+        <span style="color:var(--text-dim);font-size:12px">${p.matches_won||0}/${p.games_played||0}</span>
+      </div>
+    </div>`).join(''):(top3.length?'':'<div class="empty-state">No players yet.</div>');
 }
 function setLeaderTab(tab,btn){
   leaderTab=tab;
