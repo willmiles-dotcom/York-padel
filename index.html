@@ -42,15 +42,13 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:100vh;background:var(--bg)}
 /* Backdrop system: a fixed full-bleed photo layer behind everything, with
-   a dark gradient (text always passes contrast) and a faint grain layer
-   (kills the "plastic" flat-glass look). JS swaps the photo per screen via
-   setBackdrop(); until a screen requests one, this shared default shows -
-   see js call at the bottom of the page. Fixed position avoids the iOS
-   Safari repaint-on-scroll bug that a body background-image would hit. */
-/* No photo by default - most screens (Players, Sessions, Committee, etc.)
-   stay on this plain gradient deliberately, so a photo never competes
-   with dense text/tables. Only Home, Leaderboard and a live session get
-   a real photo, set via setBackdrop() in showPage()/renderLiveSession(). */
+   a heavy dark gradient (text always passes contrast) and a faint grain
+   layer (kills the "plastic" flat-glass look). Every screen shows a photo
+   - Home/Leaderboard/a live session get their own distinct one, everything
+   else shares one calm default - swapped via setBackdrop() in showPage()/
+   renderLiveSession()/renderCompletedSession(). The plain gradient below
+   is only a pre-JS/no-JS fallback. Fixed position avoids the iOS Safari
+   repaint-on-scroll bug that a body background-image would hit. */
 #app-backdrop{position:fixed;inset:0;z-index:-2;background-size:cover;background-position:center;
   background-color:var(--bg);
   background-image:radial-gradient(circle at 12% -10%,rgba(201,162,39,0.10),transparent 55%),radial-gradient(circle at 100% 15%,rgba(255,255,255,0.05),transparent 45%);
@@ -900,7 +898,7 @@ function showSessionDetail(sid){
 }
 
 function renderCompletedSession(s){
-  setBackdrop(null);
+  setBackdrop('photo-12');
   viewingCompletedSessionId=s.id;
   const rounds=s.rounds||[];
   const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
@@ -1906,9 +1904,9 @@ async function importRoster(){
 
 // ── BACKDROP ─────────────────────────────────────────────────
 // Swaps the fixed full-bleed photo layer (see #app-backdrop). Pass a photo
-// id from assets/img/manifest.json (e.g. 'photo-03'); omit/null for the
-// quiet no-photo default (plain dark gradient - most screens use this,
-// deliberately, so photos don't compete with dense text/tables).
+// id from assets/img/manifest.json (e.g. 'photo-03'); omit/null to fall
+// back to the plain gradient (pre-JS/no-JS only - every screen sets a
+// real photo once JS runs, see showPage()).
 function setBackdrop(photoId){
   document.getElementById('app-backdrop').style.backgroundImage=photoId?`url('assets/img/${photoId}-backdrop.webp')`:'';
 }
@@ -1923,7 +1921,7 @@ function showPage(id,btn,noNav){
   // read-only), so leave that one alone here.
   if(id==='home')setBackdrop('photo-03');
   else if(id==='leaderboard')setBackdrop('photo-10');
-  else if(id!=='session-detail')setBackdrop(null);
+  else if(id!=='session-detail')setBackdrop('photo-12');
 }
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
