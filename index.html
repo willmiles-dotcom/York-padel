@@ -678,7 +678,7 @@ async function loadData(){
     PLAYERS.forEach(p=>pMap[p.id]=p);
     RANKINGS_ENABLED=(setr&&!setr.error&&setr.data)?setr.data.rankings_enabled!==false:true;
     applyRankingsVisibility();
-    renderLeaderboard();renderPlayers();renderSessions();
+    renderLeaderboard();renderPlayers();renderSessions();renderHome();
     if(accessLevel==='committee')renderCommitteeStats();
   }catch(e){console.error(e);showToast('DB connection error')}
 }
@@ -1963,6 +1963,13 @@ const HOME_ICONS={
 
 function renderHome(){
   if(document.getElementById('page-home').classList.contains('active'))setBackdrop('photo-03');
+  const myName=myPlayerId&&pMap[myPlayerId]?pMap[myPlayerId].name.split(' ')[0]:null;
+  const upcoming=[...SESSIONS].filter(s=>!s.archived&&(s.status==='upcoming'||s.status==='in_progress')).sort((a,b)=>{
+    if((a.status==='in_progress')!==(b.status==='in_progress'))return a.status==='in_progress'?-1:1;
+    return new Date(a.date)-new Date(b.date);
+  })[0];
+  const topPlayer=[...PLAYERS].filter(p=>p.is_active!==false&&!p.is_guest).sort((a,b)=>b.elo_rating-a.elo_rating)[0];
+
   const tiles=[
     {label:'Rankings',icon:HOME_ICONS.rankings,cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
     {label:'Players',icon:HOME_ICONS.players,action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
@@ -1972,13 +1979,36 @@ function renderHome(){
   if(accessLevel==='committee'){
     tiles.push({label:'Committee',icon:HOME_ICONS.committee,action:"showPage('committee',document.querySelector('#main-nav button:nth-child(5)'))"});
   }
-  document.getElementById('home-tiles').innerHTML=
-    `<div style="grid-column:1/-1;margin-bottom:6px">
-      <div style="font-size:20px;font-weight:700">Welcome</div>
-      <div style="font-size:13px;color:#888">What would you like to do?</div>
-    </div>`
-    +tiles.map(t=>`<div class="tile ${t.cls||''}" onclick="${t.action}">${t.icon}<span>${t.label}</span></div>`).join('')
-    +`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile external">${HOME_ICONS.external}<span>York Padel Club</span></a>`;
+
+  let html=`<div style="grid-column:1/-1;margin-bottom:6px">
+      <div style="font-size:22px;font-weight:700;font-family:var(--font-display)">${myName?`Welcome back, ${myName}`:'Welcome'}</div>
+    </div>`;
+
+  if(upcoming){
+    html+=`<div class="card-elevated" style="grid-column:1/-1;cursor:pointer" onclick="showSessionDetail('${upcoming.id}')">
+      <div class="section-head" style="margin-bottom:4px">${upcoming.status==='in_progress'?'Happening now':'Next session'}</div>
+      <div style="font-weight:600;font-size:16px">${upcoming.title}</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${upcoming.date} · ${upcoming.location||'TBC'}</div>
+    </div>`;
+  }
+
+  html+=tiles.map(t=>`<div class="tile ${t.cls||''}" onclick="${t.action}">${t.icon}<span>${t.label}</span></div>`).join('');
+  html+=`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile external">${HOME_ICONS.external}<span>York Padel Club</span></a>`;
+
+  if(topPlayer){
+    html+=`<div class="card-elevated ranking-ui" style="grid-column:1/-1;cursor:pointer" onclick="showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="assets/img/photo-08-thumb.webp" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">
+        <div style="flex:1;min-width:0">
+          <div class="section-head" style="margin-bottom:2px">Top of the table</div>
+          <div style="font-weight:600;font-size:16px">${topPlayer.name}</div>
+        </div>
+        <span class="elo-pill ${eloClass(topPlayer.elo_rating)}">${topPlayer.elo_rating}</span>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('home-tiles').innerHTML=html;
 }
 
 // ── SIGN UP ──────────────────────────────────────────────────
