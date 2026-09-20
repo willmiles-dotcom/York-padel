@@ -156,6 +156,8 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 
 <div id="claim-screen" style="display:none"></div>
 
+<div id="guest-screen" style="display:none"></div>
+
 <div class="app" id="app-root" style="display:none">
   <div class="topbar">
     <div class="logo" style="display:flex;align-items:center;gap:8px"><img src="/icons/icon-192.png" alt="" style="width:28px;height:28px;border-radius:6px"><div><span>York</span> Padel Club</div></div>
@@ -243,15 +245,15 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 
     <!-- SESSION DETAIL / LIVE -->
     <div class="page" id="page-session-detail">
-      <button class="back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">← Back</button>
+      <button class="back-btn" id="session-detail-back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">← Back</button>
       <div id="session-detail-content"></div>
     </div>
 
-    <!-- CHECK IN -->
-    <div class="page" id="page-checkin">
+    <!-- SIGN UP -->
+    <div class="page" id="page-signup">
       <button class="back-btn" onclick="showPage('home',document.querySelector('#main-nav button:nth-child(1)'))">← Back</button>
-      <div style="font-weight:600;font-size:16px;margin-bottom:14px">Check in</div>
-      <div id="checkin-content"><div class="loading">Loading...</div></div>
+      <div style="font-weight:600;font-size:16px;margin-bottom:14px">Sign up</div>
+      <div id="signup-content"><div class="loading">Loading...</div></div>
     </div>
 
     <!-- PLAYER PROFILE -->
@@ -383,18 +385,36 @@ import('./js/scoring.js').then(m=>{scoringMod=m;});
 
 async function handleAuthChange(){
   document.getElementById('boot-loading').style.display='none';
+  if(guestJoinInProgress)return;
+  const guestCode=(window.location.hash.match(/^#guest=(.+)$/)||[])[1];
+  if(guestCode&&!currentSession){
+    document.getElementById('app-root').style.display='none';
+    document.getElementById('claim-screen').style.display='none';
+    document.getElementById('auth-screen').style.display='none';
+    renderGuestJoinScreen(guestCode);
+    document.getElementById('guest-screen').style.display='block';
+    return;
+  }
   if(!currentSession){
     document.getElementById('app-root').style.display='none';
     document.getElementById('claim-screen').style.display='none';
+    document.getElementById('guest-screen').style.display='none';
     renderAuthScreen();
     document.getElementById('auth-screen').style.display='block';
     return;
   }
-  // already linked to a player — that row's is_committee decides access level
+  // already linked to a player — that row's is_committee/is_guest decides access level
   const{data:linked}=await sb.from('players').select('*').eq('user_id',currentSession.user.id).maybeSingle();
   if(linked){
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('claim-screen').style.display='none';
+    document.getElementById('guest-screen').style.display='none';
+    myPlayerId=linked.id;
+    if(linked.is_guest){
+      applyAccess('guest');
+      await loadGuestSession(linked);
+      return;
+    }
     document.getElementById('app-root').style.display='flex';
     applyAccess(linked.is_committee?'committee':'member');
     loadData();
@@ -424,8 +444,77 @@ async function doLogout(){
   await authMod.signOut(sb);
 }
 
+// ── GUEST PASS ───────────────────────────────────────────────
+function renderGuestJoinScreen(code){
+  document.getElementById('guest-screen').innerHTML=`
+    <div style="min-height:100vh;background:var(--black);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 20px">
+      <img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px">
+      <div style="font-size:22px;font-weight:700;margin-bottom:4px;text-align:center">You're invited to a session</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px;text-align:center">Enter your name to join as a guest</div>
+      <div style="background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--glass-border);border-radius:16px;padding:20px;width:100%;max-width:380px">
+        <div class="form-row"><label class="form-label">Your name</label><input type="text" id="guest-name-input" placeholder="e.g. Jamie Smith"></div>
+        <div id="guest-join-error" style="color:#FF6B6B;font-size:13px;display:none;margin-bottom:8px"></div>
+        <button class="btn primary full" onclick="joinAsGuest('${code}')">Join session</button>
+      </div>
+    </div>`;
+}
+
+async function joinAsGuest(code){
+  const name=(document.getElementById('guest-name-input').value||'').trim();
+  const errEl=document.getElementById('guest-join-error');
+  errEl.style.display='none';
+  if(!name){errEl.textContent='Please enter your name.';errEl.style.display='block';return;}
+  guestJoinInProgress=true;
+  try{
+    const{error:authErr}=await sb.auth.signInAnonymously();
+    if(authErr)throw authErr;
+    const{error:rpcErr}=await sb.rpc('redeem_guest_pass',{code,guest_name:name});
+    if(rpcErr)throw rpcErr;
+    history.replaceState(null,'',window.location.pathname+window.location.search);
+    const{data:{session}}=await sb.auth.getSession();
+    currentSession=session;
+    const{data:linked}=await sb.from('players').select('*').eq('user_id',session.user.id).maybeSingle();
+    guestJoinInProgress=false;
+    document.getElementById('guest-screen').style.display='none';
+    myPlayerId=linked.id;
+    applyAccess('guest');
+    await loadGuestSession(linked);
+  }catch(e){
+    guestJoinInProgress=false;
+    errEl.textContent=e.message;
+    errEl.style.display='block';
+  }
+}
+
+async function loadGuestSession(linked){
+  const{data:pr}=await sb.from('players').select('*');
+  PLAYERS=pr||[];
+  pMap={};
+  PLAYERS.forEach(p=>pMap[p.id]=p);
+  const{data:s}=await sb.from('sessions').select('*').eq('id',linked.guest_session_id).maybeSingle();
+  document.getElementById('app-root').style.display='flex';
+  if(!s){showToast('Session not found');return;}
+  SESSIONS=[s];
+  showSessionDetail(s.id);
+  document.getElementById('session-detail-back-btn').style.display='none';
+}
+
+async function createGuestPass(sessionId){
+  const{data,error}=await sb.rpc('generate_guest_code',{target_session:sessionId});
+  if(error){showToast('Error: '+error.message);return;}
+  const url=window.location.origin+window.location.pathname+'#guest='+data;
+  try{
+    await navigator.clipboard.writeText(url);
+    showToast('Guest link copied!');
+  }catch{
+    showToast('Guest link: '+url);
+  }
+}
+
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
 let RANKINGS_ENABLED=true;
+let myPlayerId=null;
+let guestJoinInProgress=false;
 let activeSessionId=null;
 let sessionPlayers=[];
 let sessionRounds=[];
@@ -583,16 +672,16 @@ async function toggleRankingsEnabled(){
 
 // ── LEADERBOARD ─────────────────────────────────────────────
 function renderLeaderboard(){
-  let list=[...PLAYERS].filter(p=>p.is_active!==false);
+  let list=[...PLAYERS].filter(p=>p.is_active!==false&&!p.is_guest);
   if(leaderTab==='upper')list=list.filter(p=>p.group_name==='upper');
   else if(leaderTab==='lower')list=list.filter(p=>p.group_name==='lower');
   else if(leaderTab==='competitive')list=list.filter(p=>p.group_name==='competitive');
   list.sort((a,b)=>b.elo_rating-a.elo_rating);
-  document.getElementById('s-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
+  document.getElementById('s-active').textContent=PLAYERS.filter(p=>p.is_active!==false&&!p.is_guest).length;
   document.getElementById('s-sessions').textContent=SESSIONS.filter(s=>s.status==='completed').length;
-  document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false).length;
-  document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false).length;
-  document.getElementById('s-competitive').textContent=PLAYERS.filter(p=>p.group_name==='competitive'&&p.is_active!==false).length;
+  document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false&&!p.is_guest).length;
+  document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false&&!p.is_guest).length;
+  document.getElementById('s-competitive').textContent=PLAYERS.filter(p=>p.group_name==='competitive'&&p.is_active!==false&&!p.is_guest).length;
   document.getElementById('leader-body').innerHTML=list.map((p,i)=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
     <td><span class="rank-num ${i<3?'top':''}">${i+1}</span></td>
     <td><span class="player-name">${p.name}</span></td>
@@ -614,6 +703,7 @@ function renderPlayers(){
   const g=document.getElementById('player-group').value;
   const showArchived=document.getElementById('player-show-archived').checked;
   let list=[...PLAYERS].filter(p=>{
+    if(p.is_guest)return false;
     if(!showArchived&&p.is_active===false)return false;
     if(q&&!p.name.toLowerCase().includes(q))return false;
     if(g&&p.group_name!==g)return false;
@@ -739,6 +829,7 @@ function renderSessions(){
           <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
             <span class="badge ${s.status}">${s.status}</span>
             ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
+            ${myPlayerId&&Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId)?'<span class="badge completed">✓ You\'re in</span>':''}
             ${s.archived?'<span class="badge flag">Deleted</span>':''}
             ${s.status==='in_progress'?'<span class="session-live-badge">● LIVE</span>':''}
           </div>
@@ -789,8 +880,16 @@ function renderCompletedSession(s){
     </div>
     ${accessLevel==='committee'?`<button class="btn danger sm" style="margin-top:10px" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button>`:''}
   </div>`;
+  if(accessLevel!=='committee'&&!s.archived&&s.status==='upcoming'&&myPlayerId){
+    const signedUp=Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId);
+    html+=`<div class="card">
+      ${signedUp
+        ?`<div style="display:flex;align-items:center;justify-content:space-between"><span class="badge completed">✓ You're signed up</span><button class="btn sm" onclick="toggleMySignup('${s.id}',true,'detail')">Withdraw</button></div>`
+        :`<button class="btn primary full" onclick="toggleMySignup('${s.id}',false,'detail')">Sign up for this session</button>`}
+    </div>`;
+  }
   if(s.attendees&&s.attendees.length){
-    html+=`<div class="card"><div class="section-head">Attendees (${s.attendees.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}</span>`).join('')}</div></div>`;
+    html+=`<div class="card"><div class="section-head">Attendees (${s.attendees.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}${(pMap[id]||{}).is_guest?' (guest)':''}</span>`).join('')}</div></div>`;
   }
   if(s.elo_changes&&s.elo_changes.length){
     const sc=[...s.elo_changes].sort((a,b)=>b.change-a.change);
@@ -930,7 +1029,7 @@ async function saveEditedCompletedRound(r){
 
   if(RANKINGS_ENABLED){
     for(const id of allPlayed){
-      const p=pMap[id];if(!p)continue;
+      const p=pMap[id];if(!p||p.is_guest)continue;
       const newRating=eloState[id]||1000;
       const{error:pe}=await sb.from('players').update({elo_rating:newRating}).eq('id',id);
       if(pe){showToast('Error updating '+p.name+': '+pe.message);continue;}
@@ -1047,6 +1146,7 @@ function renderLiveSession(){
     <div style="font-size:13px;color:#aaa;margin-bottom:12px">${s.date}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
+      <button class="btn sm" onclick="createGuestPass('${s.id}')">Guest pass</button>
       ${canComplete?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
       ${s.format?`<button class="btn sm" onclick="toggleFormatPicker()">${showFormatPicker?'Cancel change':'Change format'}</button>`:''}
       <button class="btn sm danger" onclick="toggleSessionArchived('${s.id}',true)">Delete session</button>
@@ -1057,7 +1157,7 @@ function renderLiveSession(){
   html+=`<div class="card">
     <div class="section-head">Playing now (${sessionPlayers.length})</div>
     <div style="display:flex;flex-wrap:wrap;gap:4px">
-      ${sessionPlayers.map(id=>`<span class="badge ${(pMap[id]||{}).group_name||'prov'}" style="cursor:pointer" onclick="removeFromSession('${id}')">${pFirst(id)} ×</span>`).join('')}
+      ${sessionPlayers.map(id=>`<span class="badge ${(pMap[id]||{}).group_name||'prov'}" style="cursor:pointer" onclick="removeFromSession('${id}')">${pFirst(id)}${(pMap[id]||{}).is_guest?' (guest)':''} ×</span>`).join('')}
     </div>
     ${!isPaired&&!isMatchPlay&&!isKotc&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
@@ -1528,7 +1628,7 @@ async function completeSession(){
   if(se){showToast('Error: '+se.message);return;}
   // update each player's elo, games_played, matches_won
   for(const id of allPlaying){
-    const p=pMap[id];if(!p)continue;
+    const p=pMap[id];if(!p||p.is_guest)continue;
     const newElo=RANKINGS_ENABLED?(sessionEloState[id]||p.elo_rating):p.elo_rating;
     const newGames=(p.games_played||0)+(gamesCount[id]||0);
     const newWins=(p.matches_won||0)+(winsCount[id]||0);
@@ -1555,7 +1655,7 @@ function removeFromSession(pid){
 function renderSessionPlayerSearch(){
   const q=(document.getElementById('session-player-search').value||'').toLowerCase();
   const showArchived=document.getElementById('session-show-archived').checked;
-  const list=[...PLAYERS].filter(p=>(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  const list=[...PLAYERS].filter(p=>!p.is_guest&&(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('session-player-search-list').innerHTML=list.map(p=>{
     const inSession=sessionPlayers.includes(p.id);
     return`<div class="player-list-row" onclick="toggleSessionPlayer('${p.id}')">
@@ -1774,9 +1874,15 @@ function applyAccess(level){
     b.textContent='Committee';
     b.className='access-badge committee';
     b.style.display='inline-block';
+  }else if(level==='guest'){
+    b.textContent='Guest';
+    b.className='access-badge';
+    b.style.display='inline-block';
   }else{
     b.style.display='none';
   }
+  document.getElementById('main-nav').style.display=level==='guest'?'none':'flex';
+  if(level==='guest')return;
   document.getElementById('nav-committee').style.display=level==='committee'?'':'none';
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
   document.getElementById('sessions-show-archived-row').style.display=level==='committee'?'flex':'none';
@@ -1802,7 +1908,7 @@ function renderHome(){
     {label:'Rankings',icon:HOME_ICONS.rankings,cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
     {label:'Players',icon:HOME_ICONS.players,action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
     {label:'Sessions',icon:HOME_ICONS.sessions,action:"showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))"},
-    {label:'Check in',icon:HOME_ICONS.checkin,action:"showPage('checkin',null,true);renderCheckinScreen()"},
+    {label:'Sign up',icon:HOME_ICONS.checkin,action:"showPage('signup',null,true);renderSignupScreen()"},
   ];
   if(accessLevel==='committee'){
     tiles.push({label:'Committee',icon:HOME_ICONS.committee,action:"showPage('committee',document.querySelector('#main-nav button:nth-child(5)'))"});
@@ -1816,29 +1922,39 @@ function renderHome(){
     +`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile external">${HOME_ICONS.external}<span>York Padel Club</span></a>`;
 }
 
-// ── CHECK IN ─────────────────────────────────────────────────
-async function renderCheckinScreen(){
-  document.getElementById('checkin-content').innerHTML='<div class="loading">Loading...</div>';
-  const today=new Date().toISOString().slice(0,10);
-  const{data}=await sb.from('sessions').select('*').eq('date',today).in('status',['upcoming','in_progress']);
+// ── SIGN UP ──────────────────────────────────────────────────
+async function renderSignupScreen(){
+  document.getElementById('signup-content').innerHTML='<div class="loading">Loading...</div>';
+  const{data}=await sb.from('sessions').select('*').eq('archived',false).in('status',['upcoming','in_progress']).order('date',{ascending:true});
   const list=data||[];
-  const{data:me}=await sb.from('players').select('id').eq('user_id',currentSession.user.id).maybeSingle();
-  const myId=me?me.id:null;
-  document.getElementById('checkin-content').innerHTML=list.length?list.map(s=>{
-    const checkedIn=myId&&Array.isArray(s.attendees)&&s.attendees.includes(myId);
+  document.getElementById('signup-content').innerHTML=list.length?list.map(s=>{
+    const signedUp=myPlayerId&&Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId);
+    const canWithdraw=s.status==='upcoming';
     return`<div class="card">
       <div style="font-weight:600;margin-bottom:4px">${s.title}</div>
-      <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.location||'TBC'}</div>
-      ${checkedIn?'<span class="badge completed">✓ Checked in</span>':`<button class="btn primary full" onclick="doCheckIn('${s.id}')">Check in</button>`}
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">${s.date} · ${s.location||'TBC'}</div>
+      ${signedUp
+        ?(canWithdraw
+          ?`<div style="display:flex;align-items:center;justify-content:space-between"><span class="badge completed">✓ Signed up</span><button class="btn sm" onclick="toggleMySignup('${s.id}',true,'signup')">Withdraw</button></div>`
+          :'<span class="badge completed">✓ Signed up</span>')
+        :`<button class="btn primary full" onclick="toggleMySignup('${s.id}',false,'signup')">Sign up</button>`}
     </div>`;
-  }).join(''):'<div class="empty-state">No sessions today.</div>';
+  }).join(''):'<div class="empty-state">No upcoming sessions.</div>';
 }
 
-async function doCheckIn(sessionId){
-  const{error}=await sb.rpc('check_in_session',{target_session:sessionId});
+async function toggleMySignup(sessionId,alreadySignedUp,refreshSource){
+  const fn=alreadySignedUp?'withdraw_session':'sign_up_session';
+  const{error}=await sb.rpc(fn,{target_session:sessionId});
   if(error){showToast('Error: '+error.message);return;}
-  showToast('Checked in!');
-  renderCheckinScreen();
+  showToast(alreadySignedUp?'Removed from session':'Signed up!');
+  const{data}=await sb.from('sessions').select('*').eq('id',sessionId).maybeSingle();
+  if(data){
+    const idx=SESSIONS.findIndex(x=>x.id===sessionId);
+    if(idx>=0)SESSIONS[idx]=data;else SESSIONS.push(data);
+  }
+  if(refreshSource==='signup')renderSignupScreen();
+  renderSessions();
+  if(viewingCompletedSessionId===sessionId)renderCompletedSession(SESSIONS.find(x=>x.id===sessionId));
 }
 
 // ── AUTH SCREEN ──────────────────────────────────────────────
