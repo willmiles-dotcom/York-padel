@@ -6,49 +6,65 @@
 <title>York Padel Club</title>
 <link rel="manifest" href="/manifest.json">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-<meta name="theme-color" content="#1A1A1A">
+<meta name="theme-color" content="#08080A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="York Padel">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root{--gold:#C9A227;--black:#1A1A1A;--bg:#F7F5EF}
+:root{
+  --gold:#C9A227;
+  --black:#0B0B0D;
+  --bg:#08080A;
+  --ink:#171208;
+  --text:#F2F2F0;
+  --text-dim:#9a9a9a;
+  --glass:rgba(255,255,255,0.055);
+  --glass-strong:rgba(255,255,255,0.1);
+  --glass-border:rgba(255,255,255,0.12);
+  --blur:blur(20px)
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:#1a1a1a;background:var(--bg);min-height:100vh}
-.app{display:flex;flex-direction:column;min-height:100vh;max-width:600px;margin:0 auto;background:#fff}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #000;background:var(--black);position:sticky;top:0;z-index:50}
-.logo{font-size:17px;font-weight:600;letter-spacing:-0.5px;color:#fff}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);min-height:100vh;
+  background:
+    radial-gradient(circle at 12% -10%,rgba(201,162,39,0.10),transparent 55%),
+    radial-gradient(circle at 100% 15%,rgba(255,255,255,0.05),transparent 45%),
+    var(--bg);
+}
+.app{display:flex;flex-direction:column;min-height:100vh;max-width:600px;margin:0 auto;background:transparent}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--glass-border);background:rgba(20,20,22,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);position:sticky;top:0;z-index:50}
+.logo{font-size:17px;font-weight:600;letter-spacing:-0.5px;color:var(--text)}
 .logo span{color:var(--gold)}
-.access-badge{font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid #555;color:#ddd;background:transparent}
-.access-badge.committee{background:var(--gold);color:var(--black);border-color:var(--gold);font-weight:600}
-.nav{display:flex;border-bottom:1px solid #000;background:var(--black);overflow-x:auto}
+.access-badge{font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);color:var(--text-dim);background:transparent}
+.access-badge.committee{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600}
+.nav{display:flex;border-bottom:1px solid var(--glass-border);background:rgba(20,20,22,0.45);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);overflow-x:auto}
 .nav::-webkit-scrollbar{display:none}
-.nav button{flex:1;min-width:70px;padding:12px 8px;border:none;background:transparent;font-size:13px;cursor:pointer;color:#999;border-bottom:2px solid transparent;white-space:nowrap}
+.nav button{flex:1;min-width:70px;padding:12px 8px;border:none;background:transparent;font-size:13px;cursor:pointer;color:#8a8a8a;border-bottom:2px solid transparent;white-space:nowrap}
 .nav button.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
 .content{padding:16px;flex:1;padding-bottom:40px}
 .page{display:none}.page.active{display:block}
-.card{background:#fff;border:1px solid #e8e8e4;border-radius:12px;padding:16px;margin-bottom:12px}
+.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:12px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 24px rgba(0,0,0,0.35)}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tile{background:#fff;border:1px solid #e8e8e4;border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:#1a1a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:transform 0.1s ease}
+.tile{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 8px 20px rgba(0,0,0,0.3);transition:transform 0.1s ease;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
 .tile svg{color:var(--gold)}
-.tile:active{background:var(--bg);transform:scale(0.97)}
-.tile.external{background:var(--black);color:#fff;border-color:var(--black)}
-.tile.external:active{background:#000}
-.stat{background:var(--bg);border-radius:10px;padding:14px}
-.stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
-.stat-val{font-size:24px;font-weight:600}
+.tile:active{background:var(--glass-strong);transform:scale(0.97)}
+.tile.external{background:rgba(201,162,39,0.14);border-color:rgba(201,162,39,0.35);color:var(--gold)}
+.tile.external:active{background:rgba(201,162,39,0.22)}
+.stat{background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:14px}
+.stat-label{font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
+.stat-val{font-size:24px;font-weight:600;color:var(--text)}
 .stat-val.green{color:var(--gold)}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;padding:8px;font-size:11px;font-weight:600;color:#888;border-bottom:1px solid #e8e8e4;text-transform:uppercase;letter-spacing:0.4px}
-td{padding:10px 8px;border-bottom:1px solid #f0f0ee}
+th{text-align:left;padding:8px;font-size:11px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--glass-border);text-transform:uppercase;letter-spacing:0.4px}
+td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.08);color:var(--text)}
 tr:last-child td{border-bottom:none}
 .badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
 .badge.upper{background:#E1F5EE;color:#0F6E56}
 .badge.lower{background:#FAEEDA;color:#854F0B}
 .badge.competitive{background:#ECE6FA;color:#5B3FA0}
-.badge.unassigned{background:#f0f0ee;color:#666}
-.badge.prov{background:#f0f0ee;color:#666}
+.badge.unassigned{background:rgba(255,255,255,0.1);color:#ccc}
+.badge.prov{background:rgba(255,255,255,0.1);color:#ccc}
 .badge.flag{background:#FCEBEB;color:#A32D2D}
 .badge.completed{background:#E1F5EE;color:#0F6E56}
 .badge.upcoming{background:#FAEEDA;color:#854F0B}
@@ -57,75 +73,78 @@ body.rankings-off .ranking-ui{display:none!important}
 .elo-high{background:#E1F5EE;color:#0F6E56}
 .elo-mid{background:#FAEEDA;color:#854F0B}
 .elo-low{background:#FCEBEB;color:#A32D2D}
-.change-pos{color:#1D9E75;font-weight:600}
-.change-neg{color:#D85A30;font-weight:600}
-.section-head{font-size:11px;font-weight:600;color:#888;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#1a1a1a;font-weight:500}
+.change-pos{color:#3DDC97;font-weight:600}
+.change-neg{color:#FF6B57;font-weight:600}
+.section-head{font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-weight:500;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .btn:active{opacity:0.7}
-.btn.primary{background:var(--gold);color:var(--black);border-color:var(--gold);font-weight:600}
-.btn.danger{background:#FCEBEB;color:#A32D2D;border-color:#F7C1C1}
-.btn.warning{background:#FAEEDA;color:#854F0B;border-color:#FAC775}
+.btn.primary{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600}
+.btn.danger{background:rgba(220,60,60,0.16);color:#FF8A8A;border-color:rgba(220,60,60,0.4)}
+.btn.warning{background:rgba(250,180,60,0.16);color:#FFCE7A;border-color:rgba(250,180,60,0.4)}
 .btn.sm{padding:6px 12px;font-size:12px;border-radius:8px}
 .btn.full{width:100%}
+.btn:disabled{opacity:0.4;cursor:not-allowed}
 .row-flex{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
-input,select,textarea{padding:10px 12px;border:1px solid #ddd;border-radius:10px;font-size:14px;background:#fff;color:#1a1a1a;width:100%}
+input,select,textarea{padding:10px 12px;border:1px solid var(--glass-border);border-radius:10px;font-size:14px;background:rgba(255,255,255,0.05);color:var(--text);width:100%}
+input::placeholder{color:#777}
 input:focus,select:focus{outline:none;border-color:var(--gold)}
+input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 .form-row{margin-bottom:12px}
-.form-label{font-size:12px;color:#666;margin-bottom:5px;display:block;font-weight:500}
+.form-label{font-size:12px;color:var(--text-dim);margin-bottom:5px;display:block;font-weight:500}
 .session-card{cursor:pointer}
-.session-card:active{background:#f5f5f3}
+.session-card:active{background:rgba(255,255,255,0.05)}
 .tab-pills{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
 .tab-pills::-webkit-scrollbar{display:none}
-.tab-pills button{padding:6px 14px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;color:#666;white-space:nowrap}
-.tab-pills button.active{background:var(--black);color:var(--gold);border-color:var(--black)}
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:none;align-items:flex-end;justify-content:center}
+.tab-pills button{padding:6px 14px;border-radius:20px;border:1px solid var(--glass-border);background:var(--glass);font-size:13px;cursor:pointer;color:var(--text-dim);white-space:nowrap}
+.tab-pills button.active{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:none;align-items:flex-end;justify-content:center}
 .modal-overlay.open{display:flex}
-.modal{background:#fff;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto}
-.modal-handle{width:36px;height:4px;background:#ddd;border-radius:2px;margin:0 auto 16px}
+.modal{background:rgba(24,24,27,0.75);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid var(--glass-border);border-bottom:none;border-radius:20px 20px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;color:var(--text)}
+.modal-handle{width:36px;height:4px;background:rgba(255,255,255,0.25);border-radius:2px;margin:0 auto 16px}
 .modal h3{font-size:17px;font-weight:600;margin-bottom:16px}
 .filter-row{display:flex;gap:8px;margin-bottom:14px}
 .filter-row input,.filter-row select{flex:1;min-width:0}
-.rank-num{font-size:14px;font-weight:600;color:#bbb;min-width:22px;display:inline-block}
+.rank-num{font-size:14px;font-weight:600;color:#666;min-width:22px;display:inline-block}
 .rank-num.top{color:var(--gold)}
-.player-name{font-weight:500;font-size:14px}
-.empty-state{text-align:center;padding:40px 20px;color:#aaa;font-size:14px}
-.loading{text-align:center;padding:40px;color:#aaa}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;white-space:nowrap}
+.player-name{font-weight:500;font-size:14px;color:var(--text)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
+.loading{text-align:center;padding:40px;color:var(--text-dim)}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:rgba(30,30,32,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--glass-border);color:var(--text);padding:10px 20px;border-radius:20px;font-size:13px;z-index:999;display:none;white-space:nowrap}
 .toast.show{display:block}
-.back-btn{display:flex;align-items:center;gap:6px;color:var(--black);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px;background:none;border:none;padding:0}
-.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.back-btn{display:flex;align-items:center;gap:6px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer;margin-bottom:14px;background:none;border:none;padding:0}
+.info-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px}
 .info-row:last-child{border-bottom:none}
-.info-label{color:#888}
+.info-label{color:var(--text-dim)}
 .player-initials{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0}
-.edit-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid #f0f0ee;gap:10px}
+.edit-row{display:flex;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);gap:10px}
 .edit-row:last-child{border-bottom:none}
-.edit-row-label{font-size:13px;color:#888;min-width:90px}
+.edit-row-label{font-size:13px;color:var(--text-dim);min-width:90px}
 .edit-row input,.edit-row select{flex:1;padding:6px 10px;font-size:13px;border-radius:8px}
-.player-list-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f0f0ee;cursor:pointer}
+.player-list-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);cursor:pointer}
 .player-list-row:last-child{border-bottom:none}
 .player-list-row:active{opacity:0.6}
 
 /* Americano specific */
 [hidden]{display:none!important}
-.player-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;margin:4px}
-.player-chip.selected{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56}
-.player-chip.selected .chip-remove{color:#0F6E56}
-.chip-remove{font-size:16px;line-height:1;color:#aaa}
-.court-block{border:1px solid #e8e8e4;border-radius:12px;overflow:hidden;margin-bottom:12px}
-.court-header{background:#f5f5f3;padding:10px 14px;font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;justify-content:space-between}
+.player-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 12px;border-radius:20px;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-size:13px;cursor:pointer;margin:4px}
+.player-chip.selected{background:rgba(93,202,165,0.18);border-color:#5DCAA5;color:#7CE8C4}
+.player-chip.selected .chip-remove{color:#7CE8C4}
+.chip-remove{font-size:16px;line-height:1;color:var(--text-dim)}
+.court-block{border:1px solid var(--glass-border);border-radius:12px;overflow:hidden;margin-bottom:12px;background:rgba(255,255,255,0.03)}
+.court-header{background:rgba(255,255,255,0.05);padding:10px 14px;font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;justify-content:space-between}
 .court-match{padding:14px}
 .team-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .team-row:last-child{margin-bottom:0}
-.team-names{font-weight:500;font-size:14px;flex:1}
-.score-input{width:60px;padding:8px;text-align:center;font-size:18px;font-weight:600;border:1px solid #ddd;border-radius:8px;-webkit-appearance:none}
+.team-names{font-weight:500;font-size:14px;flex:1;color:var(--text)}
+.score-input{width:60px;padding:8px;text-align:center;font-size:18px;font-weight:600;border:1px solid var(--glass-border);border-radius:8px;-webkit-appearance:none;background:rgba(255,255,255,0.05);color:var(--text)}
 .score-input:focus{outline:none;border-color:var(--gold)}
-.vs-divider{text-align:center;color:#aaa;font-size:12px;padding:4px 0;border-top:1px solid #f0f0ee;border-bottom:1px solid #f0f0ee;margin:8px 0}
-.elo-result-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px}
+.vs-divider{text-align:center;color:var(--text-dim);font-size:12px;padding:4px 0;border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);margin:8px 0}
+.elo-result-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px}
 .elo-result-row:last-child{border-bottom:none}
 .running-elo{display:flex;align-items:center;gap:6px}
-.round-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f5f5f3;border-radius:10px;margin-bottom:8px;cursor:pointer}
-.round-scores-summary{font-size:13px;color:#aaa}
-.session-live-badge{display:inline-block;background:#FAEEDA;color:#854F0B;border:1px solid #FAC775;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
+.round-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.05);border-radius:10px;margin-bottom:8px;cursor:pointer}
+.round-scores-summary{font-size:13px;color:var(--text-dim)}
+.session-live-badge{display:inline-block;background:rgba(250,180,60,0.16);color:#FFCE7A;border:1px solid rgba(250,180,60,0.4);font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px}
 </style>
 </head>
 <body>
@@ -807,7 +826,7 @@ function renderCompletedSession(s){
       ms.forEach(m=>{
         const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(', ');
         const w1=m.winner==='t1';
-        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
+        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px">
           <div style="flex:1;font-weight:${w1?'700':'400'}">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
           <div style="font-size:12px;color:#888">${setsText}</div>
           <div style="flex:1;text-align:right;font-weight:${!w1?'700':'400'}">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
@@ -835,11 +854,11 @@ function renderCompletedSession(s){
       </div>`;
       ms.forEach((m,mi)=>{
         const w1=(m.s1||0)>(m.s2||0),w2=(m.s2||0)>(m.s1||0);
-        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
+        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px">
           <div style="flex:1">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
-          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s1-${r}-${mi}" value="${m.s1||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w1?'#1D9E75':'#1a1a1a'}">${m.s1||0}</span>`}
+          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s1-${r}-${mi}" value="${m.s1||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w1?'#1D9E75':'#E5E5E5'}">${m.s1||0}</span>`}
           <span style="color:#aaa;font-size:11px">—</span>
-          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s2-${r}-${mi}" value="${m.s2||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w2?'#1D9E75':'#1a1a1a'}">${m.s2||0}</span>`}
+          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s2-${r}-${mi}" value="${m.s2||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w2?'#1D9E75':'#E5E5E5'}">${m.s2||0}</span>`}
           <div style="flex:1;text-align:right">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
         </div>`;
       });
@@ -869,10 +888,18 @@ async function saveEditedCompletedRound(r){
   const s=SESSIONS.find(x=>x.id===sid);if(!s)return;
   const rounds=(s.rounds||[]).map(x=>({...x}));
   const matches=rounds.filter(x=>x.r===r);
-  matches.forEach((m,mi)=>{
-    m.s1=parseInt(document.getElementById('completed-edit-s1-'+r+'-'+mi).value)||0;
-    m.s2=parseInt(document.getElementById('completed-edit-s2-'+r+'-'+mi).value)||0;
-  });
+  const pointsLimit=s.points_to_play||16;
+  const scores=matches.map((m,mi)=>({
+    s1:parseInt(document.getElementById('completed-edit-s1-'+r+'-'+mi).value)||0,
+    s2:parseInt(document.getElementById('completed-edit-s2-'+r+'-'+mi).value)||0
+  }));
+  for(let mi=0;mi<scores.length;mi++){
+    if(scores[mi].s1+scores[mi].s2>pointsLimit){
+      showToast(`Court ${mi+1}: ${scores[mi].s1}+${scores[mi].s2} adds up to more than ${pointsLimit} points`);
+      return;
+    }
+  }
+  matches.forEach((m,mi)=>{m.s1=scores[mi].s1;m.s2=scores[mi].s2});
 
   // derive each player's rating as it stood before this session (current
   // rating minus this session's previously-recorded contribution), then
@@ -1051,10 +1078,12 @@ function renderLiveSession(){
     </div>`;
   }
 
-  // Points per round — only relevant once an Americano format is active
+  // Points per round — only relevant once an Americano format is active.
+  // Locked once a round's been saved, since past rounds were played to the old limit.
   if(s.format&&!showFormatPicker&&!isMatchPlay&&!isKotc){
+    const locked=roundsPlayed>0;
     html+=`<div class="card">
-      <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="live-points-per-round" value="${s.points_to_play||16}" min="1" onchange="updatePointsPerRound(this.value)"></div>
+      <div class="form-row"><label class="form-label">Points per round${locked?' (locked after round 1)':''}</label><input type="number" id="live-points-per-round" value="${s.points_to_play||16}" min="1" ${locked?'disabled':''} onchange="updatePointsPerRound(this.value)"></div>
     </div>`;
   }
 
@@ -1103,7 +1132,7 @@ function renderLiveSession(){
       ${roundNumsDesc.map(rn=>{
         const matches=sessionRounds.filter(r=>r.r===rn);
         const isEditing=editingRoundNum===rn;
-        return`<div style="padding:10px 0;border-bottom:1px solid #f0f0ee;${isEditing?'':'opacity:0.6'}">
+        return`<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);${isEditing?'':'opacity:0.6'}">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
             <span style="font-weight:600;font-size:13px">Round ${rn}</span>
             ${isEditing?`<button class="btn sm" onclick="cancelEditRound()">Cancel</button>`:`<button class="btn sm" onclick="startEditRound(${rn})">Edit</button>`}
@@ -1165,7 +1194,7 @@ function renderLiveSession(){
           matches.forEach(m=>{
             const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(', ');
             const w1=m.winner==='t1';
-            rh+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
+            rh+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px">
               <div style="flex:1;font-weight:${w1?'700':'400'}">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
               <div style="font-size:12px;color:#888">${setsText}</div>
               <div style="flex:1;text-align:right;font-weight:${!w1?'700':'400'}">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
@@ -1203,17 +1232,32 @@ function renderLiveSession(){
           <div class="court-block" style="margin-bottom:12px">
             <div class="court-header">Court ${mi+1}</div>
             <div class="court-match">
-              <div class="team-row"><div class="team-names">${m.t1.map(id=>pFirst(id)).join(' & ')}</div></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <div style="flex:1"></div>
+                <div style="display:flex;gap:6px">
+                  <span style="width:44px;text-align:center;font-size:10px;color:var(--text-dim);text-transform:uppercase">Set 1</span>
+                  <span style="width:44px;text-align:center;font-size:10px;color:var(--text-dim);text-transform:uppercase">Set 2</span>
+                  <span class="mp-set3-${mi}" hidden style="width:44px;text-align:center;font-size:10px;color:var(--text-dim);text-transform:uppercase">Set 3</span>
+                </div>
+              </div>
+              <div class="team-row">
+                <div class="team-names">${m.t1.map(id=>pFirst(id)).join(' & ')}</div>
+                <div style="display:flex;gap:6px">
+                  <input type="number" class="score-input" style="width:44px" id="mp-s1-${mi}-0" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input" style="width:44px" id="mp-s1-${mi}-1" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input mp-set3-${mi}" hidden style="width:44px" id="mp-s1-${mi}-2" min="0" max="7" placeholder="–">
+                </div>
+              </div>
               <div class="vs-divider">vs</div>
-              <div class="team-row" style="margin-bottom:14px"><div class="team-names">${m.t2.map(id=>pFirst(id)).join(' & ')}</div></div>
-              ${[0,1,2].map(si=>`
-                <div class="team-row" id="mp-set-row-${mi}-${si}" ${si===2?'hidden':''}>
-                  <div class="team-names" style="flex:0 0 50px">Set ${si+1}</div>
-                  <input type="number" class="score-input" style="width:50px" id="mp-s1-${mi}-${si}" min="0" max="7" placeholder="–">
-                  <span style="color:#aaa">–</span>
-                  <input type="number" class="score-input" style="width:50px" id="mp-s2-${mi}-${si}" min="0" max="7" placeholder="–">
-                </div>`).join('')}
-              <div style="text-align:center;margin-top:6px"><button class="btn sm" onclick="document.getElementById('mp-set-row-${mi}-2').hidden=false">+ Set 3 (if 1-1)</button></div>
+              <div class="team-row" style="margin-bottom:0">
+                <div class="team-names">${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
+                <div style="display:flex;gap:6px">
+                  <input type="number" class="score-input" style="width:44px" id="mp-s2-${mi}-0" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input" style="width:44px" id="mp-s2-${mi}-1" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input mp-set3-${mi}" hidden style="width:44px" id="mp-s2-${mi}-2" min="0" max="7" placeholder="–">
+                </div>
+              </div>
+              <div style="text-align:right;margin-top:8px"><button class="btn sm" onclick="document.querySelectorAll('.mp-set3-${mi}').forEach(el=>el.hidden=false);this.hidden=true">+ Set 3 (if 1-1)</button></div>
             </div>
           </div>`).join('')}
         <button class="btn primary full" style="margin-top:8px" onclick="submitMatchPlayRound(${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
@@ -1299,10 +1343,17 @@ function cancelEditRound(){
 
 async function saveEditedRound(rn){
   const matches=sessionRounds.filter(r=>r.r===rn);
-  matches.forEach((m,mi)=>{
-    m.s1=parseInt(document.getElementById('edit-s1-'+rn+'-'+mi).value)||0;
-    m.s2=parseInt(document.getElementById('edit-s2-'+rn+'-'+mi).value)||0;
-  });
+  const scores=matches.map((m,mi)=>({
+    s1:parseInt(document.getElementById('edit-s1-'+rn+'-'+mi).value)||0,
+    s2:parseInt(document.getElementById('edit-s2-'+rn+'-'+mi).value)||0
+  }));
+  for(let mi=0;mi<scores.length;mi++){
+    if(scores[mi].s1+scores[mi].s2>pointsPerRound){
+      showToast(`Court ${mi+1}: ${scores[mi].s1}+${scores[mi].s2} adds up to more than ${pointsPerRound} points`);
+      return;
+    }
+  }
+  matches.forEach((m,mi)=>{m.s1=scores[mi].s1;m.s2=scores[mi].s2});
   replaySessionElo();
   const{error}=await sb.from('sessions').update({rounds:sessionRounds}).eq('id',activeSessionId);
   if(error){showToast('Error: '+error.message);return;}
@@ -1314,6 +1365,14 @@ async function saveEditedRound(rn){
 }
 
 async function submitRound(matches,roundNum){
+  for(let mi=0;mi<matches.length;mi++){
+    const s1=parseInt(document.getElementById('s1-'+mi).value)||0;
+    const s2=parseInt(document.getElementById('s2-'+mi).value)||0;
+    if(s1+s2>pointsPerRound){
+      showToast(`Court ${mi+1}: ${s1}+${s2} adds up to more than ${pointsPerRound} points`);
+      return;
+    }
+  }
   const newRounds=[];
   const eloChangesThisRound={};
   for(let mi=0;mi<matches.length;mi++){
@@ -1388,9 +1447,9 @@ async function submitMatchPlayRound(roundNum){
     const m=matchPlayLockedMatches[mi];
     const sets=[];
     for(let si=0;si<3;si++){
-      const row=document.getElementById('mp-set-row-'+mi+'-'+si);
-      if(row&&row.hidden)continue;
-      const s1raw=document.getElementById('mp-s1-'+mi+'-'+si).value;
+      const s1el=document.getElementById('mp-s1-'+mi+'-'+si);
+      if(s1el.hidden)continue;
+      const s1raw=s1el.value;
       const s2raw=document.getElementById('mp-s2-'+mi+'-'+si).value;
       if(s1raw===''&&s2raw==='')continue;
       const s1=parseInt(s1raw),s2=parseInt(s2raw);
@@ -1541,7 +1600,7 @@ function renderCommitteeStats(){
 async function renderPendingClaims(){
   const{data,error}=await sb.rpc('list_pending_claims');
   const el=document.getElementById('pending-claims-list');
-  if(error){console.error('list_pending_claims error:',error);el.innerHTML='<div style="font-size:13px;color:#A32D2D">Could not load pending requests: '+error.message+'</div>';return;}
+  if(error){console.error('list_pending_claims error:',error);el.innerHTML='<div style="font-size:13px;color:#FF6B6B">Could not load pending requests: '+error.message+'</div>';return;}
   const list=data||[];
   el.innerHTML=list.length?list.map(r=>`<div class="elo-result-row">
     <div><div style="font-weight:500">${r.player_name}</div><div style="font-size:12px;color:#888">${r.requester_email}</div></div>
@@ -1848,7 +1907,7 @@ function renderAuthScreen(){
     memberBody=`
       <div class="form-row"><label class="form-label">University email</label><input type="email" id="member-email" placeholder="you@york.ac.uk"></div>
       <div class="form-row"><label class="form-label">Password</label><input type="password" id="member-password" placeholder="Password"></div>
-      <div id="member-auth-error" style="color:#A32D2D;font-size:13px;display:none;margin-bottom:8px"></div>
+      <div id="member-auth-error" style="color:#FF6B6B;font-size:13px;display:none;margin-bottom:8px"></div>
       <button class="btn primary full" onclick="${isSignup?'attemptMemberSignup()':'attemptMemberLogin()'}">${isSignup?'Sign up':'Log in'}</button>
       <button class="btn full" style="margin-top:8px" onclick="toggleMemberMode()">${isSignup?'Already have an account? Log in':'New here? Sign up'}</button>
       ${isSignup?'<div style="font-size:12px;color:#888;margin-top:8px;text-align:center">Use your @york.ac.uk email address</div>':''}`;
@@ -1857,7 +1916,7 @@ function renderAuthScreen(){
     <div style="min-height:100vh;background:var(--black);color:#fff;display:flex;flex-direction:column;align-items:center;padding:48px 20px">
       <div style="font-size:24px;font-weight:700;margin-bottom:4px"><span style="color:var(--gold)">York</span> Padel Club</div>
       <div style="font-size:13px;color:#bbb;margin-bottom:28px;text-align:center">Sign in to view rankings, players and sessions</div>
-      <div style="background:#fff;color:#1a1a1a;border-radius:16px;padding:20px;width:100%;max-width:380px">
+      <div style="background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--glass-border);color:var(--text);border-radius:16px;padding:20px;width:100%;max-width:380px">
         ${showCommitteeTab?`<div class="tab-pills" style="margin-bottom:16px">
           <button class="${authTab==='member'?'active':''}" onclick="setAuthTab('member')">Member</button>
           <button class="${authTab==='committee'?'active':''}" onclick="setAuthTab('committee')">Committee</button>
@@ -1865,7 +1924,7 @@ function renderAuthScreen(){
         <div style="display:${authTab==='member'?'block':'none'}">${memberBody}</div>
         ${showCommitteeTab?`<div style="display:${authTab==='committee'?'block':'none'}">
           <div class="form-row"><label class="form-label">Committee password</label><input type="password" id="committee-pw" placeholder="Committee password"></div>
-          <div id="committee-auth-error" style="color:#A32D2D;font-size:13px;display:none;margin-bottom:8px">Incorrect password</div>
+          <div id="committee-auth-error" style="color:#FF6B6B;font-size:13px;display:none;margin-bottom:8px">Incorrect password</div>
           <button class="btn primary full" onclick="attemptCommitteeLogin()">Unlock</button>
         </div>`:''}
       </div>
