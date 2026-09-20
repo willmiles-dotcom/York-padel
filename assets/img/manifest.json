@@ -1,0 +1,150 @@
+{
+  "generated": "2026-09-20",
+  "notes": "All EXIF/GPS metadata stripped and orientation baked in during optimisation. Consent for identifiable players confirmed by the committee (2026-09-20).",
+  "photos": [
+    {
+      "id": "photo-01",
+      "description": "Golden-hour sky over the court, two players mid-rally, one face partially cropped at the frame edge",
+      "orientation": "portrait",
+      "dominantColor": "#405A83",
+      "suggestedUse": "thumbnail",
+      "sizes": {
+        "backdrop": { "file": "photo-01-backdrop.webp", "width": 1200, "height": 1600, "bytes": 161834 },
+        "card": { "file": "photo-01-card.webp", "width": 600, "height": 800, "bytes": 49500 },
+        "thumb": { "file": "photo-01-thumb.webp", "width": 300, "height": 400, "bytes": 12608 }
+      }
+    },
+    {
+      "id": "photo-02",
+      "description": "Bright daylight, net in foreground with club/court branding, two players clearly facing camera",
+      "orientation": "portrait",
+      "dominantColor": "#425978",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-02-backdrop.webp", "width": 1200, "height": 1600, "bytes": 296100 },
+        "card": { "file": "photo-02-card.webp", "width": 600, "height": 800, "bytes": 95548 },
+        "thumb": { "file": "photo-02-thumb.webp", "width": 300, "height": 400, "bytes": 26952 }
+      }
+    },
+    {
+      "id": "photo-03",
+      "description": "Dramatic glowing sunset cloud over the court's glass and cage structure; players only visible as distant reflections/silhouettes",
+      "orientation": "portrait",
+      "dominantColor": "#716768",
+      "suggestedUse": "backdrop",
+      "sizes": {
+        "backdrop": { "file": "photo-03-backdrop.webp", "width": 1200, "height": 1600, "bytes": 161406 },
+        "card": { "file": "photo-03-card.webp", "width": 600, "height": 800, "bytes": 48704 },
+        "thumb": { "file": "photo-03-thumb.webp", "width": 300, "height": 400, "bytes": 12462 }
+      }
+    },
+    {
+      "id": "photo-04",
+      "description": "Bright winter sky, landscape orientation, two players close to camera with clearly identifiable faces",
+      "orientation": "landscape",
+      "dominantColor": "#495B78",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-04-backdrop.webp", "width": 1600, "height": 1200, "bytes": 244806 },
+        "card": { "file": "photo-04-card.webp", "width": 800, "height": 600, "bytes": 83934 },
+        "thumb": { "file": "photo-04-thumb.webp", "width": 400, "height": 300, "bytes": 18256 }
+      }
+    },
+    {
+      "id": "photo-05",
+      "description": "Overcast light, autumn tree backdrop, two players mid-action",
+      "orientation": "portrait",
+      "dominantColor": "#3E527E",
+      "suggestedUse": "thumbnail",
+      "sizes": {
+        "backdrop": { "file": "photo-05-backdrop.webp", "width": 1200, "height": 1600, "bytes": 234818 },
+        "card": { "file": "photo-05-card.webp", "width": 600, "height": 800, "bytes": 71944 },
+        "thumb": { "file": "photo-05-thumb.webp", "width": 300, "height": 400, "bytes": 16494 }
+      }
+    },
+    {
+      "id": "photo-06",
+      "description": "Overcast light, distinctive curved floodlight sculpture in background, one smiling player close to camera",
+      "orientation": "portrait",
+      "dominantColor": "#445D86",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-06-backdrop.webp", "width": 1200, "height": 1600, "bytes": 241396 },
+        "card": { "file": "photo-06-card.webp", "width": 600, "height": 800, "bytes": 66350 },
+        "thumb": { "file": "photo-06-thumb.webp", "width": 300, "height": 400, "bytes": 15238 }
+      }
+    },
+    {
+      "id": "photo-07",
+      "description": "Dusk, player jumping for an overhead smash - motion blurred with a streaked floodlight and moody blue tone. Not sharp enough for a card/thumbnail role but works as an atmospheric backdrop layer",
+      "orientation": "portrait",
+      "dominantColor": "#4D559E",
+      "suggestedUse": "backdrop",
+      "sizes": {
+        "backdrop": { "file": "photo-07-backdrop.webp", "width": 1200, "height": 1600, "bytes": 67396 },
+        "card": { "file": "photo-07-card.webp", "width": 600, "height": 800, "bytes": 26226 },
+        "thumb": { "file": "photo-07-thumb.webp", "width": 300, "height": 400, "bytes": 8460 }
+      }
+    },
+    {
+      "id": "photo-08",
+      "description": "Same session as photo-01 (golden-hour sky, same court/scoreboard wall), both players fully visible and engaged",
+      "orientation": "portrait",
+      "dominantColor": "#435D86",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-08-backdrop.webp", "width": 1200, "height": 1600, "bytes": 221928 },
+        "card": { "file": "photo-08-card.webp", "width": 600, "height": 800, "bytes": 61320 },
+        "thumb": { "file": "photo-08-thumb.webp", "width": 300, "height": 400, "bytes": 13680 }
+      }
+    },
+    {
+      "id": "photo-09",
+      "description": "Overcast, different venue signage visible (mirrored in glass), action shot with bystanders in the background",
+      "orientation": "portrait",
+      "dominantColor": "#495F83",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-09-backdrop.webp", "width": 1200, "height": 1600, "bytes": 145246 },
+        "card": { "file": "photo-09-card.webp", "width": 600, "height": 800, "bytes": 42324 },
+        "thumb": { "file": "photo-09-thumb.webp", "width": 300, "height": 400, "bytes": 10166 }
+      }
+    },
+    {
+      "id": "photo-10",
+      "description": "Deep blue sky with sun flare through a floodlight, sharp, close smiling player with a second player further back",
+      "orientation": "portrait",
+      "dominantColor": "#405786",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-10-backdrop.webp", "width": 1200, "height": 1600, "bytes": 240830 },
+        "card": { "file": "photo-10-card.webp", "width": 600, "height": 800, "bytes": 67286 },
+        "thumb": { "file": "photo-10-thumb.webp", "width": 300, "height": 400, "bytes": 15350 }
+      }
+    },
+    {
+      "id": "photo-11",
+      "description": "Flat overcast light, symmetric court view, two players facing camera with the ball mid-air",
+      "orientation": "portrait",
+      "dominantColor": "#4F6487",
+      "suggestedUse": "card",
+      "sizes": {
+        "backdrop": { "file": "photo-11-backdrop.webp", "width": 1200, "height": 1600, "bytes": 170724 },
+        "card": { "file": "photo-11-card.webp", "width": 600, "height": 800, "bytes": 45930 },
+        "thumb": { "file": "photo-11-thumb.webp", "width": 300, "height": 400, "bytes": 9334 }
+      }
+    },
+    {
+      "id": "photo-12",
+      "description": "Blue-hour dusk with the moon visible and a glowing floodlight, cage mesh frames the shot, small distant player",
+      "orientation": "portrait",
+      "dominantColor": "#4B6493",
+      "suggestedUse": "backdrop",
+      "sizes": {
+        "backdrop": { "file": "photo-12-backdrop.webp", "width": 1200, "height": 1600, "bytes": 183074 },
+        "card": { "file": "photo-12-card.webp", "width": 600, "height": 800, "bytes": 68776 },
+        "thumb": { "file": "photo-12-thumb.webp", "width": 300, "height": 400, "bytes": 20356 }
+      }
+    }
+  ]
+}
