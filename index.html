@@ -106,6 +106,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
 .player-list-row:active{opacity:0.6}
 
 /* Americano specific */
+[hidden]{display:none!important}
 .player-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px 6px 12px;border-radius:20px;border:1px solid #ddd;background:#fff;font-size:13px;cursor:pointer;margin:4px}
 .player-chip.selected{background:#E1F5EE;border-color:#5DCAA5;color:#0F6E56}
 .player-chip.selected .chip-remove{color:#0F6E56}
@@ -295,7 +296,7 @@ input:focus,select:focus{outline:none;border-color:var(--gold)}
     <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
-      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option></select></div>
+      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" placeholder="e.g. York Sport Centre"></div>
     <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" placeholder="e.g. 3" min="1"></div>
@@ -348,7 +349,9 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const MEMBERSHIP_PURCHASE_URL='https://yorksu.org/activities/view/padel-club';
 
 const K=16;
+const MATCH_PLAY_K=45;
 let authMod=null;
+let scoringMod=null;
 let currentSession=null;
 let authTab='member';
 let memberAuthMode='login';
@@ -356,6 +359,7 @@ import('./js/auth.js').then(m=>{
   authMod=m;
   authMod.initAuth(sb,session=>{currentSession=session;handleAuthChange();});
 });
+import('./js/scoring.js').then(m=>{scoringMod=m;});
 
 async function handleAuthChange(){
   document.getElementById('boot-loading').style.display='none';
@@ -414,11 +418,13 @@ let selectedForPairing=null;
 let editingRoundNum=null;
 let viewingCompletedSessionId=null;
 let editingCompletedRoundNum=null;
+let matchPlayDraft=[];
+let matchPlayLockedMatches=null;
 
 // ── ELO ENGINE ──────────────────────────────────────────────
 function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
 
-function calcRoundElo(t1ids,t2ids,s1,s2,eloState){
+function calcRoundElo(t1ids,t2ids,s1,s2,eloState,k=K){
   const total=s1+s2;
   if(total===0)return{};
   const score1=s1/total,score2=s2/total;
@@ -427,8 +433,8 @@ function calcRoundElo(t1ids,t2ids,s1,s2,eloState){
   const exp1=expectedScore(avgR1,avgR2);
   const exp2=expectedScore(avgR2,avgR1);
   const changes={};
-  t1ids.forEach(id=>{changes[id]=Math.round(K*(score1-exp1))});
-  t2ids.forEach(id=>{changes[id]=Math.round(K*(score2-exp2))});
+  t1ids.forEach(id=>{changes[id]=Math.round(k*(score1-exp1))});
+  t2ids.forEach(id=>{changes[id]=Math.round(k*(score2-exp2))});
   return changes;
 }
 
@@ -750,9 +756,10 @@ function renderCompletedSession(s){
   viewingCompletedSessionId=s.id;
   const rounds=s.rounds||[];
   const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
+  const isMatchPlay=s.format==='match_play';
   let html=`<div class="card">
     <div style="font-size:18px;font-weight:600;margin-bottom:4px">${s.title}</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.date} · ${s.location||'TBC'} · ${s.points_to_play||16} pts/round</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.date} · ${s.location||'TBC'}${!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts/round`:''}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="badge ${s.status}">${s.status}</span>
       ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
@@ -773,7 +780,42 @@ function renderCompletedSession(s){
         <span class="elo-pill ${eloClass(c.final)}">${c.final}</span>
       </div></div>`).join('')}</div>`;
   }
-  if(rounds.length){
+  if(rounds.length&&isMatchPlay){
+    const stats={};
+    rounds.forEach(m=>{
+      const gamesA=(m.sets||[]).reduce((a,x)=>a+x.s1,0);
+      const gamesB=(m.sets||[]).reduce((a,x)=>a+x.s2,0);
+      (m.t1||[]).forEach(id=>{
+        if(!stats[id])stats[id]={w:0,l:0,g:0};
+        stats[id].g+=gamesA;
+        if(m.winner==='t1')stats[id].w++;else if(m.winner==='t2')stats[id].l++;
+      });
+      (m.t2||[]).forEach(id=>{
+        if(!stats[id])stats[id]={w:0,l:0,g:0};
+        stats[id].g+=gamesB;
+        if(m.winner==='t2')stats[id].w++;else if(m.winner==='t1')stats[id].l++;
+      });
+    });
+    const ranked=Object.entries(stats).sort((a,b)=>b[1].w-a[1].w||b[1].g-a[1].g);
+    html+=`<div class="card"><div class="section-head">Match Play standings</div>${ranked.map(([id,st],i)=>`
+      <div class="elo-result-row"><div style="display:flex;align-items:center;gap:10px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pName(id)}</span></div><span style="font-weight:600;color:#1D9E75;font-size:14px">${st.w}W ${st.l}L · ${st.g} games</span></div>`).join('')}</div>`;
+    let rh='<div class="card"><div class="section-head">Match results</div>';
+    for(let r=1;r<=maxR;r++){
+      const ms=rounds.filter(x=>x.r===r);
+      rh+=`<div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;padding:8px 0 4px">Round ${r}</div>`;
+      ms.forEach(m=>{
+        const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(', ');
+        const w1=m.winner==='t1';
+        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
+          <div style="flex:1;font-weight:${w1?'700':'400'}">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
+          <div style="font-size:12px;color:#888">${setsText}</div>
+          <div style="flex:1;text-align:right;font-weight:${!w1?'700':'400'}">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
+        </div>`;
+      });
+    }
+    rh+='</div>';
+    html+=rh;
+  }else if(rounds.length){
     const scores={};
     rounds.forEach(round=>{
       (round.t1||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(round.s1||0)});
@@ -885,6 +927,8 @@ function loadLiveSession(s){
   maxCourts=s.max_courts||null;
   selectedForPairing=null;
   editingRoundNum=null;
+  matchPlayDraft=[];
+  matchPlayLockedMatches=null;
   // snapshot each player's rating as it stood before this session, then
   // replay all saved rounds from there so elo_changes are always derived
   // fresh from the stored scores rather than trusted as previously saved
@@ -899,6 +943,19 @@ function replaySessionElo(){
   const roundNums=[...new Set(sessionRounds.map(r=>r.r))].sort((a,b)=>a-b);
   roundNums.forEach(rn=>{
     sessionRounds.filter(r=>r.r===rn).forEach(m=>{
+      if(Array.isArray(m.sets)){
+        // Match Play: each set is its own rated event, applied in order
+        const changes={};
+        m.sets.forEach(set=>{
+          const setChanges=RANKINGS_ENABLED?calcRoundElo(m.t1,m.t2,set.s1,set.s2,sessionEloState,MATCH_PLAY_K):{};
+          Object.entries(setChanges).forEach(([id,ch])=>{
+            sessionEloState[id]=(sessionEloState[id]||1000)+ch;
+            changes[id]=(changes[id]||0)+ch;
+          });
+        });
+        m.elo_changes=changes;
+        return;
+      }
       const changes=RANKINGS_ENABLED?calcRoundElo(m.t1,m.t2,m.s1||0,m.s2||0,sessionEloState):{};
       m.elo_changes=changes;
       Object.entries(changes).forEach(([id,ch])=>{
@@ -922,17 +979,20 @@ async function setSessionFormat(sessionId,format){
 function renderLiveSession(){
   const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
   const isPaired=s.format==='paired_americano';
+  const isMatchPlay=s.format==='match_play';
+  const isKotc=s.format==='king_of_the_court';
   const roundsPlayed=sessionRounds.length?Math.max(...sessionRounds.map(r=>r.r)):0;
   const roundNum=roundsPlayed+1;
+  const canComplete=isKotc?sessionPlayers.length>0:sessionRounds.length>0;
   let html=`<div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
       <div style="font-size:18px;font-weight:600">${s.title}</div>
       <span class="session-live-badge">● LIVE</span>
     </div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:12px">${s.date} · ${s.points_to_play||16} pts/round</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:12px">${s.date}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
-      ${sessionRounds.length>0?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
+      ${canComplete?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
       <button class="btn sm danger" onclick="toggleSessionArchived('${s.id}',true)">Delete session</button>
     </div>
   </div>`;
@@ -943,7 +1003,7 @@ function renderLiveSession(){
     <div style="display:flex;flex-wrap:wrap;gap:4px">
       ${sessionPlayers.map(id=>`<span class="badge ${(pMap[id]||{}).group_name||'prov'}" style="cursor:pointer" onclick="removeFromSession('${id}')">${pFirst(id)} ×</span>`).join('')}
     </div>
-    ${!isPaired&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
+    ${!isPaired&&!isMatchPlay&&!isKotc&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
 
   // No format chosen yet — players can still check in, but rounds can't start
@@ -951,10 +1011,14 @@ function renderLiveSession(){
     html+=`<div class="card">
       <div class="section-head">Set format</div>
       <p style="font-size:13px;color:#888;margin-bottom:12px">Pick a format to start recording rounds. Players can still check themselves in before this is set.</p>
-      <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="set-format-points" value="16" min="1"></div>
-      <div style="display:flex;gap:8px">
+      <div class="form-row"><label class="form-label">Points per round (Americano only)</label><input type="number" id="set-format-points" value="16" min="1"></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','doubles_americano')">Singles Americano</button>
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','paired_americano')">Doubles Americano</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn primary full" onclick="setSessionFormat('${s.id}','match_play')">Match Play</button>
+        <button class="btn primary full" onclick="setSessionFormat('${s.id}','king_of_the_court')">King of the Court</button>
       </div>
     </div>`;
   }
@@ -976,7 +1040,7 @@ function renderLiveSession(){
   }
 
   // Past rounds summary
-  if(sessionRounds.length>0){
+  if(sessionRounds.length>0&&!isMatchPlay&&!isKotc){
     const scores={};
     sessionRounds.forEach(r=>{
       (r.t1||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(r.s1||0)});
@@ -998,7 +1062,7 @@ function renderLiveSession(){
   }
 
   // Past rounds (editable)
-  if(roundsPlayed>0){
+  if(roundsPlayed>0&&!isMatchPlay&&!isKotc){
     const roundNumsDesc=[...new Set(sessionRounds.map(r=>r.r))].sort((a,b)=>b-a);
     html+=`<div class="card"><div class="section-head">Past rounds</div>
       ${roundNumsDesc.map(rn=>{
@@ -1021,6 +1085,106 @@ function renderLiveSession(){
         </div>`;
       }).join('')}
     </div>`;
+  }
+
+  // King of the Court: nothing more to render — attendance only
+  if(isKotc){
+    document.getElementById('session-detail-content').innerHTML=html;
+    return;
+  }
+
+  // Match Play: standings, past rounds, then build/score the next round
+  if(isMatchPlay){
+    if(sessionRounds.length>0){
+      const stats={};
+      sessionRounds.forEach(m=>{
+        const gamesA=(m.sets||[]).reduce((a,x)=>a+x.s1,0);
+        const gamesB=(m.sets||[]).reduce((a,x)=>a+x.s2,0);
+        (m.t1||[]).forEach(id=>{
+          if(!stats[id])stats[id]={w:0,l:0,g:0};
+          stats[id].g+=gamesA;
+          if(m.winner==='t1')stats[id].w++;else if(m.winner==='t2')stats[id].l++;
+        });
+        (m.t2||[]).forEach(id=>{
+          if(!stats[id])stats[id]={w:0,l:0,g:0};
+          stats[id].g+=gamesB;
+          if(m.winner==='t2')stats[id].w++;else if(m.winner==='t1')stats[id].l++;
+        });
+      });
+      const ranked=Object.entries(stats).sort((a,b)=>b[1].w-a[1].w||b[1].g-a[1].g);
+      html+=`<div class="card"><div class="section-head">Standings after ${roundsPlayed} round${roundsPlayed>1?'s':''}</div>
+        ${ranked.map(([id,st],i)=>`<div class="elo-result-row">
+          <div style="display:flex;align-items:center;gap:8px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pFirst(id)}</span></div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;color:#888">${st.w}W ${st.l}L · ${st.g} games</span>
+            <span class="elo-pill ranking-ui ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>
+          </div>
+        </div>`).join('')}
+      </div>`;
+
+      const roundNumsDesc=[...new Set(sessionRounds.map(r=>r.r))].sort((a,b)=>b-a);
+      html+=`<div class="card"><div class="section-head">Past rounds</div>
+        ${roundNumsDesc.map(rn=>{
+          const matches=sessionRounds.filter(r=>r.r===rn);
+          let rh=`<div style="font-weight:600;font-size:13px;padding:8px 0 4px">Round ${rn}</div>`;
+          matches.forEach(m=>{
+            const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(', ');
+            const w1=m.winner==='t1';
+            rh+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid #f0f0ee;font-size:13px">
+              <div style="flex:1;font-weight:${w1?'700':'400'}">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
+              <div style="font-size:12px;color:#888">${setsText}</div>
+              <div style="flex:1;text-align:right;font-weight:${!w1?'700':'400'}">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
+            </div>`;
+          });
+          return rh;
+        }).join('')}
+      </div>`;
+    }
+
+    if(!matchPlayLockedMatches){
+      const maxM=maxCourts||99;
+      const assignedIds=new Set(matchPlayDraft.flatMap(m=>[...m.t1,...m.t2]));
+      const pool=sessionPlayers.filter(id=>!assignedIds.has(id));
+      const canStart=matchPlayDraft.some(m=>m.t1.length===2&&m.t2.length===2);
+      html+=`<div class="card">
+        <div class="section-head">Round ${roundNum} — build matches</div>
+        ${matchPlayDraft.map((m,mi)=>`
+          <div class="court-block" style="margin-bottom:10px">
+            <div class="court-header">Court ${mi+1}<span style="cursor:pointer;color:#c0392b" onclick="removeDraftMatch(${mi})">Remove ✕</span></div>
+            <div class="court-match">
+              <div class="team-row"><div class="team-names">${m.t1.length?m.t1.map((id,idx)=>`${pFirst(id)} <span class="chip-remove" style="cursor:pointer" onclick="removeMatchPlayerFromDraft(${mi},'t1',${idx})">×</span>`).join(' & '):'<span style="color:#aaa">Tap players below</span>'}</div></div>
+              <div class="vs-divider">vs</div>
+              <div class="team-row"><div class="team-names">${m.t2.length?m.t2.map((id,idx)=>`${pFirst(id)} <span class="chip-remove" style="cursor:pointer" onclick="removeMatchPlayerFromDraft(${mi},'t2',${idx})">×</span>`).join(' & '):'<span style="color:#aaa">—</span>'}</div></div>
+            </div>
+          </div>`).join('')}
+        ${matchPlayDraft.length<maxM?`<p style="font-size:12px;color:#888;margin:10px 0">Tap players to fill the next open court (up to ${maxM} court${maxM===1?'':'s'} at once).</p>
+        <div>${pool.map(id=>`<span class="player-chip" onclick="tapMatchPlayerChip('${id}')">${pFirst(id)}</span>`).join('')}</div>`:''}
+        <button class="btn primary full" style="margin-top:12px" ${canStart?'':'disabled'} onclick="startMatchPlayRound()">Start round ${roundNum}</button>
+      </div>`;
+    }else{
+      html+=`<div class="card">
+        <div class="section-head">Round ${roundNum} — enter set scores</div>
+        ${matchPlayLockedMatches.map((m,mi)=>`
+          <div class="court-block" style="margin-bottom:12px">
+            <div class="court-header">Court ${mi+1}</div>
+            <div class="court-match">
+              <div style="text-align:center;font-weight:500;font-size:13px;margin-bottom:8px">${m.t1.map(id=>pFirst(id)).join(' & ')} <span style="color:#aaa">vs</span> ${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
+              ${[0,1,2].map(si=>`
+                <div class="team-row" id="mp-set-row-${mi}-${si}" ${si===2?'hidden':''}>
+                  <div class="team-names" style="flex:0 0 50px">Set ${si+1}</div>
+                  <input type="number" class="score-input" style="width:50px" id="mp-s1-${mi}-${si}" min="0" max="7" placeholder="–">
+                  <span style="color:#aaa">–</span>
+                  <input type="number" class="score-input" style="width:50px" id="mp-s2-${mi}-${si}" min="0" max="7" placeholder="–">
+                </div>`).join('')}
+              <div style="text-align:center;margin-top:6px"><button class="btn sm" onclick="document.getElementById('mp-set-row-${mi}-2').hidden=false">+ Set 3 (if 1-1)</button></div>
+            </div>
+          </div>`).join('')}
+        <button class="btn primary full" style="margin-top:8px" onclick="submitMatchPlayRound(${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
+        <button class="btn sm full" style="margin-top:8px" onclick="editMatchPlayRound()">← Back to match building</button>
+      </div>`;
+    }
+    document.getElementById('session-detail-content').innerHTML=html;
+    return;
   }
 
   // Generate next round
@@ -1145,6 +1309,94 @@ async function submitRound(matches,roundNum){
   renderLiveSession();
 }
 
+function tapMatchPlayerChip(id){
+  let target=matchPlayDraft.find(m=>m.t1.length<2||m.t2.length<2);
+  if(!target){
+    if(matchPlayDraft.length>=(maxCourts||99)){showToast('All courts full for this round');return;}
+    target={t1:[],t2:[]};
+    matchPlayDraft.push(target);
+  }
+  if(target.t1.length<2)target.t1.push(id);else target.t2.push(id);
+  renderLiveSession();
+}
+
+function removeMatchPlayerFromDraft(mi,side,idx){
+  const m=matchPlayDraft[mi];if(!m)return;
+  m[side].splice(idx,1);
+  renderLiveSession();
+}
+
+function removeDraftMatch(mi){
+  matchPlayDraft.splice(mi,1);
+  renderLiveSession();
+}
+
+function startMatchPlayRound(){
+  const complete=matchPlayDraft.filter(m=>m.t1.length===2&&m.t2.length===2);
+  if(!complete.length){showToast('Fill at least one court with 4 players first');return;}
+  matchPlayLockedMatches=complete;
+  matchPlayDraft=[];
+  renderLiveSession();
+}
+
+function editMatchPlayRound(){
+  matchPlayDraft=matchPlayLockedMatches?[...matchPlayLockedMatches]:matchPlayDraft;
+  matchPlayLockedMatches=null;
+  renderLiveSession();
+}
+
+async function submitMatchPlayRound(roundNum){
+  const built=[];
+  for(let mi=0;mi<matchPlayLockedMatches.length;mi++){
+    const m=matchPlayLockedMatches[mi];
+    const sets=[];
+    for(let si=0;si<3;si++){
+      const row=document.getElementById('mp-set-row-'+mi+'-'+si);
+      if(row&&row.hidden)continue;
+      const s1raw=document.getElementById('mp-s1-'+mi+'-'+si).value;
+      const s2raw=document.getElementById('mp-s2-'+mi+'-'+si).value;
+      if(s1raw===''&&s2raw==='')continue;
+      const s1=parseInt(s1raw),s2=parseInt(s2raw);
+      if(!scoringMod.validateSetScore(s1,s2)){
+        showToast(`Court ${mi+1}, set ${si+1}: invalid score (${s1raw}-${s2raw})`);
+        return;
+      }
+      sets.push({s1,s2});
+    }
+    const winner=scoringMod.matchWinner(sets);
+    if(!winner){
+      showToast(`Court ${mi+1}: match isn't decided yet (needs 2 sets won)`);
+      return;
+    }
+    built.push({r:roundNum,t1:m.t1,t2:m.t2,sets,winner});
+  }
+  built.forEach(match=>{
+    const changes={};
+    match.sets.forEach(set=>{
+      const setChanges=RANKINGS_ENABLED?calcRoundElo(match.t1,match.t2,set.s1,set.s2,sessionEloState,MATCH_PLAY_K):{};
+      Object.entries(setChanges).forEach(([id,ch])=>{
+        sessionEloState[id]=(sessionEloState[id]||1000)+ch;
+        changes[id]=(changes[id]||0)+ch;
+      });
+    });
+    match.elo_changes=changes;
+  });
+  sessionRounds=[...sessionRounds,...built];
+  matchPlayLockedMatches=null;
+  matchPlayDraft=[];
+  const allAttendees=[...new Set([...sessionPlayers,...sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])])])];
+  const{error}=await sb.from('sessions').update({
+    rounds:sessionRounds,
+    attendees:allAttendees,
+    status:'in_progress'
+  }).eq('id',activeSessionId);
+  if(error){showToast('Save error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0){SESSIONS[idx].rounds=sessionRounds;SESSIONS[idx].attendees=allAttendees;SESSIONS[idx].status='in_progress';}
+  showToast('Round '+roundNum+' saved!');
+  renderLiveSession();
+}
+
 async function completeSession(){
   if(!confirm(RANKINGS_ENABLED?'Complete this session and apply all ELO changes to player ratings?':'Complete this session?'))return;
   // build final elo changes per player
@@ -1163,7 +1415,8 @@ async function completeSession(){
   // count games and wins per player
   const gamesCount={},winsCount={};
   sessionRounds.forEach(r=>{
-    const w1=(r.s1||0)>(r.s2||0),w2=(r.s2||0)>(r.s1||0);
+    const w1=Array.isArray(r.sets)?r.winner==='t1':(r.s1||0)>(r.s2||0);
+    const w2=Array.isArray(r.sets)?r.winner==='t2':(r.s2||0)>(r.s1||0);
     (r.t1||[]).forEach(id=>{gamesCount[id]=(gamesCount[id]||0)+1;if(w1)winsCount[id]=(winsCount[id]||0)+1;});
     (r.t2||[]).forEach(id=>{gamesCount[id]=(gamesCount[id]||0)+1;if(w2)winsCount[id]=(winsCount[id]||0)+1;});
   });
