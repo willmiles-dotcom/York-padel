@@ -40,20 +40,22 @@
   --blur:blur(20px)
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:100vh;
-  background:
-    radial-gradient(circle at 12% -10%,rgba(201,162,39,0.10),transparent 55%),
-    radial-gradient(circle at 100% 15%,rgba(255,255,255,0.05),transparent 45%),
-    var(--bg);
-}
+body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:100vh;background:var(--bg)}
 /* Backdrop system: a fixed full-bleed photo layer behind everything, with
    a dark gradient (text always passes contrast) and a faint grain layer
    (kills the "plastic" flat-glass look). JS swaps the photo per screen via
    setBackdrop(); until a screen requests one, this shared default shows -
    see js call at the bottom of the page. Fixed position avoids the iOS
    Safari repaint-on-scroll bug that a body background-image would hit. */
-#app-backdrop{position:fixed;inset:0;z-index:-2;background-size:cover;background-position:center;background-color:var(--bg);background-image:url('assets/img/photo-09-backdrop.webp')}
-#app-backdrop::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,10,0.55),rgba(8,8,10,0.82) 55%,rgba(8,8,10,0.96));}
+/* No photo by default - most screens (Players, Sessions, Committee, etc.)
+   stay on this plain gradient deliberately, so a photo never competes
+   with dense text/tables. Only Home, Leaderboard and a live session get
+   a real photo, set via setBackdrop() in showPage()/renderLiveSession(). */
+#app-backdrop{position:fixed;inset:0;z-index:-2;background-size:cover;background-position:center;
+  background-color:var(--bg);
+  background-image:radial-gradient(circle at 12% -10%,rgba(201,162,39,0.10),transparent 55%),radial-gradient(circle at 100% 15%,rgba(255,255,255,0.05),transparent 45%);
+}
+#app-backdrop::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,10,0.62),rgba(8,8,10,0.86) 55%,rgba(8,8,10,0.97));}
 #app-backdrop::before{content:'';position:absolute;inset:0;z-index:1;opacity:0.05;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
   .card,.tile,.btn,.modal,.nav,.topbar,.tab-pills button,.player-chip,.toast,.court-block,.score-input,input,select,textarea{background:var(--black)!important}
@@ -898,6 +900,7 @@ function showSessionDetail(sid){
 }
 
 function renderCompletedSession(s){
+  setBackdrop(null);
   viewingCompletedSessionId=s.id;
   const rounds=s.rounds||[];
   const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
@@ -1165,6 +1168,7 @@ async function updatePointsPerRound(val){
 
 function renderLiveSession(){
   const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
+  setBackdrop('photo-12');
   const isPaired=s.format==='paired_americano';
   const isMatchPlay=s.format==='match_play';
   const isKotc=s.format==='king_of_the_court';
@@ -1902,9 +1906,9 @@ async function importRoster(){
 
 // ── BACKDROP ─────────────────────────────────────────────────
 // Swaps the fixed full-bleed photo layer (see #app-backdrop). Pass a photo
-// id from assets/img/manifest.json (e.g. 'photo-03'); omit to fall back to
-// the shared default set in CSS. Screens get their assigned photo as each
-// is redesigned in later build stages - most still use the CSS default.
+// id from assets/img/manifest.json (e.g. 'photo-03'); omit/null for the
+// quiet no-photo default (plain dark gradient - most screens use this,
+// deliberately, so photos don't compete with dense text/tables).
 function setBackdrop(photoId){
   document.getElementById('app-backdrop').style.backgroundImage=photoId?`url('assets/img/${photoId}-backdrop.webp')`:'';
 }
@@ -1914,6 +1918,12 @@ function showPage(id,btn,noNav){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(!noNav){document.querySelectorAll('#main-nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
+  // Only Home, Leaderboard and live session-detail get a real photo
+  // backdrop - session-detail's own render functions decide (live vs
+  // read-only), so leave that one alone here.
+  if(id==='home')setBackdrop('photo-03');
+  else if(id==='leaderboard')setBackdrop('photo-10');
+  else if(id!=='session-detail')setBackdrop(null);
 }
 function openModal(id){document.getElementById(id).classList.add('open')}
 function closeModal(id){document.getElementById(id).classList.remove('open')}
@@ -1954,6 +1964,7 @@ const HOME_ICONS={
 };
 
 function renderHome(){
+  if(document.getElementById('page-home').classList.contains('active'))setBackdrop('photo-03');
   const tiles=[
     {label:'Rankings',icon:HOME_ICONS.rankings,cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
     {label:'Players',icon:HOME_ICONS.players,action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
