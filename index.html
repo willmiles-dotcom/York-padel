@@ -12,6 +12,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="York Padel">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --gold:#C9A227;
@@ -20,21 +23,44 @@
   --ink:#171208;
   --text:#F2F2F0;
   --text-dim:#9a9a9a;
-  --glass:rgba(255,255,255,0.055);
-  --glass-strong:rgba(255,255,255,0.1);
+  --competitive:#F5B93A;
+  --upper:#8B5CF6;
+  --lower:#22D3EE;
+  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-display:'Space Grotesk',var(--font-body);
+  /* Glass tiers, by hierarchy - not one style everywhere.
+     Whisper: large ambient containers. Elevated: the one key card per
+     screen. Solid: controls/small text where legibility must win. */
+  --glass-whisper:rgba(255,255,255,0.045);
+  --glass-elevated:rgba(255,255,255,0.09);
+  --glass-solid:rgba(20,20,24,0.82);
   --glass-border:rgba(255,255,255,0.12);
+  --glass-strong:rgba(255,255,255,0.1);
+  --glass:var(--glass-whisper);
   --blur:blur(20px)
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;color:var(--text);min-height:100vh;
+body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:100vh;
   background:
     radial-gradient(circle at 12% -10%,rgba(201,162,39,0.10),transparent 55%),
     radial-gradient(circle at 100% 15%,rgba(255,255,255,0.05),transparent 45%),
     var(--bg);
 }
+/* Backdrop system: a fixed full-bleed photo layer behind everything, with
+   a dark gradient (text always passes contrast) and a faint grain layer
+   (kills the "plastic" flat-glass look). JS swaps the photo per screen via
+   setBackdrop(); until a screen requests one, this shared default shows -
+   see js call at the bottom of the page. Fixed position avoids the iOS
+   Safari repaint-on-scroll bug that a body background-image would hit. */
+#app-backdrop{position:fixed;inset:0;z-index:-2;background-size:cover;background-position:center;background-color:var(--bg);background-image:url('assets/img/photo-09-backdrop.webp')}
+#app-backdrop::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(8,8,10,0.55),rgba(8,8,10,0.82) 55%,rgba(8,8,10,0.96));}
+#app-backdrop::before{content:'';position:absolute;inset:0;z-index:1;opacity:0.05;mix-blend-mode:overlay;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .card,.tile,.btn,.modal,.nav,.topbar,.tab-pills button,.player-chip,.toast,.court-block,.score-input,input,select,textarea{background:var(--black)!important}
+}
 .app{display:flex;flex-direction:column;min-height:100vh;max-width:600px;margin:0 auto;background:transparent}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--glass-border);background:rgba(20,20,22,0.55);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);position:sticky;top:0;z-index:50}
-.logo{font-size:17px;font-weight:600;letter-spacing:-0.5px;color:var(--text)}
+.logo{font-family:var(--font-display);font-size:17px;font-weight:600;letter-spacing:-0.3px;color:var(--text)}
 .logo span{color:var(--gold)}
 .access-badge{font-size:12px;padding:4px 10px;border-radius:20px;cursor:pointer;border:1px solid rgba(255,255,255,0.2);color:var(--text-dim);background:transparent}
 .access-badge.committee{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600}
@@ -44,7 +70,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .nav button.active{color:var(--gold);border-bottom-color:var(--gold);font-weight:500}
 .content{padding:16px;flex:1;padding-bottom:40px}
 .page{display:none}.page.active{display:block}
-.card{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:12px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 24px rgba(0,0,0,0.35)}
+.card{background:var(--glass-whisper);border:1px solid var(--glass-border);border-radius:16px;padding:16px;margin-bottom:12px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 24px rgba(0,0,0,0.35)}
+.card-elevated{background:var(--glass-elevated);border:1px solid var(--glass-border);border-top-color:rgba(255,255,255,0.35);border-left-color:rgba(255,255,255,0.22);border-radius:20px;padding:16px;margin-bottom:12px;backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);box-shadow:0 10px 30px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.08)}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .tile{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 8px 20px rgba(0,0,0,0.3);transition:transform 0.1s ease;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
@@ -54,22 +81,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-siz
 .tile.external:active{background:rgba(201,162,39,0.22)}
 .stat{background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);border-radius:10px;padding:14px}
 .stat-label{font-size:11px;color:var(--text-dim);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.4px}
-.stat-val{font-size:24px;font-weight:600;color:var(--text)}
+.stat-val{font-family:var(--font-display);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;color:var(--text)}
 .stat-val.green{color:var(--gold)}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;padding:8px;font-size:11px;font-weight:600;color:var(--text-dim);border-bottom:1px solid var(--glass-border);text-transform:uppercase;letter-spacing:0.4px}
 td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,0.08);color:var(--text)}
 tr:last-child td{border-bottom:none}
 .badge{display:inline-block;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
-.badge.upper{background:#E1F5EE;color:#0F6E56}
-.badge.lower{background:#FAEEDA;color:#854F0B}
-.badge.competitive{background:#ECE6FA;color:#5B3FA0}
+.badge.upper,.badge.lower,.badge.competitive{border:1px solid transparent}
+.badge.upper::before,.badge.lower::before,.badge.competitive::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.badge.competitive{background:rgba(245,185,58,0.15);color:var(--competitive);border-color:rgba(245,185,58,0.55)}
+.badge.competitive::before{background:var(--competitive)}
+.badge.upper{background:rgba(139,92,246,0.15);color:#B9A2F7;border-color:rgba(139,92,246,0.55)}
+.badge.upper::before{background:var(--upper)}
+.badge.lower{background:rgba(34,211,238,0.15);color:#7FE6F5;border-color:rgba(34,211,238,0.55)}
+.badge.lower::before{background:var(--lower)}
 .badge.unassigned{background:rgba(255,255,255,0.1);color:#ccc}
 .badge.prov{background:rgba(255,255,255,0.1);color:#ccc}
 .badge.flag{background:#FCEBEB;color:#A32D2D}
 .badge.completed{background:#E1F5EE;color:#0F6E56}
 .badge.upcoming{background:#FAEEDA;color:#854F0B}
-.elo-pill{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px}
+.elo-pill{display:inline-block;font-family:var(--font-display);font-variant-numeric:tabular-nums;font-size:12px;font-weight:600;padding:3px 9px;border-radius:20px}
 body.rankings-off .ranking-ui{display:none!important}
 .elo-high{background:#E1F5EE;color:#0F6E56}
 .elo-mid{background:#FAEEDA;color:#854F0B}
@@ -77,7 +109,7 @@ body.rankings-off .ranking-ui{display:none!important}
 .change-pos{color:#3DDC97;font-weight:600}
 .change-neg{color:#FF6B57;font-weight:600}
 .section-head{font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass);color:var(--text);font-weight:500;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid var(--glass-border);background:var(--glass-solid);color:var(--text);font-weight:500;font-family:var(--font-body);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .btn:active{opacity:0.7}
 .btn.primary{background:var(--gold);color:var(--ink);border-color:var(--gold);font-weight:600}
 .btn.danger{background:rgba(220,60,60,0.16);color:#FF8A8A;border-color:rgba(220,60,60,0.4)}
@@ -86,7 +118,7 @@ body.rankings-off .ranking-ui{display:none!important}
 .btn.full{width:100%}
 .btn:disabled{opacity:0.4;cursor:not-allowed}
 .row-flex{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:8px}
-input,select,textarea{padding:10px 12px;border:1px solid var(--glass-border);border-radius:10px;font-size:14px;background:rgba(255,255,255,0.05);color:var(--text);width:100%}
+input,select,textarea{padding:10px 12px;border:1px solid var(--glass-border);border-radius:10px;font-size:14px;font-family:var(--font-body);background:var(--glass-solid);color:var(--text);width:100%}
 input::placeholder{color:#777}
 input:focus,select:focus{outline:none;border-color:var(--gold)}
 input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
@@ -105,7 +137,7 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 .modal h3{font-size:17px;font-weight:600;margin-bottom:16px}
 .filter-row{display:flex;gap:8px;margin-bottom:14px}
 .filter-row input,.filter-row select{flex:1;min-width:0}
-.rank-num{font-size:14px;font-weight:600;color:#666;min-width:22px;display:inline-block}
+.rank-num{font-family:var(--font-display);font-variant-numeric:tabular-nums;font-size:14px;font-weight:600;color:#666;min-width:22px;display:inline-block}
 .rank-num.top{color:var(--gold)}
 .player-name{font-weight:500;font-size:14px;color:var(--text)}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px}
@@ -131,13 +163,13 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 .player-chip.selected{background:rgba(93,202,165,0.18);border-color:#5DCAA5;color:#7CE8C4}
 .player-chip.selected .chip-remove{color:#7CE8C4}
 .chip-remove{font-size:16px;line-height:1;color:var(--text-dim)}
-.court-block{border:1px solid var(--glass-border);border-radius:12px;overflow:hidden;margin-bottom:12px;background:rgba(255,255,255,0.03)}
+.court-block{border:1px solid var(--glass-border);border-radius:12px;overflow:hidden;margin-bottom:12px;background:var(--glass-solid);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .court-header{background:rgba(255,255,255,0.05);padding:10px 14px;font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;justify-content:space-between}
 .court-match{padding:14px}
 .team-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .team-row:last-child{margin-bottom:0}
 .team-names{font-weight:500;font-size:14px;flex:1;color:var(--text)}
-.score-input{width:60px;padding:8px;text-align:center;font-size:18px;font-weight:600;border:1px solid var(--glass-border);border-radius:8px;-webkit-appearance:none;background:rgba(255,255,255,0.05);color:var(--text)}
+.score-input{width:60px;padding:8px;text-align:center;font-size:18px;font-weight:600;font-family:var(--font-display);font-variant-numeric:tabular-nums;border:1px solid var(--glass-border);border-radius:8px;-webkit-appearance:none;background:var(--glass-solid);color:var(--text)}
 .score-input:focus{outline:none;border-color:var(--gold)}
 .vs-divider{text-align:center;color:var(--text-dim);font-size:12px;padding:4px 0;border-top:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.08);margin:8px 0}
 .elo-result-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px}
@@ -149,6 +181,8 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 </style>
 </head>
 <body>
+
+<div id="app-backdrop"></div>
 
 <div id="boot-loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;color:#aaa;background:var(--bg)">Loading…</div>
 
@@ -1864,6 +1898,15 @@ async function importRoster(){
   document.getElementById('import-roster-text').value='';
   showToast('Roster imported!');
   await loadData();
+}
+
+// ── BACKDROP ─────────────────────────────────────────────────
+// Swaps the fixed full-bleed photo layer (see #app-backdrop). Pass a photo
+// id from assets/img/manifest.json (e.g. 'photo-03'); omit to fall back to
+// the shared default set in CSS. Screens get their assigned photo as each
+// is redesigned in later build stages - most still use the CSS default.
+function setBackdrop(photoId){
+  document.getElementById('app-backdrop').style.backgroundImage=photoId?`url('assets/img/${photoId}-backdrop.webp')`:'';
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────
