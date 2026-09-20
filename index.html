@@ -420,6 +420,7 @@ let viewingCompletedSessionId=null;
 let editingCompletedRoundNum=null;
 let matchPlayDraft=[];
 let matchPlayLockedMatches=null;
+let showFormatPicker=false;
 
 // ── ELO ENGINE ──────────────────────────────────────────────
 function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
@@ -929,6 +930,7 @@ function loadLiveSession(s){
   editingRoundNum=null;
   matchPlayDraft=[];
   matchPlayLockedMatches=null;
+  showFormatPicker=false;
   // snapshot each player's rating as it stood before this session, then
   // replay all saved rounds from there so elo_changes are always derived
   // fresh from the stored scores rather than trusted as previously saved
@@ -966,13 +968,38 @@ function replaySessionElo(){
 }
 
 async function setSessionFormat(sessionId,format){
-  const pts=parseInt(document.getElementById('set-format-points').value)||16;
-  const{error}=await sb.from('sessions').update({format,points_to_play:pts}).eq('id',sessionId);
+  const s=SESSIONS.find(x=>x.id===sessionId);if(!s)return;
+  const changingFormat=!!s.format&&s.format!==format;
+  if(changingFormat&&!confirm('Change format to "'+format.replace(/_/g,' ')+'"? This will restart the session and clear any rounds recorded so far.'))return;
+  const updates={format};
+  if(changingFormat){updates.rounds=[];updates.pairs=[];updates.status='upcoming';}
+  if(!s.points_to_play)updates.points_to_play=16;
+  const{error}=await sb.from('sessions').update(updates).eq('id',sessionId);
   if(error){showToast('Error: '+error.message);return;}
-  const idx=SESSIONS.findIndex(x=>x.id===sessionId);
-  if(idx>=0){SESSIONS[idx].format=format;SESSIONS[idx].points_to_play=pts;}
+  Object.assign(s,updates);
+  if(changingFormat){
+    sessionRounds=[];sessionPairs=[];matchPlayDraft=[];matchPlayLockedMatches=null;
+    sessionStartElo={};PLAYERS.forEach(p=>{sessionStartElo[p.id]=p.elo_rating});
+    replaySessionElo();
+  }
+  pointsPerRound=s.points_to_play||16;
+  showFormatPicker=false;
+  showToast(changingFormat?'Format changed':'Format set!');
+  renderLiveSession();
+}
+
+function toggleFormatPicker(){
+  showFormatPicker=!showFormatPicker;
+  renderLiveSession();
+}
+
+async function updatePointsPerRound(val){
+  const pts=parseInt(val)||16;
+  const{error}=await sb.from('sessions').update({points_to_play:pts}).eq('id',activeSessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0)SESSIONS[idx].points_to_play=pts;
   pointsPerRound=pts;
-  showToast('Format set!');
   renderLiveSession();
 }
 
@@ -993,6 +1020,7 @@ function renderLiveSession(){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
       ${canComplete?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
+      ${s.format?`<button class="btn sm" onclick="toggleFormatPicker()">${showFormatPicker?'Cancel change':'Change format'}</button>`:''}
       <button class="btn sm danger" onclick="toggleSessionArchived('${s.id}',true)">Delete session</button>
     </div>
   </div>`;
@@ -1006,12 +1034,12 @@ function renderLiveSession(){
     ${!isPaired&&!isMatchPlay&&!isKotc&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
 
-  // No format chosen yet — players can still check in, but rounds can't start
-  if(!s.format){
+  // No format chosen yet, or committee is switching to a different one —
+  // players can still check in before a format is set.
+  if(!s.format||showFormatPicker){
     html+=`<div class="card">
-      <div class="section-head">Set format</div>
-      <p style="font-size:13px;color:#888;margin-bottom:12px">Pick a format to start recording rounds. Players can still check themselves in before this is set.</p>
-      <div class="form-row"><label class="form-label">Points per round (Americano only)</label><input type="number" id="set-format-points" value="16" min="1"></div>
+      <div class="section-head">${s.format?'Change format':'Set format'}</div>
+      <p style="font-size:13px;color:#888;margin-bottom:12px">${s.format?'Choosing a new format restarts the session and clears any rounds recorded so far.':'Pick a format to start recording rounds. Players can still check themselves in before this is set.'}</p>
       <div style="display:flex;gap:8px;margin-bottom:8px">
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','doubles_americano')">Singles Americano</button>
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','paired_americano')">Doubles Americano</button>
@@ -1020,6 +1048,13 @@ function renderLiveSession(){
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','match_play')">Match Play</button>
         <button class="btn primary full" onclick="setSessionFormat('${s.id}','king_of_the_court')">King of the Court</button>
       </div>
+    </div>`;
+  }
+
+  // Points per round — only relevant once an Americano format is active
+  if(s.format&&!showFormatPicker&&!isMatchPlay&&!isKotc){
+    html+=`<div class="card">
+      <div class="form-row"><label class="form-label">Points per round</label><input type="number" id="live-points-per-round" value="${s.points_to_play||16}" min="1" onchange="updatePointsPerRound(this.value)"></div>
     </div>`;
   }
 
@@ -1168,7 +1203,9 @@ function renderLiveSession(){
           <div class="court-block" style="margin-bottom:12px">
             <div class="court-header">Court ${mi+1}</div>
             <div class="court-match">
-              <div style="text-align:center;font-weight:500;font-size:13px;margin-bottom:8px">${m.t1.map(id=>pFirst(id)).join(' & ')} <span style="color:#aaa">vs</span> ${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
+              <div class="team-row"><div class="team-names">${m.t1.map(id=>pFirst(id)).join(' & ')}</div></div>
+              <div class="vs-divider">vs</div>
+              <div class="team-row" style="margin-bottom:14px"><div class="team-names">${m.t2.map(id=>pFirst(id)).join(' & ')}</div></div>
               ${[0,1,2].map(si=>`
                 <div class="team-row" id="mp-set-row-${mi}-${si}" ${si===2?'hidden':''}>
                   <div class="team-names" style="flex:0 0 50px">Set ${si+1}</div>
