@@ -1987,7 +1987,13 @@ const HOME_ICONS={
 function renderHome(){
   if(document.getElementById('page-home').classList.contains('active'))setBackdrop('photo-03');
   const myName=myPlayerId&&pMap[myPlayerId]?pMap[myPlayerId].name.split(' ')[0]:null;
-  const upcoming=[...SESSIONS].filter(s=>!s.archived&&(s.status==='upcoming'||s.status==='in_progress')).sort((a,b)=>{
+  const now=new Date();
+  const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  // "upcoming" status alone isn't enough - a session dated in the past
+  // that was never started/completed is still technically "upcoming",
+  // but shouldn't be shown as the next one to play. in_progress sessions
+  // are exempt from the date check since they're genuinely happening now.
+  const upcoming=[...SESSIONS].filter(s=>!s.archived&&(s.status==='in_progress'||(s.status==='upcoming'&&s.date>=todayStr))).sort((a,b)=>{
     if((a.status==='in_progress')!==(b.status==='in_progress'))return a.status==='in_progress'?-1:1;
     return new Date(a.date)-new Date(b.date);
   })[0];
