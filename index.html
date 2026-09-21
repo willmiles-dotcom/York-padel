@@ -1490,21 +1490,24 @@ function renderLiveSession(){
 
   {
     const guestIds=[...new Set([...sessionPlayers,...sessionPendingGuestIds])].filter(id=>(pMap[id]||{}).is_guest);
-    if(guestIds.length){
-      html+=`<div class="card"><div class="section-head">Guests (${guestIds.length})</div>
-        ${guestIds.map(id=>{
-          const verified=!!(pMap[id]||{}).door_verified;
-          return`<div class="elo-result-row">
-            <div style="display:flex;align-items:center;gap:8px">
-              <button onclick="admitGuest('${id}')" aria-label="Admit" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${verified?'#1D9E75':'#e7f6ef'};color:${verified?'#fff':'#1D9E75'}">✓</button>
-              <button onclick="removeFromSession('${id}')" aria-label="Remove" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fbeceb;color:#E5484D">✕</button>
-              <span>${escapeHtml(pName(id))}</span>
-            </div>
-            <span style="font-size:12px;color:${verified?'#1D9E75':'#999'}">${verified?'Playing':'Not checked in'}</span>
-          </div>`;
-        }).join('')}
-      </div>`;
-    }
+    html+=`<div class="card">
+      <div class="section-head">Guests${guestIds.length?` (${guestIds.length})`:''}</div>
+      <div style="display:flex;gap:8px;${guestIds.length?'margin-bottom:12px':''}">
+        <input type="text" id="adhoc-guest-name" placeholder="Someone with a pass? Add them here" minlength="2" maxlength="40" style="flex:1" onkeydown="if(event.key==='Enter')addAdhocGuest()">
+        <button class="btn sm primary" onclick="addAdhocGuest()">Add</button>
+      </div>
+      ${guestIds.map(id=>{
+        const verified=!!(pMap[id]||{}).door_verified;
+        return`<div class="elo-result-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <button onclick="admitGuest('${id}')" aria-label="Admit" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${verified?'#1D9E75':'#e7f6ef'};color:${verified?'#fff':'#1D9E75'}">✓</button>
+            <button onclick="removeFromSession('${id}')" aria-label="Remove" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fbeceb;color:#E5484D">✕</button>
+            <span>${escapeHtml(pName(id))}</span>
+          </div>
+          <span style="font-size:12px;color:${verified?'#1D9E75':'#999'}">${verified?'Playing':'Not checked in'}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
   }
 
   // No format chosen yet, or committee is switching to a different one —
@@ -2012,6 +2015,26 @@ function removeFromSession(pid){
   if(hadPair)persistSessionPairs();
   persistSessionAttendees();
   renderLiveSession();
+}
+
+// Committee entering someone by hand at the door (they showed up with a
+// pass but never used the link themselves) - added straight into the
+// playing pool and already door-verified, since committee is looking at
+// them as they type the name in.
+async function addAdhocGuest(){
+  const input=document.getElementById('adhoc-guest-name');
+  const name=(input.value||'').trim();
+  if(name.length<2||name.length>40){showToast('Name must be 2-40 characters');return;}
+  const id='guest_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  const player={id,name,is_guest:true,guest_session_id:activeSessionId,elo_rating:1000,is_active:true,door_verified:true};
+  const{error}=await sb.from('players').insert([player]);
+  if(error){showToast('Error: '+error.message);return;}
+  PLAYERS.push(player);pMap[id]=player;
+  sessionPlayers.push(id);
+  persistSessionAttendees();
+  input.value='';
+  renderLiveSession();
+  showToast(name+' added');
 }
 
 // A guest is admitted (green tick): door-verified and moved into the
