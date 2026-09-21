@@ -2006,7 +2006,19 @@ function removeFromSession(pid){
   const hadPair=sessionPairs.some(pair=>pair.includes(pid));
   sessionPairs=sessionPairs.filter(pair=>!pair.includes(pid));
   if(hadPair)persistSessionPairs();
+  persistSessionAttendees();
   renderLiveSession();
+}
+
+// "Playing now" (sessionPlayers) only gets folded into sessions.attendees
+// on the DB when a round is submitted/completed, so add/remove has to
+// persist attendees itself too, or a refresh before the next round
+// reverts to whatever attendees last were.
+async function persistSessionAttendees(){
+  const{error}=await sb.from('sessions').update({attendees:sessionPlayers}).eq('id',activeSessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0)SESSIONS[idx].attendees=sessionPlayers;
 }
 
 function renderSessionPlayerSearch(){
@@ -2025,6 +2037,7 @@ function renderSessionPlayerSearch(){
 async function toggleSessionPlayer(pid){
   if(sessionPlayers.includes(pid)){
     sessionPlayers=sessionPlayers.filter(id=>id!==pid);
+    persistSessionAttendees();
     renderSessionPlayerSearch();
     renderLiveSession();
     return;
@@ -2039,6 +2052,7 @@ async function toggleSessionPlayer(pid){
     if(accessLevel==='committee')renderCommitteeStats();
   }
   sessionPlayers.push(pid);
+  persistSessionAttendees();
   renderSessionPlayerSearch();
   renderLiveSession();
 }
