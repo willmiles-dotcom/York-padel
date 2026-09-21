@@ -414,6 +414,10 @@ const MEMBERSHIP_PURCHASE_URL='https://yorksu.org/activities/view/padel-club';
 
 const K=16;
 const MATCH_PLAY_K=45;
+// Taster sign-up is parked, not removed - the public #taster link, the
+// committee toggle, and all the backend functions/columns stay intact.
+// Flip this back to true to bring it back.
+const TASTER_ENABLED=false;
 let authMod=null;
 let scoringMod=null;
 let currentSession=null;
@@ -427,7 +431,7 @@ import('./js/scoring.js').then(m=>{scoringMod=m;});
 
 async function handleAuthChange(){
   document.getElementById('boot-loading').style.display='none';
-  if(window.location.hash==='#taster'){
+  if(TASTER_ENABLED&&window.location.hash==='#taster'){
     document.getElementById('app-root').style.display='none';
     document.getElementById('claim-screen').style.display='none';
     document.getElementById('auth-screen').style.display='none';
@@ -1469,7 +1473,7 @@ function renderLiveSession(){
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
       <button class="btn sm" onclick="toggleGuestSignupOpen('${s.id}',${!!s.guest_signup_open})">Guest sign-up: ${s.guest_signup_open?'On':'Off'}</button>
       <button class="btn sm" ${s.guest_signup_open?'':'disabled'} onclick="shareGuestLink('${s.id}')">${s.guest_signup_open?'Share guest link':'Turn on guest sign-up first'}</button>
-      <button class="btn sm" onclick="toggleTasterSignup('${s.id}',${!!s.taster_signup_open})">Taster sign-up: ${s.taster_signup_open?'On':'Off'}</button>
+      ${TASTER_ENABLED?`<button class="btn sm" onclick="toggleTasterSignup('${s.id}',${!!s.taster_signup_open})">Taster sign-up: ${s.taster_signup_open?'On':'Off'}</button>`:''}
       ${canComplete?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
       ${s.format?`<button class="btn sm" onclick="toggleFormatPicker()">${showFormatPicker?'Cancel change':'Change format'}</button>`:''}
       <button class="btn sm danger" onclick="toggleSessionArchived('${s.id}',true)">Delete session</button>
