@@ -60,6 +60,11 @@ begin
 end;
 $$ language plpgsql security definer;
 
+-- Guards against the live function still being an older signature (e.g.
+-- if 014_lightweight_guests.sql wasn't run first) - CREATE OR REPLACE
+-- can't change a function's return type.
+drop function if exists public.redeem_guest_pass(text, text);
+
 create or replace function public.redeem_guest_pass(code text, guest_name text)
 returns void as $$
 declare
@@ -91,5 +96,10 @@ begin
     where id = target_session_id;
 end;
 $$ language plpgsql security definer;
+
+-- Dropping the function above also drops its grants, so these must be
+-- reissued (get_session_by_guest_code was CREATE OR REPLACE'd, not
+-- dropped, so its existing grant to anon/authenticated survives as-is).
+grant execute on function public.redeem_guest_pass(text, text) to anon, authenticated;
 
 commit;
