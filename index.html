@@ -424,7 +424,6 @@ import('./js/scoring.js').then(m=>{scoringMod=m;});
 
 async function handleAuthChange(){
   document.getElementById('boot-loading').style.display='none';
-  if(guestJoinInProgress)return;
   if(window.location.hash==='#taster'){
     document.getElementById('app-root').style.display='none';
     document.getElementById('claim-screen').style.display='none';
@@ -435,12 +434,13 @@ async function handleAuthChange(){
     return;
   }
   const guestCode=(window.location.hash.match(/^#guest=(.+)$/)||[])[1];
-  if(guestCode&&!currentSession){
+  if(guestCode){
     document.getElementById('app-root').style.display='none';
     document.getElementById('claim-screen').style.display='none';
     document.getElementById('auth-screen').style.display='none';
-    renderGuestJoinScreen(guestCode);
+    document.getElementById('taster-screen').style.display='none';
     document.getElementById('guest-screen').style.display='block';
+    renderGuestJoinScreen(guestCode);
     return;
   }
   if(!currentSession){
@@ -451,18 +451,14 @@ async function handleAuthChange(){
     document.getElementById('auth-screen').style.display='block';
     return;
   }
-  // already linked to a player — that row's is_committee/is_guest decides access level
+  // already linked to a player — that row's is_committee flag decides access level
+  // (a guest players row never has user_id set, so it can never match here)
   const{data:linked}=await sb.from('players').select('*').eq('user_id',currentSession.user.id).maybeSingle();
   if(linked){
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('claim-screen').style.display='none';
     document.getElementById('guest-screen').style.display='none';
     myPlayerId=linked.id;
-    if(linked.is_guest){
-      applyAccess('guest');
-      await loadGuestSession(linked);
-      return;
-    }
     document.getElementById('app-root').style.display='flex';
     applyAccess(linked.is_committee?'committee':'member');
     loadData();
@@ -492,59 +488,63 @@ async function doLogout(){
   await authMod.signOut(sb);
 }
 
-// ── GUEST PASS ───────────────────────────────────────────────
-function renderGuestJoinScreen(code){
-  document.getElementById('guest-screen').innerHTML=`
-    <div style="min-height:100vh;background:var(--black);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 20px">
-      <img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px">
-      <div style="font-size:22px;font-weight:700;margin-bottom:4px;text-align:center">You're invited to a session</div>
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:24px;text-align:center">Enter your name to join as a guest</div>
-      <div style="background:var(--glass);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--glass-border);border-radius:16px;padding:20px;width:100%;max-width:380px">
-        <div class="form-row"><label class="form-label">Your name</label><input type="text" id="guest-name-input" placeholder="e.g. Jamie Smith"></div>
-        <div id="guest-join-error" style="color:#FF6B6B;font-size:13px;display:none;margin-bottom:8px"></div>
-        <button class="btn primary full" onclick="joinAsGuest('${code}')">Join session</button>
+// ── GUEST PASS (public, no login — same mechanism as Taster sign-up,
+// just reached via a per-session code instead of one public link) ────
+let guestNameCount=1;
+
+async function renderGuestJoinScreen(code){
+  const el=document.getElementById('guest-screen');
+  el.innerHTML=`<div style="min-height:100vh;background:var(--black);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 20px">
+    <img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px">
+    <div style="font-size:22px;font-weight:700;font-family:var(--font-display);margin-bottom:20px;text-align:center">You're invited</div>
+    <div id="guest-body" style="width:100%;max-width:380px"><div class="loading">Loading...</div></div>
+  </div>`;
+  const{data,error}=await sb.rpc('get_session_by_guest_code',{code});
+  const body=document.getElementById('guest-body');
+  if(error||!data||!data.length){body.innerHTML='<div class="card">This guest link is invalid or has expired.</div>';return;}
+  renderGuestSignupForm(data[0],code);
+}
+
+function renderGuestSignupForm(session,code){
+  guestNameCount=1;
+  document.getElementById('guest-body').innerHTML=`
+    <div class="card-elevated">
+      <div style="font-weight:700;font-size:18px;font-family:var(--font-display)">${escapeHtml(session.title)}</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${escapeHtml(session.date)} · ${escapeHtml(session.location||'TBC')}</div>
+    </div>
+    <div class="card" id="guest-form-card">
+      <div id="guest-name-fields">
+        <div class="form-row"><label class="form-label">Your name</label><input type="text" class="guest-name-input" placeholder="e.g. Jamie Smith" minlength="2" maxlength="40"></div>
       </div>
+      <button type="button" class="btn sm" id="guest-add-friend-btn" onclick="addGuestFriendField()">+ Add a friend</button>
+      <div id="guest-form-error" style="color:#FF6B6B;font-size:13px;display:none;margin:12px 0 0"></div>
+      <button class="btn primary full" style="margin-top:16px" onclick="submitGuestSignup('${code}')">Join session</button>
     </div>`;
 }
 
-async function joinAsGuest(code){
-  const name=(document.getElementById('guest-name-input').value||'').trim();
-  const errEl=document.getElementById('guest-join-error');
-  errEl.style.display='none';
-  if(!name){errEl.textContent='Please enter your name.';errEl.style.display='block';return;}
-  guestJoinInProgress=true;
-  try{
-    const{error:authErr}=await sb.auth.signInAnonymously();
-    if(authErr)throw authErr;
-    const{error:rpcErr}=await sb.rpc('redeem_guest_pass',{code,guest_name:name});
-    if(rpcErr)throw rpcErr;
-    history.replaceState(null,'',window.location.pathname+window.location.search);
-    const{data:{session}}=await sb.auth.getSession();
-    currentSession=session;
-    const{data:linked}=await sb.from('players').select('*').eq('user_id',session.user.id).maybeSingle();
-    guestJoinInProgress=false;
-    document.getElementById('guest-screen').style.display='none';
-    myPlayerId=linked.id;
-    applyAccess('guest');
-    await loadGuestSession(linked);
-  }catch(e){
-    guestJoinInProgress=false;
-    errEl.textContent=e.message;
-    errEl.style.display='block';
-  }
+function addGuestFriendField(){
+  if(guestNameCount>=6){showToast("That's enough friends for one go!");return;}
+  guestNameCount++;
+  const wrap=document.createElement('div');
+  wrap.className='form-row';
+  wrap.innerHTML=`<label class="form-label">Friend's name</label><input type="text" class="guest-name-input" placeholder="e.g. Sam T" minlength="2" maxlength="40">`;
+  document.getElementById('guest-name-fields').appendChild(wrap);
+  if(guestNameCount>=6)document.getElementById('guest-add-friend-btn').style.display='none';
 }
 
-async function loadGuestSession(linked){
-  const{data:pr}=await sb.from('players').select('*');
-  PLAYERS=pr||[];
-  pMap={};
-  PLAYERS.forEach(p=>pMap[p.id]=p);
-  const{data:s}=await sb.from('sessions').select('*').eq('id',linked.guest_session_id).maybeSingle();
-  document.getElementById('app-root').style.display='flex';
-  if(!s){showToast('Session not found');return;}
-  SESSIONS=[s];
-  showSessionDetail(s.id);
-  document.getElementById('session-detail-back-btn').style.display='none';
+async function submitGuestSignup(code){
+  await submitGuestNames({
+    nameSelector:'.guest-name-input',
+    errElId:'guest-form-error',
+    formCardId:'guest-form-card',
+    rpcFn:'redeem_guest_pass',
+    rpcTargetKey:'code',
+    rpcTargetValue:code,
+    confirmationHtml:`<div style="text-align:center;padding:8px 0">
+      <div style="font-size:18px;font-weight:700;font-family:var(--font-display);margin-bottom:8px">You're signed up!</div>
+      <div style="font-size:14px;color:var(--text-dim)">See you on the court.</div>
+    </div>`
+  });
 }
 
 async function createGuestPass(sessionId){
@@ -569,37 +569,14 @@ async function toggleTasterSignup(sessionId,currentlyOpen){
   renderLiveSession();
 }
 
-// Committee-only door view - direct table access is fine here (covered by
-// the taster_signups RLS policies scoped to is_caller_committee()); the
-// public never gets a policy at all, only the taster_signup() RPC.
-async function loadTasterDoorView(sessionId,readOnly){
-  const card=document.getElementById('taster-doorview-card');
-  if(!card)return;
-  const{data,error}=await sb.from('taster_signups').select('*').eq('session_id',sessionId).order('created_at',{ascending:true});
-  if(error){card.innerHTML=`<div class="section-head">Taster sign-ups</div><div style="font-size:13px;color:var(--text-dim)">Could not load: ${escapeHtml(error.message)}</div>`;return;}
-  const list=data||[];
-  card.innerHTML=`<div class="section-head">Taster sign-ups (${list.length})</div>`
-    +(list.length?list.map(t=>`
-      <div class="elo-result-row">
-        <div style="display:flex;align-items:center;gap:8px">
-          ${readOnly?(t.verified?'<span style="color:#3DDC97">✓</span>':'<span style="color:var(--text-dim)">—</span>'):`<input type="checkbox" ${t.verified?'checked':''} onchange="toggleTasterVerified('${t.id}',this.checked,'${sessionId}')" style="width:auto">`}
-          <span>${escapeHtml(t.name)}</span>
-        </div>
-        ${readOnly?'':`<span class="chip-remove" style="cursor:pointer" onclick="removeTasterSignup('${t.id}','${sessionId}')">×</span>`}
-      </div>`).join(''):'<div style="font-size:13px;color:var(--text-dim)">No sign-ups yet.</div>');
-}
-
-async function toggleTasterVerified(id,checked,sessionId){
-  const{error}=await sb.from('taster_signups').update({verified:checked}).eq('id',id);
+// Door check for any guest (Taster or per-session Guest pass alike) -
+// they're just is_guest players rows now, so this is a direct update
+// like togglePlayerActive, not a separate fetch/table.
+async function toggleDoorVerified(id,checked){
+  const{error}=await sb.from('players').update({door_verified:checked}).eq('id',id);
   if(error){showToast('Error: '+error.message);return;}
-  loadTasterDoorView(sessionId,false);
-}
-
-async function removeTasterSignup(id,sessionId){
-  if(!confirm('Remove this taster sign-up?'))return;
-  const{error}=await sb.from('taster_signups').delete().eq('id',id);
-  if(error){showToast('Error: '+error.message);return;}
-  loadTasterDoorView(sessionId,false);
+  if(pMap[id])pMap[id].door_verified=checked;
+  renderLiveSession();
 }
 
 // ── TASTER SIGN-UP (public, no login) ───────────────────────
@@ -663,31 +640,48 @@ function addTasterFriendField(){
   if(tasterNameCount>=6)document.getElementById('taster-add-friend-btn').style.display='none';
 }
 
-async function submitTasterSignup(sessionId){
-  const errEl=document.getElementById('taster-form-error');
+// Shared by Taster and Guest sign-up: validate names, call one RPC per
+// name, show a confirmation. The two forms only differ in which RPC/
+// target they call and whether a checkbox gate (Taster's ticket tick)
+// is required.
+async function submitGuestNames(opts){
+  const errEl=document.getElementById(opts.errElId);
   errEl.style.display='none';
-  const names=[...document.querySelectorAll('.taster-name-input')].map(i=>i.value.trim()).filter(n=>n.length>0);
+  const names=[...document.querySelectorAll(opts.nameSelector)].map(i=>i.value.trim()).filter(n=>n.length>0);
   if(!names.length){errEl.textContent='Enter at least one name.';errEl.style.display='block';return;}
   for(const n of names){
     if(n.length<2||n.length>40){errEl.textContent='Names must be 2-40 characters.';errEl.style.display='block';return;}
   }
-  if(!document.getElementById('taster-ticket-check').checked){
-    errEl.textContent="Please confirm you've bought your ticket.";errEl.style.display='block';return;
+  if(opts.checkboxId&&!document.getElementById(opts.checkboxId).checked){
+    errEl.textContent=opts.checkboxErrorText;errEl.style.display='block';return;
   }
   for(const n of names){
-    const{error}=await sb.rpc('taster_signup',{target_session:sessionId,guest_name:n});
+    const{error}=await sb.rpc(opts.rpcFn,{[opts.rpcTargetKey]:opts.rpcTargetValue,guest_name:n});
     if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
   }
-  document.getElementById('taster-form-card').innerHTML=`<div style="text-align:center;padding:8px 0">
-    <div style="font-size:18px;font-weight:700;font-family:var(--font-display);margin-bottom:8px">You're on the list!</div>
-    <div style="font-size:14px;color:var(--text-dim)">Show your ticket or receipt at the door.</div>
-  </div>`;
+  document.getElementById(opts.formCardId).innerHTML=opts.confirmationHtml;
+}
+
+async function submitTasterSignup(sessionId){
+  await submitGuestNames({
+    nameSelector:'.taster-name-input',
+    errElId:'taster-form-error',
+    formCardId:'taster-form-card',
+    rpcFn:'taster_signup',
+    rpcTargetKey:'target_session',
+    rpcTargetValue:sessionId,
+    checkboxId:'taster-ticket-check',
+    checkboxErrorText:"Please confirm you've bought your ticket.",
+    confirmationHtml:`<div style="text-align:center;padding:8px 0">
+      <div style="font-size:18px;font-weight:700;font-family:var(--font-display);margin-bottom:8px">You're on the list!</div>
+      <div style="font-size:14px;color:var(--text-dim)">Show your ticket or receipt at the door.</div>
+    </div>`
+  });
 }
 
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
 let RANKINGS_ENABLED=true;
 let myPlayerId=null;
-let guestJoinInProgress=false;
 let activeSessionId=null;
 let sessionPlayers=[];
 let sessionRounds=[];
@@ -1070,8 +1064,13 @@ function renderCompletedSession(s){
     </div>
     ${accessLevel==='committee'?`<button class="btn danger sm" style="margin-top:10px" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button>`:''}
   </div>`;
-  if(s.is_taster&&accessLevel==='committee'){
-    html+=`<div class="card" id="taster-doorview-card"><div class="section-head">Taster sign-ups</div><div class="loading">Loading...</div></div>`;
+  if(accessLevel==='committee'){
+    const guestIds=(s.attendees||[]).filter(id=>(pMap[id]||{}).is_guest);
+    if(guestIds.length){
+      html+=`<div class="card"><div class="section-head">Guests (${guestIds.length})</div>
+        ${guestIds.map(id=>`<div class="elo-result-row"><span>${escapeHtml(pName(id))}</span><span>${(pMap[id]||{}).door_verified?'✓ Verified':'—'}</span></div>`).join('')}
+      </div>`;
+    }
   }
   if(accessLevel!=='committee'&&!s.archived&&s.status==='upcoming'&&myPlayerId){
     const signedUp=Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId);
@@ -1163,7 +1162,6 @@ function renderCompletedSession(s){
     html+=rh;
   }
   document.getElementById('session-detail-content').innerHTML=html;
-  if(s.is_taster&&accessLevel==='committee')loadTasterDoorView(s.id,true);
 }
 
 function startEditCompletedRound(r){
@@ -1358,8 +1356,19 @@ function renderLiveSession(){
     ${!isPaired&&!isMatchPlay&&!isKotc&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
 
-  if(s.is_taster){
-    html+=`<div class="card" id="taster-doorview-card"><div class="section-head">Taster sign-ups</div><div class="loading">Loading...</div></div>`;
+  {
+    const guestIds=sessionPlayers.filter(id=>(pMap[id]||{}).is_guest);
+    if(guestIds.length){
+      html+=`<div class="card"><div class="section-head">Guests (${guestIds.length})</div>
+        ${guestIds.map(id=>`<div class="elo-result-row">
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" ${(pMap[id]||{}).door_verified?'checked':''} onchange="toggleDoorVerified('${id}',this.checked)" style="width:auto">
+            <span>${escapeHtml(pName(id))}</span>
+          </div>
+          <span class="chip-remove" style="cursor:pointer" onclick="removeFromSession('${id}')">×</span>
+        </div>`).join('')}
+      </div>`;
+    }
   }
 
   // No format chosen yet, or committee is switching to a different one —
@@ -1455,7 +1464,6 @@ function renderLiveSession(){
   // King of the Court: nothing more to render — attendance only
   if(isKotc){
     document.getElementById('session-detail-content').innerHTML=html;
-    if(s.is_taster)loadTasterDoorView(s.id,false);
     return;
   }
 
@@ -1567,7 +1575,6 @@ function renderLiveSession(){
       </div>`;
     }
     document.getElementById('session-detail-content').innerHTML=html;
-    if(s.is_taster)loadTasterDoorView(s.id,false);
     return;
   }
 
@@ -1609,7 +1616,6 @@ function renderLiveSession(){
   }
 
   document.getElementById('session-detail-content').innerHTML=html;
-  if(s.is_taster)loadTasterDoorView(s.id,false);
 }
 
 async function persistSessionPairs(){
@@ -2120,15 +2126,9 @@ function applyAccess(level){
     b.textContent='Committee';
     b.className='access-badge committee';
     b.style.display='inline-block';
-  }else if(level==='guest'){
-    b.textContent='Guest';
-    b.className='access-badge';
-    b.style.display='inline-block';
   }else{
     b.style.display='none';
   }
-  document.getElementById('main-nav').style.display=level==='guest'?'none':'flex';
-  if(level==='guest')return;
   document.getElementById('nav-committee').style.display=level==='committee'?'':'none';
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
   document.getElementById('sessions-show-archived-row').style.display=level==='committee'?'flex':'none';
