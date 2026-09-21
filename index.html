@@ -1014,6 +1014,7 @@ function renderPlayers(){
   const g=document.getElementById('player-group').value;
   const showArchived=document.getElementById('player-show-archived').checked;
   let list=[...PLAYERS].filter(p=>{
+    if(p.is_guest)return false;
     if(!showArchived&&p.is_active===false)return false;
     if(q&&!p.name.toLowerCase().includes(q))return false;
     if(g&&p.group_name!==g)return false;
@@ -1023,7 +1024,7 @@ function renderPlayers(){
   document.getElementById('player-select-col-head').style.display=isCommittee?'table-cell':'none';
   document.getElementById('player-body').innerHTML=list.map(p=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
     ${isCommittee?`<td onclick="event.stopPropagation()" style="box-shadow:inset 3px 0 0 ${groupEdgeColor(p.group_name)}"><input type="checkbox" ${selectedPlayerIds.has(p.id)?'checked':''} onchange="togglePlayerSelect('${p.id}',this.checked)"></td>`:''}
-    <td ${!isCommittee?`style="box-shadow:inset 3px 0 0 ${groupEdgeColor(p.group_name)}"`:''}><span class="player-name">${p.name}</span>${p.is_guest?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Guest</span>':''}${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
+    <td ${!isCommittee?`style="box-shadow:inset 3px 0 0 ${groupEdgeColor(p.group_name)}"`:''}><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
     <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
     <td class="ranking-ui"><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
     <td style="color:#aaa">${p.games_played||0}</td>
@@ -2144,7 +2145,7 @@ async function rejectClaimRequest(playerId){
 function renderCommitteePlayerList(){
   const q=(document.getElementById('committee-search').value||'').toLowerCase();
   const showArchived=document.getElementById('committee-show-archived').checked;
-  let list=[...PLAYERS].filter(p=>(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
+  let list=[...PLAYERS].filter(p=>!p.is_guest&&(showArchived||p.is_active!==false)&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>a.name.localeCompare(b.name));
   document.getElementById('committee-player-list').innerHTML=list.map(p=>`
     <div class="player-list-row" onclick="openEditModal('${p.id}')">
       <div><span style="font-weight:500">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:6px;font-size:10px">Inactive</span>':''}</div>
