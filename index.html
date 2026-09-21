@@ -382,7 +382,7 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
     <div class="edit-row"><span class="edit-row-label">Group</span><select id="edit-group"><option value="upper">Upper</option><option value="lower">Lower</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
     <div class="edit-row ranking-ui"><span class="edit-row-label">ELO</span><input type="number" id="edit-elo"></div>
     <div class="edit-row"><span class="edit-row-label">Active</span><select id="edit-active"><option value="true">Yes</option><option value="false">No</option></select></div>
-    <div class="edit-row"><span class="edit-row-label">Membership</span><select id="edit-membership"><option value="guest">Guest</option><option value="member">Member</option><option value="committee">Committee</option></select></div>
+    <div class="edit-row"><span class="edit-row-label">Membership</span><select id="edit-membership"><option value="member">Member</option><option value="committee">Committee</option></select></div>
     <div style="display:flex;gap:10px;margin-top:16px">
       <button class="btn full" onclick="closeModal('edit-player-modal')">Cancel</button>
       <button class="btn primary full" onclick="savePlayerEdit()">Save</button>
@@ -701,16 +701,6 @@ async function toggleTasterSignup(sessionId,currentlyOpen){
   renderLiveSession();
 }
 
-// Door check for any guest (Taster or per-session Guest pass alike) -
-// they're just is_guest players rows now, so this is a direct update
-// like togglePlayerActive, not a separate fetch/table.
-async function toggleDoorVerified(id,checked){
-  const{error}=await sb.from('players').update({door_verified:checked}).eq('id',id);
-  if(error){showToast('Error: '+error.message);return;}
-  if(pMap[id])pMap[id].door_verified=checked;
-  renderLiveSession();
-}
-
 // ── TASTER SIGN-UP (public, no login) ───────────────────────
 // The app's first surface rendering text typed by a genuinely anonymous
 // public visitor rather than committee-entered data, so unlike the rest
@@ -816,6 +806,11 @@ let RANKINGS_ENABLED=true;
 let myPlayerId=null;
 let activeSessionId=null;
 let sessionPlayers=[];
+// Guests who've signed up but haven't been door-checked yet - kept out of
+// sessionPlayers (so they can't be drawn into a round) but still saved to
+// sessions.attendees so they aren't lost on refresh or on an unrelated
+// attendee change elsewhere in the session.
+let sessionPendingGuestIds=[];
 let sessionRounds=[];
 let sessionPairs=[];
 let sessionEloState={};
@@ -1372,7 +1367,11 @@ async function saveEditedCompletedRound(r){
 // ── LIVE SESSION ─────────────────────────────────────────────
 function loadLiveSession(s){
   activeSessionId=s.id;
-  sessionPlayers=Array.isArray(s.attendees)?[...s.attendees]:[];
+  {
+    const allAttendees=Array.isArray(s.attendees)?[...s.attendees]:[];
+    sessionPendingGuestIds=allAttendees.filter(id=>{const p=pMap[id];return p&&p.is_guest&&!p.door_verified;});
+    sessionPlayers=allAttendees.filter(id=>!sessionPendingGuestIds.includes(id));
+  }
   sessionRounds=Array.isArray(s.rounds)?[...s.rounds]:[];
   sessionPairs=Array.isArray(s.pairs)?[...s.pairs]:[];
   pointsPerRound=s.points_to_play||16;
@@ -1490,16 +1489,20 @@ function renderLiveSession(){
   </div>`;
 
   {
-    const guestIds=sessionPlayers.filter(id=>(pMap[id]||{}).is_guest);
+    const guestIds=[...new Set([...sessionPlayers,...sessionPendingGuestIds])].filter(id=>(pMap[id]||{}).is_guest);
     if(guestIds.length){
       html+=`<div class="card"><div class="section-head">Guests (${guestIds.length})</div>
-        ${guestIds.map(id=>`<div class="elo-result-row">
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="checkbox" ${(pMap[id]||{}).door_verified?'checked':''} onchange="toggleDoorVerified('${id}',this.checked)" style="width:auto">
-            <span>${escapeHtml(pName(id))}</span>
-          </div>
-          <span class="chip-remove" style="cursor:pointer" onclick="removeFromSession('${id}')">×</span>
-        </div>`).join('')}
+        ${guestIds.map(id=>{
+          const verified=!!(pMap[id]||{}).door_verified;
+          return`<div class="elo-result-row">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onclick="admitGuest('${id}')" aria-label="Admit" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;background:${verified?'#1D9E75':'#e7f6ef'};color:${verified?'#fff':'#1D9E75'}">✓</button>
+              <button onclick="removeFromSession('${id}')" aria-label="Remove" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;border:none;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#fbeceb;color:#E5484D">✕</button>
+              <span>${escapeHtml(pName(id))}</span>
+            </div>
+            <span style="font-size:12px;color:${verified?'#1D9E75':'#999'}">${verified?'Playing':'Not checked in'}</span>
+          </div>`;
+        }).join('')}
       </div>`;
     }
   }
@@ -1842,7 +1845,7 @@ async function submitRound(matches,roundNum){
   });
   sessionRounds=[...sessionRounds,...newRounds];
   // save to supabase
-  const allAttendees=[...new Set([...sessionPlayers,...sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])])])];
+  const allAttendees=[...new Set([...sessionPlayers,...sessionPendingGuestIds,...sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])])])];
   const{error}=await sb.from('sessions').update({
     rounds:sessionRounds,
     attendees:allAttendees,
@@ -1931,7 +1934,7 @@ async function submitMatchPlayRound(roundNum){
   sessionRounds=[...sessionRounds,...built];
   matchPlayLockedMatches=null;
   matchPlayDraft=[];
-  const allAttendees=[...new Set([...sessionPlayers,...sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])])])];
+  const allAttendees=[...new Set([...sessionPlayers,...sessionPendingGuestIds,...sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])])])];
   const{error}=await sb.from('sessions').update({
     rounds:sessionRounds,
     attendees:allAttendees,
@@ -1967,7 +1970,7 @@ async function completeSession(){
     (r.t1||[]).forEach(id=>{gamesCount[id]=(gamesCount[id]||0)+1;if(w1)winsCount[id]=(winsCount[id]||0)+1;});
     (r.t2||[]).forEach(id=>{gamesCount[id]=(gamesCount[id]||0)+1;if(w2)winsCount[id]=(winsCount[id]||0)+1;});
   });
-  const allAttendees=[...new Set([...sessionPlayers,...allPlaying])];
+  const allAttendees=[...new Set([...sessionPlayers,...sessionPendingGuestIds,...allPlaying])];
   // update session
   const{error:se}=await sb.from('sessions').update({
     status:'completed',elo_applied:RANKINGS_ENABLED,
@@ -1996,13 +1999,14 @@ async function completeSession(){
   const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
   if(idx>=0){Object.assign(SESSIONS[idx],{status:'completed',elo_applied:RANKINGS_ENABLED,attendees:allAttendees,rounds:sessionRounds,elo_changes:finalChanges});}
   showToast(RANKINGS_ENABLED?'Session complete! ELO updated.':'Session complete!');
-  activeSessionId=null;sessionPlayers=[];sessionRounds=[];sessionEloState={};
+  activeSessionId=null;sessionPlayers=[];sessionPendingGuestIds=[];sessionRounds=[];sessionEloState={};
   await loadData();
   renderCompletedSession(SESSIONS.find(x=>x.status==='completed'&&SESSIONS[idx])||SESSIONS[idx]);
 }
 
 function removeFromSession(pid){
   sessionPlayers=sessionPlayers.filter(id=>id!==pid);
+  sessionPendingGuestIds=sessionPendingGuestIds.filter(id=>id!==pid);
   const hadPair=sessionPairs.some(pair=>pair.includes(pid));
   sessionPairs=sessionPairs.filter(pair=>!pair.includes(pid));
   if(hadPair)persistSessionPairs();
@@ -2010,15 +2014,31 @@ function removeFromSession(pid){
   renderLiveSession();
 }
 
+// A guest is admitted (green tick): door-verified and moved into the
+// playing pool. Removal (red tick, or the × on any "Playing now" chip)
+// goes through the same removeFromSession() as everyone else.
+async function admitGuest(id){
+  const{error}=await sb.from('players').update({door_verified:true}).eq('id',id);
+  if(error){showToast('Error: '+error.message);return;}
+  if(pMap[id])pMap[id].door_verified=true;
+  sessionPendingGuestIds=sessionPendingGuestIds.filter(x=>x!==id);
+  if(!sessionPlayers.includes(id))sessionPlayers.push(id);
+  persistSessionAttendees();
+  renderLiveSession();
+}
+
 // "Playing now" (sessionPlayers) only gets folded into sessions.attendees
 // on the DB when a round is submitted/completed, so add/remove has to
 // persist attendees itself too, or a refresh before the next round
-// reverts to whatever attendees last were.
+// reverts to whatever attendees last were. Pending (not-yet-admitted)
+// guests are written too, alongside sessionPlayers, so they aren't lost
+// on a refresh or wiped out by an unrelated attendee change.
 async function persistSessionAttendees(){
-  const{error}=await sb.from('sessions').update({attendees:sessionPlayers}).eq('id',activeSessionId);
+  const allAttendees=[...new Set([...sessionPlayers,...sessionPendingGuestIds])];
+  const{error}=await sb.from('sessions').update({attendees:allAttendees}).eq('id',activeSessionId);
   if(error){showToast('Error: '+error.message);return;}
   const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
-  if(idx>=0)SESSIONS[idx].attendees=sessionPlayers;
+  if(idx>=0)SESSIONS[idx].attendees=allAttendees;
 }
 
 function renderSessionPlayerSearch(){
@@ -2122,7 +2142,7 @@ function openEditModal(pid){
   document.getElementById('edit-group').value=p.group_name||'unassigned';
   document.getElementById('edit-elo').value=p.elo_rating||1000;
   document.getElementById('edit-active').value=p.is_active===false?'false':'true';
-  document.getElementById('edit-membership').value=p.is_guest?'guest':p.is_committee?'committee':'member';
+  document.getElementById('edit-membership').value=p.is_committee?'committee':'member';
   document.getElementById('unlink-account-btn').style.display=p.user_id?'block':'none';
   openModal('edit-player-modal');
 }
@@ -2141,7 +2161,7 @@ async function unlinkPlayerAccount(){
 async function savePlayerEdit(){
   const pid=document.getElementById('edit-player-id').value;
   const membership=document.getElementById('edit-membership').value;
-  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true',is_committee:membership==='committee',is_guest:membership==='guest'};
+  const updates={name:document.getElementById('edit-name').value.trim(),gender:document.getElementById('edit-gender').value,group_name:document.getElementById('edit-group').value,elo_rating:parseInt(document.getElementById('edit-elo').value)||1000,is_active:document.getElementById('edit-active').value==='true',is_committee:membership==='committee'};
   const{error}=await sb.from('players').update(updates).eq('id',pid);
   if(error){showToast('Error: '+error.message);return;}
   Object.assign(pMap[pid],updates);PLAYERS=PLAYERS.map(p=>p.id===pid?{...p,...updates}:p);
