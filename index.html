@@ -195,6 +195,8 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 
 <div id="guest-screen" style="display:none"></div>
 
+<div id="taster-screen" style="display:none"></div>
+
 <div class="app" id="app-root" style="display:none">
   <div class="topbar">
     <div class="logo" style="display:flex;align-items:center;gap:8px"><img src="/icons/icon-192.png" alt="" style="width:28px;height:28px;border-radius:6px"><div><span>York</span> Padel Club</div></div>
@@ -423,6 +425,15 @@ import('./js/scoring.js').then(m=>{scoringMod=m;});
 async function handleAuthChange(){
   document.getElementById('boot-loading').style.display='none';
   if(guestJoinInProgress)return;
+  if(window.location.hash==='#taster'){
+    document.getElementById('app-root').style.display='none';
+    document.getElementById('claim-screen').style.display='none';
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('guest-screen').style.display='none';
+    document.getElementById('taster-screen').style.display='block';
+    renderTasterScreen();
+    return;
+  }
   const guestCode=(window.location.hash.match(/^#guest=(.+)$/)||[])[1];
   if(guestCode&&!currentSession){
     document.getElementById('app-root').style.display='none';
@@ -546,6 +557,131 @@ async function createGuestPass(sessionId){
   }catch{
     showToast('Guest link: '+url);
   }
+}
+
+async function toggleTasterSignup(sessionId,currentlyOpen){
+  const updates=currentlyOpen?{taster_signup_open:false}:{is_taster:true,taster_signup_open:true};
+  const{error}=await sb.from('sessions').update(updates).eq('id',sessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===sessionId);
+  if(idx>=0)Object.assign(SESSIONS[idx],updates);
+  showToast(currentlyOpen?'Taster sign-up closed':'Taster sign-up is open!');
+  renderLiveSession();
+}
+
+// Committee-only door view - direct table access is fine here (covered by
+// the taster_signups RLS policies scoped to is_caller_committee()); the
+// public never gets a policy at all, only the taster_signup() RPC.
+async function loadTasterDoorView(sessionId,readOnly){
+  const card=document.getElementById('taster-doorview-card');
+  if(!card)return;
+  const{data,error}=await sb.from('taster_signups').select('*').eq('session_id',sessionId).order('created_at',{ascending:true});
+  if(error){card.innerHTML=`<div class="section-head">Taster sign-ups</div><div style="font-size:13px;color:var(--text-dim)">Could not load: ${escapeHtml(error.message)}</div>`;return;}
+  const list=data||[];
+  card.innerHTML=`<div class="section-head">Taster sign-ups (${list.length})</div>`
+    +(list.length?list.map(t=>`
+      <div class="elo-result-row">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${readOnly?(t.verified?'<span style="color:#3DDC97">✓</span>':'<span style="color:var(--text-dim)">—</span>'):`<input type="checkbox" ${t.verified?'checked':''} onchange="toggleTasterVerified('${t.id}',this.checked,'${sessionId}')" style="width:auto">`}
+          <span>${escapeHtml(t.name)}</span>
+        </div>
+        ${readOnly?'':`<span class="chip-remove" style="cursor:pointer" onclick="removeTasterSignup('${t.id}','${sessionId}')">×</span>`}
+      </div>`).join(''):'<div style="font-size:13px;color:var(--text-dim)">No sign-ups yet.</div>');
+}
+
+async function toggleTasterVerified(id,checked,sessionId){
+  const{error}=await sb.from('taster_signups').update({verified:checked}).eq('id',id);
+  if(error){showToast('Error: '+error.message);return;}
+  loadTasterDoorView(sessionId,false);
+}
+
+async function removeTasterSignup(id,sessionId){
+  if(!confirm('Remove this taster sign-up?'))return;
+  const{error}=await sb.from('taster_signups').delete().eq('id',id);
+  if(error){showToast('Error: '+error.message);return;}
+  loadTasterDoorView(sessionId,false);
+}
+
+// ── TASTER SIGN-UP (public, no login) ───────────────────────
+// The app's first surface rendering text typed by a genuinely anonymous
+// public visitor rather than committee-entered data, so unlike the rest
+// of this file's innerHTML interpolation, taster names get escaped.
+function escapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+let tasterNameCount=1;
+
+async function renderTasterScreen(){
+  const el=document.getElementById('taster-screen');
+  el.innerHTML=`<div style="min-height:100vh;background:var(--black);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 20px">
+    <img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px">
+    <div style="font-size:22px;font-weight:700;font-family:var(--font-display);margin-bottom:20px;text-align:center">Try padel</div>
+    <div id="taster-body" style="width:100%;max-width:380px"><div class="loading">Loading...</div></div>
+    <a href="#" onclick="event.preventDefault();history.replaceState(null,'',window.location.pathname);document.getElementById('taster-screen').style.display='none';handleAuthChange();" style="margin-top:24px;font-size:13px;color:var(--text-dim)">Already a member? Log in</a>
+  </div>`;
+  const{data,error}=await sb.rpc('list_open_taster_sessions');
+  const body=document.getElementById('taster-body');
+  if(error){body.innerHTML='<div class="card">Something went wrong loading taster sessions.</div>';return;}
+  const list=data||[];
+  if(!list.length){body.innerHTML='<div class="card">No taster sessions are open right now.</div>';return;}
+  if(list.length===1){renderTasterSignupForm(list[0]);return;}
+  body.innerHTML=`<div class="section-head" style="margin-bottom:10px">Pick a session</div>`
+    +list.map(s=>`<div class="card session-card" onclick="renderTasterSignupForm(${JSON.stringify(s).replace(/"/g,'&quot;')})">
+      <div style="font-weight:600;font-family:var(--font-display)">${escapeHtml(s.title)}</div>
+      <div style="font-size:13px;color:var(--text-dim)">${escapeHtml(s.date)} · ${escapeHtml(s.location||'TBC')}</div>
+    </div>`).join('');
+}
+
+function renderTasterSignupForm(session){
+  tasterNameCount=1;
+  document.getElementById('taster-body').innerHTML=`
+    <div class="card-elevated">
+      <div style="font-weight:700;font-size:18px;font-family:var(--font-display)">${escapeHtml(session.title)}</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${escapeHtml(session.date)} · ${escapeHtml(session.location||'TBC')}</div>
+    </div>
+    <a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="btn primary full" style="margin-bottom:12px;text-decoration:none">Buy your ticket</a>
+    <div class="card" id="taster-form-card">
+      <div id="taster-name-fields">
+        <div class="form-row"><label class="form-label">Name</label><input type="text" class="taster-name-input" placeholder="e.g. Will M" minlength="2" maxlength="40"></div>
+      </div>
+      <button type="button" class="btn sm" id="taster-add-friend-btn" onclick="addTasterFriendField()">+ Add a friend</button>
+      <label style="display:flex;align-items:center;gap:8px;margin:16px 0;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="taster-ticket-check" style="width:auto">
+        I've bought my ticket
+      </label>
+      <div id="taster-form-error" style="color:#FF6B6B;font-size:13px;display:none;margin-bottom:8px"></div>
+      <button class="btn primary full" onclick="submitTasterSignup('${session.id}')">Sign up</button>
+    </div>`;
+}
+
+function addTasterFriendField(){
+  if(tasterNameCount>=6){showToast("That's enough friends for one go!");return;}
+  tasterNameCount++;
+  const wrap=document.createElement('div');
+  wrap.className='form-row';
+  wrap.innerHTML=`<label class="form-label">Friend's name</label><input type="text" class="taster-name-input" placeholder="e.g. Sam T" minlength="2" maxlength="40">`;
+  document.getElementById('taster-name-fields').appendChild(wrap);
+  if(tasterNameCount>=6)document.getElementById('taster-add-friend-btn').style.display='none';
+}
+
+async function submitTasterSignup(sessionId){
+  const errEl=document.getElementById('taster-form-error');
+  errEl.style.display='none';
+  const names=[...document.querySelectorAll('.taster-name-input')].map(i=>i.value.trim()).filter(n=>n.length>0);
+  if(!names.length){errEl.textContent='Enter at least one name.';errEl.style.display='block';return;}
+  for(const n of names){
+    if(n.length<2||n.length>40){errEl.textContent='Names must be 2-40 characters.';errEl.style.display='block';return;}
+  }
+  if(!document.getElementById('taster-ticket-check').checked){
+    errEl.textContent="Please confirm you've bought your ticket.";errEl.style.display='block';return;
+  }
+  for(const n of names){
+    const{error}=await sb.rpc('taster_signup',{target_session:sessionId,guest_name:n});
+    if(error){errEl.textContent=error.message;errEl.style.display='block';return;}
+  }
+  document.getElementById('taster-form-card').innerHTML=`<div style="text-align:center;padding:8px 0">
+    <div style="font-size:18px;font-weight:700;font-family:var(--font-display);margin-bottom:8px">You're on the list!</div>
+    <div style="font-size:14px;color:var(--text-dim)">Show your ticket or receipt at the door.</div>
+  </div>`;
 }
 
 let PLAYERS=[],SESSIONS=[],pMap={},accessLevel='member',leaderTab='all';
@@ -934,6 +1070,9 @@ function renderCompletedSession(s){
     </div>
     ${accessLevel==='committee'?`<button class="btn danger sm" style="margin-top:10px" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button>`:''}
   </div>`;
+  if(s.is_taster&&accessLevel==='committee'){
+    html+=`<div class="card" id="taster-doorview-card"><div class="section-head">Taster sign-ups</div><div class="loading">Loading...</div></div>`;
+  }
   if(accessLevel!=='committee'&&!s.archived&&s.status==='upcoming'&&myPlayerId){
     const signedUp=Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId);
     html+=`<div class="card">
@@ -1024,6 +1163,7 @@ function renderCompletedSession(s){
     html+=rh;
   }
   document.getElementById('session-detail-content').innerHTML=html;
+  if(s.is_taster&&accessLevel==='committee')loadTasterDoorView(s.id,true);
 }
 
 function startEditCompletedRound(r){
@@ -1202,6 +1342,7 @@ function renderLiveSession(){
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
       <button class="btn sm" onclick="createGuestPass('${s.id}')">Guest pass</button>
+      <button class="btn sm" onclick="toggleTasterSignup('${s.id}',${!!s.taster_signup_open})">Taster sign-up: ${s.taster_signup_open?'On':'Off'}</button>
       ${canComplete?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
       ${s.format?`<button class="btn sm" onclick="toggleFormatPicker()">${showFormatPicker?'Cancel change':'Change format'}</button>`:''}
       <button class="btn sm danger" onclick="toggleSessionArchived('${s.id}',true)">Delete session</button>
@@ -1216,6 +1357,10 @@ function renderLiveSession(){
     </div>
     ${!isPaired&&!isMatchPlay&&!isKotc&&sessionPlayers.length<4?'<div style="font-size:12px;color:#aaa;margin-top:8px">Need at least 4 players to generate a round.</div>':''}
   </div>`;
+
+  if(s.is_taster){
+    html+=`<div class="card" id="taster-doorview-card"><div class="section-head">Taster sign-ups</div><div class="loading">Loading...</div></div>`;
+  }
 
   // No format chosen yet, or committee is switching to a different one —
   // players can still check in before a format is set.
@@ -1310,6 +1455,7 @@ function renderLiveSession(){
   // King of the Court: nothing more to render — attendance only
   if(isKotc){
     document.getElementById('session-detail-content').innerHTML=html;
+    if(s.is_taster)loadTasterDoorView(s.id,false);
     return;
   }
 
@@ -1421,6 +1567,7 @@ function renderLiveSession(){
       </div>`;
     }
     document.getElementById('session-detail-content').innerHTML=html;
+    if(s.is_taster)loadTasterDoorView(s.id,false);
     return;
   }
 
@@ -1462,6 +1609,7 @@ function renderLiveSession(){
   }
 
   document.getElementById('session-detail-content').innerHTML=html;
+  if(s.is_taster)loadTasterDoorView(s.id,false);
 }
 
 async function persistSessionPairs(){
