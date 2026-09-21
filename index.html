@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="York Padel">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -196,6 +197,8 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
 <div id="guest-screen" style="display:none"></div>
 
 <div id="taster-screen" style="display:none"></div>
+
+<div id="guest-qr-overlay" style="display:none;position:fixed;inset:0;background:#fff;z-index:500;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)"></div>
 
 <div class="app" id="app-root" style="display:none">
   <div class="topbar">
@@ -547,16 +550,141 @@ async function submitGuestSignup(code){
   });
 }
 
-async function createGuestPass(sessionId){
+function buildGuestLink(code){
+  return window.location.origin+'/#guest='+code;
+}
+
+// navigator.clipboard.writeText is fire-and-forget here on purpose - it
+// must be invoked synchronously inside the click handler for iOS Safari
+// to allow the write at all, so callers must not await this before it.
+function copyToClipboard(text){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).catch(()=>fallbackCopyToClipboard(text));
+  }else{
+    fallbackCopyToClipboard(text);
+  }
+}
+
+function fallbackCopyToClipboard(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.position='fixed';
+  ta.style.opacity='0';
+  document.body.appendChild(ta);
+  ta.focus();ta.select();
+  try{document.execCommand('copy');}catch{}
+  document.body.removeChild(ta);
+}
+
+async function toggleGuestSignupOpen(sessionId,currentlyOpen){
+  const{error}=await sb.from('sessions').update({guest_signup_open:!currentlyOpen}).eq('id',sessionId);
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===sessionId);
+  if(idx>=0)SESSIONS[idx].guest_signup_open=!currentlyOpen;
+  showToast(currentlyOpen?'Guest sign-up closed':'Guest sign-up is open!');
+  renderLiveSession();
+}
+
+// The common case (code already cached) copies with nothing awaited
+// before it, satisfying iOS's "clipboard write must happen synchronously
+// inside the user gesture" rule. Only the very first share for a session
+// (no code generated yet) has to await first - accepted trade-off.
+function shareGuestLink(sessionId){
+  const s=SESSIONS.find(x=>x.id===sessionId);
+  if(!s||!s.guest_signup_open)return;
+  if(s.guest_code){
+    copyToClipboard(buildGuestLink(s.guest_code));
+    showToast('Link copied');
+    openGuestQrOverlay(s,s.guest_code);
+    return;
+  }
+  generateThenShareGuestLink(sessionId);
+}
+
+async function generateThenShareGuestLink(sessionId){
   const{data,error}=await sb.rpc('generate_guest_code',{target_session:sessionId});
   if(error){showToast('Error: '+error.message);return;}
-  const url=window.location.origin+window.location.pathname+'#guest='+data;
-  try{
-    await navigator.clipboard.writeText(url);
-    showToast('Guest link copied!');
-  }catch{
-    showToast('Guest link: '+url);
+  const idx=SESSIONS.findIndex(x=>x.id===sessionId);
+  if(idx>=0)SESSIONS[idx].guest_code=data;
+  copyToClipboard(buildGuestLink(data));
+  showToast('Link copied');
+  openGuestQrOverlay(SESSIONS[idx],data);
+}
+
+function openGuestQrOverlay(session,code){
+  const link=buildGuestLink(code);
+  const overlay=document.getElementById('guest-qr-overlay');
+  overlay.innerHTML=`
+    <button onclick="closeGuestQrOverlay()" aria-label="Close" style="position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:44px;height:44px;border-radius:50%;border:none;background:#f0f0f0;color:#111;font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1">×</button>
+    <div id="guest-qr-backdrop" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px;text-align:center">
+      <div style="font-size:18px;font-weight:700;color:#111;font-family:var(--font-display)">${escapeHtml(session.title)}</div>
+      <img id="guest-qr-img" src="" alt="QR code to join ${escapeHtml(session.title)}" style="width:min(80vw,360px);height:min(80vw,360px)">
+      <div id="guest-qr-link-text" style="font-size:12px;color:#555;word-break:break-all;max-width:320px">${escapeHtml(link)}</div>
+      <button class="btn primary" onclick="saveGuestQrImage()">Save image</button>
+      <div id="guest-qr-save-hint" style="font-size:12px;color:#777;max-width:280px;display:none"></div>
+      <button onclick="confirmRegenerateGuestLink('${session.id}')" style="background:none;border:none;color:#999;font-size:12px;text-decoration:underline;cursor:pointer;margin-top:8px">Regenerate link</button>
+    </div>`;
+  overlay.style.display='block';
+  document.getElementById('guest-qr-backdrop').onclick=function(e){if(e.target===this)closeGuestQrOverlay();};
+  renderGuestQrImage(link);
+}
+
+function closeGuestQrOverlay(){
+  document.getElementById('guest-qr-overlay').style.display='none';
+}
+
+// Draws the QR module-by-module onto a canvas (rather than using the
+// library's own createImgTag/createSvgTag) so the exact quiet zone,
+// integer scale and PNG export requirements are all under our control.
+function renderGuestQrImage(link){
+  const qr=qrcode(0,'M');
+  qr.addData(link);
+  qr.make();
+  const moduleCount=qr.getModuleCount();
+  const quiet=4;
+  const totalModules=moduleCount+quiet*2;
+  const scale=Math.max(1,Math.round(1024/totalModules));
+  const size=scale*totalModules;
+  const canvas=document.createElement('canvas');
+  canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+  ctx.fillStyle='#000';
+  for(let r=0;r<moduleCount;r++){
+    for(let c=0;c<moduleCount;c++){
+      if(qr.isDark(r,c))ctx.fillRect((c+quiet)*scale,(r+quiet)*scale,scale,scale);
+    }
   }
+  canvas.toBlob(blob=>{
+    window.__guestQrBlob=blob;
+    document.getElementById('guest-qr-img').src=URL.createObjectURL(blob);
+  },'image/png');
+}
+
+async function saveGuestQrImage(){
+  const blob=window.__guestQrBlob;
+  if(!blob)return;
+  const file=new File([blob],'guest-qr.png',{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){
+    try{await navigator.share({files:[file],title:'Guest QR code'});return;}catch{/* cancelled or failed - fall through to the hint */}
+  }
+  const hint=document.getElementById('guest-qr-save-hint');
+  const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent);
+  hint.textContent=isIOS?'Press and hold the QR code, then tap Add to Photos.':'Press and hold (or right-click) the QR code, then tap Download image.';
+  hint.style.display='block';
+}
+
+async function confirmRegenerateGuestLink(sessionId){
+  if(!confirm('Any QR codes already printed or saved for this session will stop working. Regenerate the link anyway?'))return;
+  const{data,error}=await sb.rpc('regenerate_guest_code',{target_session:sessionId});
+  if(error){showToast('Error: '+error.message);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===sessionId);
+  if(idx>=0)SESSIONS[idx].guest_code=data;
+  const newLink=buildGuestLink(data);
+  copyToClipboard(newLink);
+  document.getElementById('guest-qr-link-text').textContent=newLink;
+  renderGuestQrImage(newLink);
+  showToast('Link regenerated and copied');
 }
 
 async function toggleTasterSignup(sessionId,currentlyOpen){
@@ -1339,7 +1467,8 @@ function renderLiveSession(){
     <div style="font-size:13px;color:#aaa;margin-bottom:12px">${s.date}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
-      <button class="btn sm" onclick="createGuestPass('${s.id}')">Guest pass</button>
+      <button class="btn sm" onclick="toggleGuestSignupOpen('${s.id}',${!!s.guest_signup_open})">Guest sign-up: ${s.guest_signup_open?'On':'Off'}</button>
+      <button class="btn sm" ${s.guest_signup_open?'':'disabled'} onclick="shareGuestLink('${s.id}')">${s.guest_signup_open?'Share guest link':'Turn on guest sign-up first'}</button>
       <button class="btn sm" onclick="toggleTasterSignup('${s.id}',${!!s.taster_signup_open})">Taster sign-up: ${s.taster_signup_open?'On':'Off'}</button>
       ${canComplete?`<button class="btn sm warning" onclick="completeSession()">Complete session</button>`:''}
       ${s.format?`<button class="btn sm" onclick="toggleFormatPicker()">${showFormatPicker?'Cancel change':'Change format'}</button>`:''}
