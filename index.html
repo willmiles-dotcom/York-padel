@@ -1297,13 +1297,17 @@ function renderLeaderboard(){
   document.getElementById('leader-top3').innerHTML=top3.length?`<div class="podium">${top3.length===3?pod(top3[1],2)+pod(top3[0],1)+pod(top3[2],3):top3.map((p,i)=>pod(p,i+1)).join('')}</div>`:'';
 
   document.getElementById('leader-rest-card').style.display=rest.length?'block':(top3.length?'none':'block');
-  document.getElementById('leader-rest').innerHTML=rest.length?rest.map((p,i)=>`
+  // top 3 sit on the podium; show ranks 4-5 until "Show all" is tapped
+  const shownRest=leaderExpanded?rest:rest.slice(0,2);
+  document.getElementById('leader-rest').innerHTML=rest.length?shownRest.map((p,i)=>`
     <div class="rank-row" style="padding:10px 14px;cursor:pointer" onclick="showPlayerProfile('${p.id}')">
       <span class="rank-n">${i+4}</span>${avatarHtml(p.id,p.name,36)}
       <span class="rank-name">${escapeHtml(p.name)}</span>
       <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
-    </div>`).join(''):(top3.length?'':'<div class="empty-state">No players yet. They appear here once the committee adds them.</div>');
+    </div>`).join('')+(rest.length>2?`<button class="auth-link" style="margin:4px 0 2px" onclick="toggleLeaderExpanded()">${leaderExpanded?'Show top 5 only':`Show all ${list.length} players`}</button>`:''):(top3.length?'':'<div class="empty-state">No players yet. They appear here once the committee adds them.</div>');
 }
+let leaderExpanded=false;
+function toggleLeaderExpanded(){leaderExpanded=!leaderExpanded;renderLeaderboard();}
 function setLeaderTab(tab,btn){
   leaderTab=tab;
   document.querySelectorAll('#page-leaderboard .tab-pills button').forEach(b=>b.classList.remove('active'));
