@@ -169,6 +169,24 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .g-btn.ok{background:rgba(61,220,151,0.16);color:#3DDC97}
 .g-btn.ok.on{background:#3DDC97;color:var(--ink)}
 .g-btn.no{background:rgba(255,107,87,0.16);color:#FF6B57}
+.round-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 14px}
+.round-title{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-1.4px;line-height:1.1}
+.round-pts{padding:6px 12px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);font-size:13px;font-weight:500;color:var(--text-dim);white-space:nowrap}
+.round-card .court-block{border-radius:28px;background:rgba(255,255,255,0.07);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.round-card .court-header{display:inline-flex;margin:16px 0 0 16px;padding:4px 10px;border-radius:8px;background:var(--gold-soft);color:var(--gold);font-size:12px;font-weight:600;letter-spacing:0}
+.round-card .court-match{padding:8px 16px 16px}
+.round-card .team-row{gap:10px;margin:2px 0}
+.round-card .team-names{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;min-width:0}
+.round-card .team-names>span:last-child{min-width:0}
+.round-card .score-stepper{gap:6px;flex-shrink:0}
+.round-card .stepper-btn{width:44px;height:44px;border-radius:22px;background:rgba(255,255,255,0.1);font-size:22px}
+.round-card .stepper-btn.plus{background:var(--gold-soft);border-color:rgba(240,190,69,0.5);color:var(--gold)}
+.score-input.score-big{width:54px;height:48px;padding:0;border:none;border-radius:0;background:transparent;font-size:44px;font-weight:700;letter-spacing:-1.5px;line-height:48px;color:var(--text);font-variant-numeric:tabular-nums}
+.score-input.score-big::placeholder{color:rgba(255,255,255,0.28)}
+.score-input.score-big.lead{color:var(--gold)}
+.score-input.score-big:focus{outline:none;border:none}
+.sitting-out{display:flex;align-items:center;gap:12px;padding:14px;margin:4px 0 14px;border-radius:22px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);font-size:13px;color:var(--text-dim);font-weight:500}
+.sitting-out>div{display:flex;flex-wrap:wrap;gap:6px}
 .page-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .page-title{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-1.4px;line-height:1.1}
 .count-pill{padding:6px 12px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);font-size:12px;color:var(--text-dim);white-space:nowrap}
@@ -2056,35 +2074,31 @@ function renderLiveSession(){
     const{matches,sitters}=computeRoundDraft(isPaired,roundNum);
     const sitterText=isPaired?sitters.map(pair=>pair.map(id=>pFirst(id)).join(' & ')).join(', '):sitters.map(id=>pFirst(id)).join(', ');
     const rId='round-'+roundNum;
-    html+=`<div class="card">
-      <div class="section-head">Round ${roundNum} — enter scores</div>
-      ${sitters.length>0?`<div style="font-size:12px;color:#aaa;margin-bottom:10px">Sitting out: ${sitterText}</div>`:''}
+    const teamNames=ids=>ids.map(id=>pFirst(id)).join(' & ');
+    const teamAvatars=ids=>`<span class="avatar-stack">${ids.map(id=>avatarHtml(id,(pMap[id]||{}).name||'?',32)).join('')}</span>`;
+    const teamRow=(ids,key,mi)=>`<div class="team-row">
+                <div class="team-names">${teamAvatars(ids)}<span>${escapeHtml(teamNames(ids))}</span></div>
+                <div class="score-stepper">
+                  <button type="button" class="stepper-btn" aria-label="Minus one point" onclick="adjustScore('${key}-${mi}',-1)">−</button>
+                  <input type="number" inputmode="numeric" class="score-input score-big" id="${key}-${mi}" min="0" max="${pointsPerRound}" placeholder="0" oninput="markLeader(${mi})">
+                  <button type="button" class="stepper-btn plus" aria-label="Plus one point" onclick="adjustScore('${key}-${mi}',1)">+</button>
+                </div>
+              </div>`;
+    html+=`<div class="round-card">
+      <div class="round-head"><div class="round-title">Round ${roundNum}</div><span class="round-pts">${pointsPerRound} points</span></div>
       <div id="${rId}">
         ${matches.map((m,mi)=>`
           <div class="court-block" style="margin-bottom:12px">
             <div class="court-header">Court ${mi+1}</div>
             <div class="court-match">
-              <div class="team-row">
-                <div class="team-names">${m.t1.map(id=>pFirst(id)).join(' & ')}</div>
-                <div class="score-stepper">
-                  <button type="button" class="stepper-btn" onclick="adjustScore('s1-${mi}',-1)">−</button>
-                  <input type="number" class="score-input" id="s1-${mi}" min="0" max="${pointsPerRound}" placeholder="0">
-                  <button type="button" class="stepper-btn" onclick="adjustScore('s1-${mi}',1)">+</button>
-                </div>
-              </div>
+              ${teamRow(m.t1,'s1',mi)}
               <div class="vs-divider">vs</div>
-              <div class="team-row">
-                <div class="team-names">${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
-                <div class="score-stepper">
-                  <button type="button" class="stepper-btn" onclick="adjustScore('s2-${mi}',-1)">−</button>
-                  <input type="number" class="score-input" id="s2-${mi}" min="0" max="${pointsPerRound}" placeholder="0">
-                  <button type="button" class="stepper-btn" onclick="adjustScore('s2-${mi}',1)">+</button>
-                </div>
-              </div>
+              ${teamRow(m.t2,'s2',mi)}
             </div>
           </div>`).join('')}
       </div>
-      <button class="btn primary full" onclick="submitRound(${JSON.stringify(matches).replace(/"/g,'&quot;')},${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
+      ${sitters.length>0?`<div class="sitting-out"><span>Sitting out</span><div>${(isPaired?sitters.map(pair=>pair.map(id=>pFirst(id)).join(' & ')):sitters.map(id=>pFirst(id))).map(n=>`<span class="live-chip" style="cursor:default;margin:0 6px 0 0">${escapeHtml(n)}</span>`).join('')}</div></div>`:''}
+      <button class="btn-gold" style="width:100%;height:58px;font-size:18px;border-radius:22px" onclick="submitRound(${JSON.stringify(matches).replace(/"/g,'&quot;')},${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
     </div>`;
   }
 
@@ -2895,6 +2909,13 @@ async function importRoster(){
 // Live scoring: nudges a score input up/down by 1, clamped to its own
 // min/max. Purely a DOM convenience alongside direct typing - doesn't
 // touch scoring/ELO logic, which still just reads the input's value.
+// Colour the higher score gold on a court card. Display only: scores are still read from the inputs.
+function markLeader(mi){
+  const a=document.getElementById('s1-'+mi),b=document.getElementById('s2-'+mi);
+  if(!a||!b)return;
+  const x=parseInt(a.value)||0,y=parseInt(b.value)||0;
+  a.classList.toggle('lead',x>y);b.classList.toggle('lead',y>x);
+}
 function adjustScore(inputId,delta){
   const el=document.getElementById(inputId);
   if(!el)return;
@@ -2902,6 +2923,7 @@ function adjustScore(inputId,delta){
   const max=el.max!==''?parseInt(el.max):Infinity;
   const next=Math.max(min,Math.min(max,(parseInt(el.value)||0)+delta));
   el.value=next;
+  markLeader(parseInt(inputId.split('-')[1]));
 }
 
 function setBackdrop(photoId){
