@@ -357,7 +357,10 @@ input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
     <div class="modal-handle"></div>
     <h3>New session</h3>
     <div class="form-row"><label class="form-label">Title</label><input type="text" id="ns-title" placeholder="e.g. Wednesday Training — Upper"></div>
-    <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
+      <div class="form-row"><label class="form-label">Time</label><input type="time" id="ns-time"></div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
       <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
@@ -726,7 +729,7 @@ async function renderTasterScreen(){
   body.innerHTML=`<div class="section-head" style="margin-bottom:10px">Pick a session</div>`
     +list.map(s=>`<div class="card session-card" onclick="renderTasterSignupForm(${JSON.stringify(s).replace(/"/g,'&quot;')})">
       <div style="font-weight:600;font-family:var(--font-display)">${escapeHtml(s.title)}</div>
-      <div style="font-size:13px;color:var(--text-dim)">${escapeHtml(s.date)} · ${escapeHtml(s.location||'TBC')}</div>
+      <div style="font-size:13px;color:var(--text-dim)">${escapeHtml(sessionDateTime(s))} · ${escapeHtml(s.location||'TBC')}</div>
     </div>`).join('');
 }
 
@@ -829,6 +832,12 @@ let editingCompletedRoundNum=null;
 let matchPlayDraft=[];
 let matchPlayLockedMatches=null;
 let showFormatPicker=false;
+// The next Americano round's draw used to be recomputed (reshuffled)
+// on every render, so any unrelated re-render - someone else logging
+// in, a guest being admitted, etc. - silently swapped the matches out
+// from under players mid-round. Cached here and only rebuilt when the
+// round number advances or the player/pair pool actually changes.
+let currentRoundDraft=null;
 
 // ── ELO ENGINE ──────────────────────────────────────────────
 function expectedScore(ra,rb){return 1/(1+Math.pow(10,(rb-ra)/400))}
@@ -923,11 +932,45 @@ function generateNextPairRound(pairs,completedRounds,maxCourts){
   return{matches,sitters};
 }
 
+// Same round number + same player/pair pool => reuse the cached draw
+// instead of reshuffling. Only an actual roster change (someone added
+// or removed) or the round number moving on produces a new one.
+function computeRoundDraft(isPaired,roundNum){
+  const signature=isPaired
+    ?sessionPairs.map(p=>[...p].sort().join('|')).sort().join(',')
+    :[...sessionPlayers].sort().join(',');
+  if(currentRoundDraft&&currentRoundDraft.roundNum===roundNum&&currentRoundDraft.signature===signature){
+    return currentRoundDraft;
+  }
+  const built=isPaired?generateNextPairRound(sessionPairs,sessionRounds,maxCourts):generateNextRound(sessionPlayers,sessionRounds,maxCourts);
+  currentRoundDraft={roundNum,signature,...built};
+  persistRoundDraft();
+  return currentRoundDraft;
+}
+
+// Fire-and-forget: renderLiveSession() is synchronous and already has
+// the value it needs locally, this just saves it so other devices/a
+// reload see the same draw rather than drawing a fresh one.
+async function persistRoundDraft(){
+  const draft=currentRoundDraft;
+  const{error}=await sb.from('sessions').update({draft_round:draft}).eq('id',activeSessionId);
+  if(error){console.error(error);return;}
+  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
+  if(idx>=0)SESSIONS[idx].draft_round=draft;
+}
+
 // ── DATA ────────────────────────────────────────────────────
 function eloClass(e){return e>=1075?'elo-high':e<=925?'elo-low':'elo-mid'}
 function groupEdgeColor(g){return g==='competitive'?'var(--competitive)':g==='upper'?'var(--upper)':g==='lower'?'var(--lower)':'transparent'}
 function pName(id){return pMap[id]?pMap[id].name:id.slice(-4)}
-function pFirst(id){return pMap[id]?pMap[id].name.split(' ')[0]:id.slice(-4)}
+function sessionDateTime(s){return s.time?`${s.date} · ${s.time}`:s.date}
+// "Will M" rather than just "Will" everywhere inside a session, so two
+// players sharing a first name are still told apart on a court/chip.
+function pFirst(id){
+  const name=pMap[id]?pMap[id].name:id.slice(-4);
+  const parts=name.trim().split(/\s+/);
+  return parts.length>1&&parts[1]?`${parts[0]} ${parts[1][0]}`:parts[0];
+}
 function initials(n){return n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800)}
 
@@ -1141,7 +1184,7 @@ function renderSessions(){
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div style="flex:1;min-width:0">
           <div style="font-weight:600;margin-bottom:3px;font-family:var(--font-display)">${s.title}</div>
-          <div style="font-size:12px;color:var(--text-dim)">${s.date} · ${s.location||'TBC'}</div>
+          <div style="font-size:12px;color:var(--text-dim)">${sessionDateTime(s)} · ${s.location||'TBC'}</div>
           <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
             <span class="badge ${s.status}">${s.status}</span>
             ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
@@ -1188,7 +1231,7 @@ function renderCompletedSession(s){
   const isMatchPlay=s.format==='match_play';
   let html=`<div class="card">
     <div style="font-size:18px;font-weight:600;margin-bottom:4px">${s.title}</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${s.date} · ${s.location||'TBC'}${!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts/round`:''}</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${sessionDateTime(s)} · ${s.location||'TBC'}${!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts/round`:''}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="badge ${s.status}">${s.status}</span>
       ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
@@ -1381,6 +1424,9 @@ function loadLiveSession(s){
   // Collapse Guests by default when there's nothing needing attention;
   // standings starts open.
   collapsedSections={guests:sessionPendingGuestIds.length===0,standings:false};
+  // The drafted (not-yet-submitted) next round is persisted so every
+  // device/reload sees the same draw instead of a fresh random shuffle.
+  currentRoundDraft=s.draft_round?{...s.draft_round}:null;
   sessionRounds=Array.isArray(s.rounds)?[...s.rounds]:[];
   sessionPairs=Array.isArray(s.pairs)?[...s.pairs]:[];
   pointsPerRound=s.points_to_play||16;
@@ -1431,13 +1477,13 @@ async function setSessionFormat(sessionId,format){
   const changingFormat=!!s.format&&s.format!==format;
   if(changingFormat&&!confirm('Change format to "'+format.replace(/_/g,' ')+'"? This will restart the session and clear any rounds recorded so far.'))return;
   const updates={format};
-  if(changingFormat){updates.rounds=[];updates.pairs=[];updates.status='upcoming';}
+  if(changingFormat){updates.rounds=[];updates.pairs=[];updates.status='upcoming';updates.draft_round=null;}
   if(!s.points_to_play)updates.points_to_play=16;
   const{error}=await sb.from('sessions').update(updates).eq('id',sessionId);
   if(error){showToast('Error: '+error.message);return;}
   Object.assign(s,updates);
   if(changingFormat){
-    sessionRounds=[];sessionPairs=[];matchPlayDraft=[];matchPlayLockedMatches=null;
+    sessionRounds=[];sessionPairs=[];matchPlayDraft=[];matchPlayLockedMatches=null;currentRoundDraft=null;
     sessionStartElo={};PLAYERS.forEach(p=>{sessionStartElo[p.id]=p.elo_rating});
     replaySessionElo();
   }
@@ -1478,7 +1524,7 @@ function renderLiveSession(){
       <span class="session-live-badge">● LIVE</span>
     </div>
     <div style="font-size:13px;color:#aaa;margin-bottom:${collapsedSections.pointsEdit?'8px':'12px'};display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <span>${s.date}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</span>
+      <span>${sessionDateTime(s)}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</span>
       ${s.format&&!isMatchPlay&&!isKotc&&roundsPlayed===0?`<button onclick="toggleSection('pointsEdit')" style="background:none;border:none;color:var(--text-dim);font-size:11px;text-decoration:underline;cursor:pointer;padding:0">${collapsedSections.pointsEdit?'Cancel':'Edit'}</button>`:''}
     </div>
     ${collapsedSections.pointsEdit?`<div class="form-row" style="margin:0 0 12px"><label class="form-label">Points per round</label><input type="number" id="live-points-per-round" value="${s.points_to_play||16}" min="1" onchange="updatePointsPerRound(this.value)"></div>`:''}
@@ -1741,7 +1787,7 @@ function renderLiveSession(){
 
   // Generate next round
   if(s.format&&(isPaired?sessionPairs.length>=2:sessionPlayers.length>=4)){
-    const{matches,sitters}=isPaired?generateNextPairRound(sessionPairs,sessionRounds,maxCourts):generateNextRound(sessionPlayers,sessionRounds,maxCourts);
+    const{matches,sitters}=computeRoundDraft(isPaired,roundNum);
     const sitterText=isPaired?sitters.map(pair=>pair.map(id=>pFirst(id)).join(' & ')).join(', '):sitters.map(id=>pFirst(id)).join(', ');
     const rId='round-'+roundNum;
     html+=`<div class="card">
@@ -1874,12 +1920,14 @@ async function submitRound(matches,roundNum){
   const{error}=await sb.from('sessions').update({
     rounds:sessionRounds,
     attendees:allAttendees,
-    status:'in_progress'
+    status:'in_progress',
+    draft_round:null
   }).eq('id',activeSessionId);
   if(error){showToast('Save error: '+error.message);return;}
   // update local
   const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
-  if(idx>=0){SESSIONS[idx].rounds=sessionRounds;SESSIONS[idx].attendees=allAttendees;SESSIONS[idx].status='in_progress';}
+  if(idx>=0){SESSIONS[idx].rounds=sessionRounds;SESSIONS[idx].attendees=allAttendees;SESSIONS[idx].status='in_progress';SESSIONS[idx].draft_round=null;}
+  currentRoundDraft=null;
   showToast('Round '+roundNum+' saved!');
   renderLiveSession();
 }
@@ -2001,7 +2049,8 @@ async function completeSession(){
     status:'completed',elo_applied:RANKINGS_ENABLED,
     attendees:allAttendees,
     rounds:sessionRounds,
-    elo_changes:finalChanges
+    elo_changes:finalChanges,
+    draft_round:null
   }).eq('id',activeSessionId);
   if(se){showToast('Error: '+se.message);return;}
   // update each player's elo, games_played, matches_won
@@ -2024,7 +2073,7 @@ async function completeSession(){
   const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
   if(idx>=0){Object.assign(SESSIONS[idx],{status:'completed',elo_applied:RANKINGS_ENABLED,attendees:allAttendees,rounds:sessionRounds,elo_changes:finalChanges});}
   showToast(RANKINGS_ENABLED?'Session complete! ELO updated.':'Session complete!');
-  activeSessionId=null;sessionPlayers=[];sessionPendingGuestIds=[];sessionRounds=[];sessionEloState={};
+  activeSessionId=null;sessionPlayers=[];sessionPendingGuestIds=[];sessionRounds=[];sessionEloState={};currentRoundDraft=null;
   await loadData();
   renderCompletedSession(SESSIONS.find(x=>x.status==='completed'&&SESSIONS[idx])||SESSIONS[idx]);
 }
@@ -2247,7 +2296,8 @@ async function saveNewSession(){
   if(!title||!date){showToast('Title and date required');return;}
   const maxCourtsVal=parseInt(document.getElementById('ns-max-courts').value)||null;
   if(!maxCourtsVal){showToast('Number of courts is required');return;}
-  const session={id:'s-'+Date.now(),title,date,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
+  const time=document.getElementById('ns-time').value;
+  const session={id:'s-'+Date.now(),title,date,time,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
   const{error}=await sb.from('sessions').insert([session]);
   if(error){showToast('Error: '+error.message);return;}
   SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
@@ -2399,7 +2449,7 @@ function renderHome(){
     html+=`<div class="card-elevated" style="grid-column:1/-1;cursor:pointer" onclick="showSessionDetail('${upcoming.id}')">
       <div class="section-head" style="margin-bottom:4px">${upcoming.status==='in_progress'?'Happening now':'Next session'}</div>
       <div style="font-weight:600;font-size:16px">${upcoming.title}</div>
-      <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${upcoming.date} · ${upcoming.location||'TBC'}</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${sessionDateTime(upcoming)} · ${upcoming.location||'TBC'}</div>
     </div>`;
   }
 
@@ -2432,7 +2482,7 @@ async function renderSignupScreen(){
     const canWithdraw=s.status==='upcoming';
     return`<div class="${signedUp?'card-elevated':'card'}">
       <div style="font-weight:600;margin-bottom:4px;font-family:var(--font-display)">${s.title}</div>
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">${s.date} · ${s.location||'TBC'}</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">${sessionDateTime(s)} · ${s.location||'TBC'}</div>
       ${signedUp
         ?(canWithdraw
           ?`<div style="display:flex;align-items:center;justify-content:space-between"><span class="badge completed">✓ Signed up</span><button class="btn sm" onclick="toggleMySignup('${s.id}',true,'signup')">Withdraw</button></div>`
