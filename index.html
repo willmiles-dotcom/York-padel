@@ -132,6 +132,22 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .player-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-top:2px}
 .gdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
 .player-count{font-size:13px;font-weight:500;color:var(--text-dim);white-space:nowrap}
+.sess-card{display:flex;align-items:center;gap:14px;padding:14px;border-radius:28px;margin-bottom:12px}
+.sess-card.live{border:1.5px solid rgba(61,220,151,0.6);background:var(--glass-elevated)}
+.sess-date{width:64px;height:72px;border-radius:20px;background:var(--gold-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.sess-date b{font-family:var(--font-display);font-size:30px;font-weight:700;letter-spacing:-1px;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+.sess-date span{font-size:12px;color:#C9B472;margin-top:3px}
+.sess-card.live .sess-date{background:rgba(61,220,151,0.16)}
+.sess-card.live .sess-date b,.sess-card.live .sess-date span{color:#3DDC97}
+.sess-card.done .sess-date{background:rgba(255,255,255,0.06)}
+.sess-card.done .sess-date b{color:var(--text)}
+.sess-card.done .sess-date span{color:var(--text-dim)}
+.sess-info{flex:1;min-width:0}
+.sess-title{font-size:16px;font-weight:600;letter-spacing:-0.2px}
+.sess-meta{font-size:13px;color:var(--text-dim);margin-top:2px}
+.sess-chips{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:7px}
+.badge.live{background:rgba(61,220,151,0.15);color:#3DDC97}
+.badge.live::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#3DDC97;margin-right:5px;vertical-align:middle}
 .pass-icon{width:48px;height:48px;border-radius:16px;background:rgba(240,190,69,0.18);color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
 .tile{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 8px 20px rgba(var(--shadow-tint),0.3);transition:transform 0.1s ease;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
@@ -347,11 +363,16 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- SESSIONS -->
     <div class="page" id="page-sessions">
-      <div class="row-flex">
-        <div style="font-weight:600;font-size:16px">Sessions</div>
+      <div class="page-title-row">
+        <div class="page-title">Sessions</div>
         <button class="btn primary sm" id="new-session-btn" style="display:none" onclick="openModal('new-session-modal')">+ New</button>
       </div>
-      <label id="sessions-show-archived-row" style="display:none;align-items:center;gap:6px;font-size:13px;color:#666;margin-bottom:14px"><input type="checkbox" id="sessions-show-archived" onchange="renderSessions()" style="width:auto">Show deleted</label>
+      <div class="tab-pills" id="sessions-filter">
+        <button class="active" onclick="setSessionsFilter('all',this)">All</button>
+        <button onclick="setSessionsFilter('upcoming',this)">Upcoming</button>
+        <button onclick="setSessionsFilter('completed',this)">Completed</button>
+      </div>
+      <label id="sessions-show-archived-row" style="display:none;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);margin-bottom:14px"><input type="checkbox" id="sessions-show-archived" onchange="renderSessions()" style="width:auto">Show deleted</label>
       <div id="sessions-list"><div class="loading">Loading...</div></div>
     </div>
 
@@ -1255,26 +1276,41 @@ function showPlayerProfile(pid){
 }
 
 // ── SESSIONS LIST ────────────────────────────────────────────
+let sessionsFilter='all';
+function setSessionsFilter(f,btn){
+  sessionsFilter=f;
+  document.querySelectorAll('#sessions-filter button').forEach(b=>b.classList.toggle('active',b===btn));
+  renderSessions();
+}
 function renderSessions(){
   const showArchived=document.getElementById('sessions-show-archived').checked;
-  const sorted=[...SESSIONS].filter(s=>showArchived||!s.archived).sort((a,b)=>new Date(b.date)-new Date(a.date));
-  document.getElementById('sessions-list').innerHTML=sorted.length?sorted.map(s=>`
-    <div class="${s.status==='in_progress'?'card-elevated':'card'} session-card" onclick="showSessionDetail('${s.id}')" style="${s.archived?'opacity:0.6':''}">
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:600;margin-bottom:3px;font-family:var(--font-display)">${s.title}</div>
-          <div style="font-size:12px;color:var(--text-dim)">${sessionDateTime(s)} · ${s.location||'TBC'}</div>
-          <div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap">
-            <span class="badge ${s.status}">${s.status}</span>
-            ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
-            ${myPlayerId&&Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId)?'<span class="badge completed">✓ You\'re in</span>':''}
-            ${s.archived?'<span class="badge flag">Deleted</span>':''}
-            ${s.status==='in_progress'?'<span class="session-live-badge">● Live</span>':''}
-          </div>
+  const isOpen=s=>s.status==='upcoming'||s.status==='in_progress';
+  let sorted=[...SESSIONS].filter(s=>showArchived||!s.archived);
+  if(sessionsFilter==='upcoming')sorted=sorted.filter(isOpen).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  else if(sessionsFilter==='completed')sorted=sorted.filter(s=>s.status==='completed').sort((a,b)=>new Date(b.date)-new Date(a.date));
+  else sorted.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  document.getElementById('sessions-list').innerHTML=sorted.length?sorted.map(s=>{
+    const d=parseSessionDate(s.date);
+    const live=s.status==='in_progress';
+    const done=s.status==='completed';
+    const n=Array.isArray(s.attendees)?s.attendees.length:0;
+    const statusChip=live?'<span class="badge live">Live now</span>':`<span class="badge ${s.status}">${s.status==='upcoming'?'Upcoming':s.status==='completed'?'Completed':escapeHtml(s.status)}</span>`;
+    const meta=[s.time,s.location||'TBC'].filter(Boolean).map(escapeHtml).join(' · ');
+    return `<div class="card session-card sess-card ${live?'live':done?'done':''}" onclick="showSessionDetail('${s.id}')" style="${s.archived?'opacity:0.6':''}">
+      <div class="sess-date"><b>${d.getDate()}</b><span>${d.toLocaleDateString('en-GB',{month:'short'})}</span></div>
+      <div class="sess-info">
+        <div class="sess-title">${escapeHtml(s.title)}</div>
+        <div class="sess-meta">${meta}</div>
+        <div class="sess-chips">
+          ${statusChip}
+          ${s.format?`<span class="badge prov">${escapeHtml(FORMAT_LABELS[s.format]||s.format.replace(/_/g,' '))}</span>`:''}
+          ${myPlayerId&&Array.isArray(s.attendees)&&s.attendees.includes(myPlayerId)?'<span class="badge completed">✓ You\'re in</span>':''}
+          ${s.archived?'<span class="badge flag">Deleted</span>':''}
+          ${n?`<span style="font-size:12px;color:var(--text-dim)">${n} ${live||done?'played':'going'}</span>`:''}
         </div>
-        <span style="color:#ccc;font-size:22px;margin-left:10px">›</span>
       </div>
-    </div>`).join(''):'<div class="empty-state">No sessions yet. Sessions appear here once the committee creates one.</div>';
+    </div>`;
+  }).join(''):`<div class="empty-state">${sessionsFilter==='upcoming'?'No upcoming sessions. New ones appear here once the committee posts them.':sessionsFilter==='completed'?'No completed sessions yet.':'No sessions yet. Sessions appear here once the committee creates one.'}</div>`;
 }
 
 // ── SESSION DETAIL ───────────────────────────────────────────
