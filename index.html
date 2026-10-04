@@ -91,9 +91,8 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .home-head h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-0.4px}
 .home-head a,.home-link{font-size:14px;font-weight:500;color:var(--gold);cursor:pointer;text-decoration:none}
-.hero-card{position:relative;overflow:hidden;border-radius:32px;padding:22px;background:linear-gradient(135deg,#1F5C47,#0C1A15);border:1px solid rgba(255,255,255,0.14);box-shadow:0 14px 36px rgba(var(--shadow-tint),0.5);cursor:pointer}
-.hero-card::before{content:'';position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;background:rgba(240,190,69,0.4);filter:blur(60px);pointer-events:none}
-.hero-court{position:absolute;left:20px;top:50%;transform:translateY(-50%);width:calc(100% - 40px);height:auto;aspect-ratio:2/1;pointer-events:none}
+.hero-card{position:relative;overflow:hidden;border-radius:32px;padding:22px;background:radial-gradient(circle at 100% 0%,rgba(240,190,69,0.30),transparent 55%),linear-gradient(135deg,#1F5C47,#0C1A15);border:1px solid rgba(255,255,255,0.14);box-shadow:0 14px 36px rgba(var(--shadow-tint),0.5);cursor:pointer}
+.hero-court{position:absolute;right:16px;top:18px;width:112px;height:58px;pointer-events:none}
 .hero-card>*:not(.hero-court){position:relative;z-index:1}
 .hero-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 10px;border-radius:20px;background:rgba(255,255,255,0.12);font-size:12px;font-weight:600}
 .hero-chip i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
@@ -3047,7 +3046,9 @@ function avatarHtml(id,name,size){
 function parseSessionDate(d){const [y,m,day]=String(d).split('-').map(Number);return new Date(y,(m||1)-1,day||1)}
 function daysUntil(d){const t=new Date();t.setHours(0,0,0,0);return Math.round((parseSessionDate(d)-t)/86400000)}
 function relDays(n){return n<=0?'today':n===1?'tomorrow':`in ${n} days`}
-const HERO_COURT='<svg class="hero-court" viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet" fill="none" aria-hidden="true"><g stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linecap="round"><rect x="1" y="1" width="198" height="98" rx="8" stroke-opacity="0.16"/><line x1="100" y1="1" x2="100" y2="99" stroke-opacity="0.26"/><line x1="69.5" y1="1" x2="69.5" y2="99" stroke-opacity="0.16"/><line x1="130.5" y1="1" x2="130.5" y2="99" stroke-opacity="0.16"/><line x1="69.5" y1="50" x2="130.5" y2="50" stroke-opacity="0.16"/></g></svg>';
+// Top-down padel court, 10m x 20m (2:1). Net across the middle, service lines 6.95m from each back wall,
+// centre service line between them. Fixed pixel size so it can never be stretched.
+const HERO_COURT='<svg class="hero-court" width="112" height="58" viewBox="-4 -4 208 108" fill="none" aria-hidden="true"><rect x="0" y="0" width="200" height="100" rx="7" fill="#fff" fill-opacity="0.08"/><g stroke="#fff" stroke-linecap="round" vector-effect="non-scaling-stroke"><rect x="0" y="0" width="200" height="100" rx="7" stroke-opacity="0.5" stroke-width="1.5"/><line x1="69.5" y1="0" x2="69.5" y2="100" stroke-opacity="0.4" stroke-width="1.5"/><line x1="130.5" y1="0" x2="130.5" y2="100" stroke-opacity="0.4" stroke-width="1.5"/><line x1="69.5" y1="50" x2="130.5" y2="50" stroke-opacity="0.4" stroke-width="1.5"/><line x1="100" y1="-4" x2="100" y2="104" stroke-opacity="0.85" stroke-width="2.5"/></g></svg>';
 
 function renderHome(){
   if(document.getElementById('page-home').classList.contains('active'))setBackdrop('photo-03');
