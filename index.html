@@ -145,6 +145,14 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .turnout-bars div{flex:1;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#F7CF62,#C48A00);min-height:4px}
 .turnout-labels{display:flex;gap:5px;margin-top:4px}
 .turnout-labels span{flex:1;text-align:center;font-size:10px;color:var(--text-dim)}
+.repeat-row{display:flex;align-items:center;gap:12px;padding:12px 14px;margin-bottom:12px;border-radius:16px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-border);cursor:pointer}
+.repeat-row input{width:22px;height:22px;padding:0;flex-shrink:0;accent-color:var(--gold)}
+.repeat-row b{display:block;font-size:15px;font-weight:600}
+.repeat-row small{display:block;font-size:12px;color:var(--text-dim);margin-top:1px}
+.rec-list{max-height:210px;overflow-y:auto;padding:4px 14px;border-radius:16px;background:rgba(255,255,255,0.05)}
+.rec-row{display:flex;align-items:center;gap:12px;padding:9px 0;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.06);cursor:pointer}
+.rec-row:last-child{border-bottom:none}
+.rec-row input{width:20px;height:20px;padding:0;flex-shrink:0;accent-color:var(--gold)}
 .admin-tools{border:1px solid var(--glass-border);border-radius:20px;background:rgba(255,255,255,0.04);margin-top:4px}
 .admin-tools summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;font-size:14px;font-weight:500;color:var(--text-dim);cursor:pointer;list-style:none}
 .admin-tools summary::-webkit-details-marker{display:none}
@@ -582,19 +590,26 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
     <div class="modal-handle"></div>
     <h3>New session</h3>
     <div class="form-row"><label class="form-label">Title</label><input type="text" id="ns-title" placeholder="e.g. Wednesday Training — Upper"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
-      <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
+    <label class="repeat-row"><input type="checkbox" id="ns-repeat" onchange="toggleRecurring()"><span><b>Repeat every week</b><small>Create the same session on one day each week</small></span></label>
+    <div class="form-row" id="ns-date-single"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
+    <div id="ns-recurring" style="display:none">
+      <div class="form-row"><label class="form-label">Day of the week</label><select id="ns-weekday" onchange="updateRecurringPreview()"><option value="">Choose a day</option><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="0">Sunday</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-row"><label class="form-label">From</label><input type="date" id="ns-from" onchange="onRecurringFromChange()"></div>
+        <div class="form-row"><label class="form-label">Until</label><input type="date" id="ns-until" onchange="updateRecurringPreview()"></div>
+      </div>
     </div>
+    <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Start time</label><select id="ns-time" onchange="syncEndTime('ns')"><option value="">Select</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="08:00">08:00</option><option value="08:30">08:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00">22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option></select></div>
       <div class="form-row"><label class="form-label">End time</label><select id="ns-end-time" onchange="this.dataset.touched='1'"><option value="">Select</option><option value="06:00">06:00</option><option value="06:30">06:30</option><option value="07:00">07:00</option><option value="07:30">07:30</option><option value="08:00">08:00</option><option value="08:30">08:30</option><option value="09:00">09:00</option><option value="09:30">09:30</option><option value="10:00">10:00</option><option value="10:30">10:30</option><option value="11:00">11:00</option><option value="11:30">11:30</option><option value="12:00">12:00</option><option value="12:30">12:30</option><option value="13:00">13:00</option><option value="13:30">13:30</option><option value="14:00">14:00</option><option value="14:30">14:30</option><option value="15:00">15:00</option><option value="15:30">15:30</option><option value="16:00">16:00</option><option value="16:30">16:30</option><option value="17:00">17:00</option><option value="17:30">17:30</option><option value="18:00">18:00</option><option value="18:30">18:30</option><option value="19:00">19:00</option><option value="19:30">19:30</option><option value="20:00">20:00</option><option value="20:30">20:30</option><option value="21:00">21:00</option><option value="21:30">21:30</option><option value="22:00">22:00</option><option value="22:30">22:30</option><option value="23:00">23:00</option><option value="23:30">23:30</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" value="York St. John Sports Fields" placeholder="e.g. York Sport Centre"></div>
     <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" value="3" placeholder="e.g. 3" min="1"></div>
+    <div id="ns-preview" style="display:none;margin-bottom:12px"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn full" onclick="closeModal('new-session-modal')">Cancel</button>
-      <button class="btn primary full" onclick="saveNewSession()">Create</button>
+      <button class="btn primary full" id="ns-create-btn" onclick="saveNewSession()">Create</button>
     </div>
   </div>
 </div>
@@ -2907,20 +2922,84 @@ async function saveSessionEdits(){
   showToast('Session updated');
 }
 
+// ---- Recurring sessions: one session per chosen weekday between two dates ----
+const MAX_RECURRING=60;
+const WEEKDAY_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function recurringDates(weekday,from,until){
+  const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const [fy,fm,fd]=from.split('-').map(Number),[uy,um,ud]=until.split('-').map(Number);
+  const d=new Date(fy,fm-1,fd),end=new Date(uy,um-1,ud),out=[];
+  while(d<=end&&out.length<=MAX_RECURRING){
+    if(d.getDay()===weekday)out.push(iso(d));
+    d.setDate(d.getDate()+1);
+  }
+  return out;
+}
+function toggleRecurring(){
+  const on=document.getElementById('ns-repeat').checked;
+  document.getElementById('ns-date-single').style.display=on?'none':'';
+  document.getElementById('ns-recurring').style.display=on?'block':'none';
+  updateRecurringPreview();
+}
+function onRecurringFromChange(){
+  const from=document.getElementById('ns-from').value;
+  const wd=document.getElementById('ns-weekday');
+  if(from&&wd.value===''){wd.value=String(parseSessionDate(from).getDay());}
+  updateRecurringPreview();
+}
+function syncCreateButton(){
+  const btn=document.getElementById('ns-create-btn');
+  const on=document.getElementById('ns-repeat').checked;
+  const n=document.querySelectorAll('.rec-date:checked').length;
+  btn.textContent=on&&n?`Create ${n} session${n===1?'':'s'}`:'Create';
+}
+function updateRecurringPreview(){
+  const box=document.getElementById('ns-preview');
+  if(!document.getElementById('ns-repeat').checked){box.style.display='none';box.innerHTML='';syncCreateButton();return;}
+  const wd=document.getElementById('ns-weekday').value;
+  const from=document.getElementById('ns-from').value,until=document.getElementById('ns-until').value;
+  box.style.display='block';
+  const note=(t,warn)=>{box.innerHTML=`<div class="insight-note" ${warn?'style="color:#FF8A7A"':''}>${t}</div>`;syncCreateButton();};
+  if(wd===''||!from||!until)return note('Choose a day and the from and until dates to see the sessions.');
+  if(until<from)return note('The until date is before the from date.',true);
+  const dates=recurringDates(parseInt(wd,10),from,until);
+  const name=WEEKDAY_NAMES[parseInt(wd,10)];
+  if(!dates.length)return note(`There are no ${name}s between those dates.`,true);
+  if(dates.length>MAX_RECURRING)return note(`That is more than ${MAX_RECURRING} sessions. Shorten the date range.`,true);
+  box.innerHTML=`<div class="insight-note">Untick any dates to skip, such as holidays.</div><div class="rec-list">${dates.map(d=>`<label class="rec-row"><input type="checkbox" class="rec-date" value="${d}" checked onchange="syncCreateButton()"><span>${parseSessionDate(d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}</span></label>`).join('')}</div>`;
+  syncCreateButton();
+}
+
 async function saveNewSession(){
   const title=document.getElementById('ns-title').value.trim();
+  const recurring=document.getElementById('ns-repeat').checked;
   const date=document.getElementById('ns-date').value;
-  if(!title||!date){showToast('Title and date required');return;}
+  if(!title||(!recurring&&!date)){showToast(recurring?'Title required':'Title and date required');return;}
   const maxCourtsVal=parseInt(document.getElementById('ns-max-courts').value)||null;
   if(!maxCourtsVal){showToast('Number of courts is required');return;}
   const time=document.getElementById('ns-time').value;
   const endTime=document.getElementById('ns-end-time').value;
   if(endTime&&!time){showToast('Add a start time first');return;}
   if(endTime&&endTime<=time){showToast('End time must be after the start time');return;}
-  const session={id:'s-'+Date.now(),title,date,time,end_time:endTime,type:'training',format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
-  const{error}=await sb.from('sessions').insert([session]);
+  let dates=[date];
+  if(recurring){
+    dates=[...document.querySelectorAll('.rec-date:checked')].map(i=>i.value);
+    if(!dates.length){showToast('Choose a day and dates with at least one session');return;}
+    const dayName=WEEKDAY_NAMES[parseSessionDate(dates[0]).getDay()];
+    const nice=d=>parseSessionDate(d).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    if(!confirm(`Create ${dates.length} session${dates.length===1?'':'s'} every ${dayName}, from ${nice(dates[0])} to ${nice(dates[dates.length-1])}?\n\nThey are created as separate sessions, so you can edit or delete any one afterwards.`))return;
+  }
+  const stamp=Date.now();
+  const format=document.getElementById('ns-format').value,location=document.getElementById('ns-location').value;
+  const sessions=dates.map((d,i)=>({id:'s-'+(stamp+i),title,date:d,time,end_time:endTime,type:'training',format,location,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false}));
+  const{error}=await sb.from('sessions').insert(sessions);
   if(error){showToast('Error: '+error.message);return;}
-  SESSIONS.push(session);document.getElementById('ns-end-time').dataset.touched='';closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
+  SESSIONS.push(...sessions);
+  document.getElementById('ns-end-time').dataset.touched='';
+  if(recurring){document.getElementById('ns-repeat').checked=false;toggleRecurring();}
+  closeModal('new-session-modal');
+  showToast(sessions.length>1?`${sessions.length} sessions created`:'Session created!');
+  renderSessions();renderHome();renderCommitteeStats();
 }
 
 // ── ROSTER IMPORT ───────────────────────────────────────────
