@@ -660,6 +660,15 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 </div>
 
 <!-- ADD PLAYER TO SESSION MODAL -->
+<!-- MEMBER MATCH MODAL -->
+<div class="modal-overlay" id="member-match-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Is this a member?</h3>
+    <div id="member-match-body"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="add-to-session-modal">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -1953,7 +1962,7 @@ function renderLiveSession(){
           return`<div class="g-row">
             <button class="g-btn ok ${verified?'on':''}" onclick="admitGuest('${id}')" aria-label="Admit">✓</button>
             <button class="g-btn no" onclick="removeFromSession('${id}')" aria-label="Remove">✕</button>
-            <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">${escapeHtml(pName(id))}</div><div style="font-size:12px;color:${verified?'#3DDC97':'var(--text-dim)'}">${verified?'Playing':'Signed up online · check their pass'}</div></div>
+            <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">${escapeHtml(pName(id))}</div><div style="font-size:12px;color:${verified?'#3DDC97':'var(--text-dim)'}">${verified?'Playing':'Signed up online · check their pass'}</div>${(()=>{const m=memberSuggestion(id);return m?`<div style="font-size:12px;color:var(--gold);margin-top:3px">Looks like ${escapeHtml(m.name)} · <a style="text-decoration:underline;cursor:pointer" onclick="swapGuestForMember('${id}','${m.id}')">Use member</a></div>`:''})()}</div>
           </div>`;
         }).join('')}
         ${removedGuestIds.length?`<div style="margin-top:10px">
@@ -2475,10 +2484,47 @@ function restoreGuest(id){
 // pass but never used the link themselves) - added straight into the
 // playing pool and already door-verified, since committee is looking at
 // them as they type the name in.
+// Members whose name closely matches a typed name (same words in any order, a one-letter
+// typo on a longer name, or a surname initial). A first name alone never matches.
+function findMemberMatches(name){
+  const n=normalizeName(name);
+  if(!n)return [];
+  return PLAYERS.filter(p=>!p.is_guest&&sameGuestName(normalizeName(p.name),n))
+    .sort((a,b)=>Number(normalizeName(b.name)===n)-Number(normalizeName(a.name)===n)||Number(b.is_active!==false)-Number(a.is_active!==false))
+    .slice(0,3);
+}
+let pendingGuestName='';
 async function addAdhocGuest(){
   const input=document.getElementById('adhoc-guest-name');
   const name=(input.value||'').trim();
   if(name.length<2||name.length>40){showToast('Name must be 2-40 characters');return;}
+  const matches=findMemberMatches(name);
+  if(matches.length){openMemberMatch(name,matches);return;}
+  await createAdhocGuest(name);
+}
+function openMemberMatch(name,matches){
+  pendingGuestName=name;
+  const q=`\u201c${escapeHtml(name)}\u201d`;
+  document.getElementById('member-match-body').innerHTML=`
+    <p style="font-size:14px;color:var(--text-dim);margin-bottom:14px;line-height:1.5">${q} looks like ${matches.length>1?'a few members':'a member'}. Add the member instead so their sessions stay together.</p>
+    ${matches.map(m=>{const inIt=sessionPlayers.includes(m.id);return `<button class="btn-gold" ${inIt?'disabled':''} style="width:100%;height:50px;margin-bottom:8px;font-size:15px" onclick="pickMatchedMember('${m.id}')">${inIt?`${escapeHtml(m.name)} is already in this session`:`Add ${escapeHtml(m.name)}${m.is_active===false?' (inactive)':''}`}</button>`}).join('')}
+    <button class="btn full" style="margin-bottom:6px" onclick="addAsGuestAnyway()">No, add ${q} as a guest</button>
+    <button class="auth-link" onclick="closeModal('member-match-modal')">Cancel</button>`;
+  openModal('member-match-modal');
+}
+async function pickMatchedMember(id){
+  closeModal('member-match-modal');
+  if(sessionPlayers.includes(id)){showToast('Already in this session');return;}
+  document.getElementById('adhoc-guest-name').value='';
+  await toggleSessionPlayer(id);
+  if(sessionPlayers.includes(id))showToast((pMap[id]||{}).name+' added');
+}
+function addAsGuestAnyway(){
+  closeModal('member-match-modal');
+  createAdhocGuest(pendingGuestName);
+}
+async function createAdhocGuest(name){
+  const input=document.getElementById('adhoc-guest-name');
   const id='guest_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
   const player={id,name,is_guest:true,guest_session_id:activeSessionId,elo_rating:1000,is_active:true,door_verified:true};
   const{error}=await sb.from('players').insert([player]);
@@ -2489,6 +2535,23 @@ async function addAdhocGuest(){
   input.value='';
   renderLiveSession();
   showToast(name+' added');
+}
+
+// A guest who signed up through the link might really be a member. Suggest the first active member
+// who matches and is not already in the session (not offered once the guest has played a round).
+function memberSuggestion(gid){
+  const g=pMap[gid];if(!g)return null;
+  if(sessionRounds.some(r=>[...(r.t1||[]),...(r.t2||[])].includes(gid)))return null;
+  return findMemberMatches(g.name).find(m=>m.is_active!==false&&!sessionPlayers.includes(m.id)&&!sessionPendingGuestIds.includes(m.id))||null;
+}
+function swapGuestForMember(gid,mid){
+  if(sessionPlayers.includes(mid)){showToast('Already in this session');return;}
+  sessionPlayers=sessionPlayers.filter(i=>i!==gid);
+  sessionPendingGuestIds=sessionPendingGuestIds.filter(i=>i!==gid);
+  sessionPlayers.push(mid);
+  persistSessionAttendees();
+  renderLiveSession();
+  showToast(`${(pMap[mid]||{}).name} added in place of the guest`);
 }
 
 // A guest is admitted (green tick): door-verified and moved into the
