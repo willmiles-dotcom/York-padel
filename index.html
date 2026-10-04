@@ -1551,6 +1551,12 @@ function renderLiveSession(){
   {
     const guestIds=[...new Set([...sessionPlayers,...sessionPendingGuestIds])].filter(id=>(pMap[id]||{}).is_guest);
     const collapsed=!!collapsedSections.guests;
+    // Guests taken off this session by mistake: their player row still
+    // exists, so list them (quietly) with a Restore link. Includes anyone
+    // who already played a round so their points stay on one entry.
+    const inRounds=new Set(sessionRounds.flatMap(r=>[...(r.t1||[]),...(r.t2||[])]));
+    const removedGuestIds=PLAYERS.filter(p=>p.is_guest&&!sessionPlayers.includes(p.id)&&!sessionPendingGuestIds.includes(p.id)&&(p.guest_session_id===activeSessionId||inRounds.has(p.id))).map(p=>p.id);
+    const removedOpen=!!collapsedSections.removedGuests;
     html+=`<div class="card">
       <div class="section-head" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:${collapsed?0:10}px" onclick="toggleSection('guests')">
         <span>Guests${guestIds.length?` (${guestIds.length})`:''}</span>
@@ -1572,6 +1578,13 @@ function renderLiveSession(){
             <span style="font-size:12px;color:${verified?'#1D9E75':'#999'}">${verified?'Playing':'Not checked in'}</span>
           </div>`;
         }).join('')}
+        ${removedGuestIds.length?`<div style="margin-top:10px">
+          <div onclick="toggleSection('removedGuests')" style="font-size:12px;color:var(--text-dim);cursor:pointer;opacity:0.75">${removedOpen?'▾':'▸'} Removed (${removedGuestIds.length})</div>
+          ${removedOpen?removedGuestIds.map(id=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 0 14px;font-size:12px;color:var(--text-dim)">
+            <span>${escapeHtml(pName(id))}</span>
+            <button onclick="restoreGuest('${id}')" style="background:none;border:none;color:var(--text);font-size:12px;text-decoration:underline;cursor:pointer;padding:6px 0 6px 12px">Restore</button>
+          </div>`).join(''):''}
+        </div>`:''}
       `}
     </div>`;
   }
@@ -2091,6 +2104,19 @@ function removeFromSession(pid){
   if(hadPair)persistSessionPairs();
   persistSessionAttendees();
   renderLiveSession();
+}
+
+// Put a removed guest back on the session. Their original player row is
+// reused (not a new one), so rounds already played stay linked to them.
+// Door-verified guests go straight back to playing; others return to
+// "Not checked in".
+function restoreGuest(id){
+  const verified=!!(pMap[id]||{}).door_verified;
+  if(verified){if(!sessionPlayers.includes(id))sessionPlayers.push(id);}
+  else if(!sessionPendingGuestIds.includes(id))sessionPendingGuestIds.push(id);
+  persistSessionAttendees();
+  renderLiveSession();
+  showToast(pName(id)+' restored');
 }
 
 // Committee entering someone by hand at the door (they showed up with a
