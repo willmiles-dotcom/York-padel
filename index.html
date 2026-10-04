@@ -116,6 +116,15 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .last-title{font-size:16px;font-weight:600}
 .last-meta{font-size:13px;color:var(--text-dim);margin-top:2px}
 .last-scorer{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)}
+.admin-tools{border:1px solid var(--glass-border);border-radius:20px;background:rgba(255,255,255,0.04);margin-top:4px}
+.admin-tools summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;font-size:14px;font-weight:500;color:var(--text-dim);cursor:pointer;list-style:none}
+.admin-tools summary::-webkit-details-marker{display:none}
+.admin-tools summary::after{content:'▸';font-size:12px;margin-left:auto}
+.admin-tools[open] summary::after{content:'▾'}
+.admin-attn{font-size:12px;font-weight:600;color:var(--gold)}
+.admin-section{padding:14px 16px 16px;border-top:1px solid rgba(255,255,255,0.08)}
+.nav button{position:relative}
+.nav button.attn::before{content:'';position:absolute;top:7px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px rgba(240,190,69,0.8)}
 .page-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .page-title{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-1.4px;line-height:1.1}
 .count-pill{padding:6px 12px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);font-size:12px;color:var(--text-dim);white-space:nowrap}
@@ -296,8 +305,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
   <div class="nav" id="main-nav">
     <button class="active" onclick="showPage('home',this)" aria-label="Home" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>Home</span></button>
     <button class="ranking-ui" onclick="showPage('leaderboard',this)" aria-label="Rankings" title="Rankings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span>Rankings</span></button>
-    <button onclick="showPage('players',this)" aria-label="Players" title="Players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.9.2 5.5 2.6 5.5 5.8"/></svg><span>Players</span></button>
     <button onclick="showPage('sessions',this)" aria-label="Sessions" title="Sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Sessions</span></button>
+    <button onclick="showPage('players',this)" aria-label="Players" title="Players"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3.2"/><path d="M2.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.9.2 5.5 2.6 5.5 5.8"/></svg><span>Players</span></button>
     <button id="nav-committee" style="display:none" onclick="showPage('committee',this)" aria-label="Committee" title="Committee"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3z"/></svg><span>Committee</span></button>
   </div>
   <div class="content">
@@ -378,7 +387,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- SESSION DETAIL / LIVE -->
     <div class="page" id="page-session-detail">
-      <button class="back-btn" id="session-detail-back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">← Back</button>
+      <button class="back-btn" id="session-detail-back-btn" onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(3)'))">← Back</button>
       <div id="session-detail-content"></div>
     </div>
 
@@ -391,7 +400,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- PLAYER PROFILE -->
     <div class="page" id="page-player-profile">
-      <button class="back-btn" onclick="showPage('players',document.querySelector('#main-nav button:nth-child(3)'))">← Back</button>
+      <button class="back-btn" onclick="showPage('players',document.querySelector('#main-nav button:nth-child(4)'))">← Back</button>
       <div id="player-profile-content"></div>
     </div>
 
@@ -402,19 +411,6 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <div class="stat"><div class="stat-label">Active</div><div class="stat-val green" id="c-active">—</div></div>
         <div class="stat"><div class="stat-label">Sessions</div><div class="stat-val" id="c-sess">—</div></div>
         <div class="stat"><div class="stat-label">Flagged</div><div class="stat-val" id="c-flagged">—</div></div>
-      </div>
-      <div class="card">
-        <div class="section-head">Rankings</div>
-        <p style="font-size:13px;color:#888;margin-bottom:12px">Rankings are currently <strong id="rankings-status-text">ON</strong>. Turning this off hides the leaderboard and ELO everywhere and stops calculating rating changes for new rounds — no data is deleted, and turning it back on resumes normally.</p>
-        <button class="btn full" id="rankings-toggle-btn" onclick="toggleRankingsEnabled()">Turn rankings off</button>
-      </div>
-      <div class="card">
-        <div class="section-head">Pending account requests</div>
-        <div id="pending-claims-list"><div style="font-size:13px;color:#aaa">Loading...</div></div>
-      </div>
-      <div class="card">
-        <div class="section-head">Flagged players</div>
-        <div id="flagged-list"><div style="font-size:13px;color:#aaa">No players flagged.</div></div>
       </div>
       <div class="card">
         <div class="section-head">Add new player</div>
@@ -437,6 +433,22 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <textarea id="import-roster-text" rows="6" placeholder="Jane Smith, female, upper&#10;John Doe" style="resize:vertical"></textarea>
         <button class="btn full" style="margin-top:10px" onclick="importRoster()">Import roster</button>
       </div>
+      <details class="admin-tools" id="admin-tools">
+        <summary><span>Admin tools</span><span class="admin-attn" id="admin-attn"></span></summary>
+      <div class="admin-section">
+        <div class="section-head">Pending account requests</div>
+        <div id="pending-claims-list"><div style="font-size:13px;color:#aaa">Loading...</div></div>
+      </div>
+      <div class="admin-section">
+        <div class="section-head">Flagged players</div>
+        <div id="flagged-list"><div style="font-size:13px;color:#aaa">No players flagged.</div></div>
+      </div>
+      <div class="admin-section">
+        <div class="section-head">Rankings</div>
+        <p style="font-size:13px;color:#888;margin-bottom:12px">Rankings are currently <strong id="rankings-status-text">ON</strong>. Turning this off hides the leaderboard and ELO everywhere and stops calculating rating changes for new rounds — no data is deleted, and turning it back on resumes normally.</p>
+        <button class="btn full" id="rankings-toggle-btn" onclick="toggleRankingsEnabled()">Turn rankings off</button>
+      </div>
+      </details>
     </div>
 
   </div>
@@ -1125,7 +1137,7 @@ function applyRankingsVisibility(){
   const statusText=document.getElementById('rankings-status-text');
   if(statusText)statusText.textContent=RANKINGS_ENABLED?'ON':'OFF';
   if(!RANKINGS_ENABLED&&document.getElementById('page-leaderboard').classList.contains('active')){
-    showPage('players',document.querySelector('#main-nav button:nth-child(3)'));
+    showPage('players',document.querySelector('#main-nav button:nth-child(4)'));
   }
 }
 
@@ -1358,7 +1370,7 @@ async function toggleSessionArchived(sid,archived){
   const idx=SESSIONS.findIndex(x=>x.id===sid);
   if(idx>=0)SESSIONS[idx].archived=archived;
   showToast(archived?'Session deleted':'Session restored');
-  showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'));
+  showPage('sessions',document.querySelector('#main-nav button:nth-child(3)'));
   renderSessions();
 }
 
@@ -2365,11 +2377,19 @@ function renderCommitteeStats(){
   renderPendingClaims();
 }
 
+let pendingClaimCount=0;
+function updateAdminAttention(){
+  const el=document.getElementById('admin-attn');
+  if(el)el.textContent=pendingClaimCount?`${pendingClaimCount} request${pendingClaimCount>1?'s':''} waiting`:'';
+  const nb=document.getElementById('nav-committee');
+  if(nb)nb.classList.toggle('attn',pendingClaimCount>0&&accessLevel==='committee');
+}
 async function renderPendingClaims(){
   const{data,error}=await sb.rpc('list_pending_claims');
   const el=document.getElementById('pending-claims-list');
   if(error){console.error('list_pending_claims error:',error);el.innerHTML='<div style="font-size:13px;color:#FF6B6B">Could not load pending requests: '+error.message+'</div>';return;}
   const list=data||[];
+  pendingClaimCount=list.length;updateAdminAttention();
   el.innerHTML=list.length?list.map(r=>`<div class="elo-result-row">
     <div><div style="font-weight:500">${r.player_name}</div><div style="font-size:12px;color:#888">${r.requester_email}</div></div>
     <div style="display:flex;gap:6px">
@@ -2738,7 +2758,7 @@ function renderHome(){
     }
     const meta=[parseSessionDate(mine.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}),mine.format?FORMAT_LABELS[mine.format]:'',roundCount?`${roundCount} round${roundCount>1?'s':''}`:''].filter(Boolean).join(' · ');
     html+=`<div>
-      <div class="home-head"><h2>Your last session</h2><a onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">All sessions</a></div>
+      <div class="home-head"><h2>Your last session</h2><a onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(3)'))">All sessions</a></div>
       <div class="card last-card" style="margin:0;cursor:pointer" onclick="showSessionDetail('${mine.id}')">
         <div class="last-top"><div style="flex:1;min-width:0"><div class="last-title">${escapeHtml(mine.title)}</div><div class="last-meta">${escapeHtml(meta)}</div></div><span class="badge completed">Completed</span></div>
         ${stat?`<div class="last-scorer"><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text-dim)">${stat.label}</div><div style="font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--gold);letter-spacing:-0.8px;font-variant-numeric:tabular-nums">${stat.big}</div></div><div style="font-size:15px;font-weight:600">${stat.side}</div></div>`:''}
