@@ -835,6 +835,7 @@ let sessionPendingGuestIds=[];
 // session loads, then left alone so a manual toggle sticks for the rest
 // of that viewing.
 let collapsedSections={};
+let completedOpen={}; // completed-session sections the user has expanded, keyed by sessionId:section (collapsed by default)
 let sessionRounds=[];
 let sessionPairs=[];
 let sessionEloState={};
@@ -1239,6 +1240,20 @@ function showSessionDetail(sid){
   showPage('session-detail',null,true);
 }
 
+function toggleCompletedSection(sid,key){
+  const k=sid+':'+key;
+  completedOpen[k]=!completedOpen[k];
+  const s=SESSIONS.find(x=>x.id===sid);
+  if(s)renderCompletedSession(s);
+}
+function collapsibleHead(sid,key,label,count){
+  const open=!!completedOpen[sid+':'+key];
+  return `<div class="section-head" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:${open?10:0}px" onclick="toggleCompletedSection('${sid}','${key}')">
+    <span>${label} (${count})</span>
+    <span style="font-size:12px;font-weight:400;color:var(--text-dim)">${open?'▾ Hide':'▸ Show'}</span>
+  </div>`;
+}
+
 function renderCompletedSession(s){
   setBackdrop('photo-12');
   viewingCompletedSessionId=s.id;
@@ -1259,8 +1274,8 @@ function renderCompletedSession(s){
   if(accessLevel==='committee'){
     const guestIds=(s.attendees||[]).filter(id=>(pMap[id]||{}).is_guest);
     if(guestIds.length){
-      html+=`<div class="card"><div class="section-head">Guests (${guestIds.length})</div>
-        ${guestIds.map(id=>`<div class="elo-result-row"><span>${escapeHtml(pName(id))}</span><span>${(pMap[id]||{}).door_verified?'✓ Verified':'—'}</span></div>`).join('')}
+      html+=`<div class="card">${collapsibleHead(s.id,'guests','Guests',guestIds.length)}
+        ${completedOpen[s.id+':guests']?guestIds.map(id=>`<div class="elo-result-row"><span>${escapeHtml(pName(id))}</span><span>${(pMap[id]||{}).door_verified?'✓ Verified':'—'}</span></div>`).join(''):''}
       </div>`;
     }
   }
@@ -1273,7 +1288,7 @@ function renderCompletedSession(s){
     </div>`;
   }
   if(s.attendees&&s.attendees.length){
-    html+=`<div class="card"><div class="section-head">Attendees (${s.attendees.length})</div><div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}${(pMap[id]||{}).is_guest?' (guest)':''}</span>`).join('')}</div></div>`;
+    html+=`<div class="card">${collapsibleHead(s.id,'attendees','Attendees',s.attendees.length)}${completedOpen[s.id+':attendees']?`<div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}${(pMap[id]||{}).is_guest?' (guest)':''}</span>`).join('')}</div>`:''}</div>`;
   }
   if(s.elo_changes&&s.elo_changes.length){
     const sc=[...s.elo_changes].sort((a,b)=>b.change-a.change);
