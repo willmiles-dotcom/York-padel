@@ -126,7 +126,9 @@ input,select,textarea{padding:10px 12px;border:1px solid var(--glass-border);bor
 input::placeholder{color:#777}
 input:focus,select:focus{outline:none;border-color:var(--gold)}
 input:disabled,select:disabled{opacity:0.45;cursor:not-allowed}
-.form-row{margin-bottom:12px}
+.form-row{margin-bottom:12px;min-width:0}
+input[type=date],input[type=time]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;min-height:44px;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 .form-label{font-size:12px;color:var(--text-dim);margin-bottom:5px;display:block;font-weight:500}
 .session-card{cursor:pointer}
 .session-card:active{background:rgba(255,255,255,0.05)}
