@@ -116,6 +116,22 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .last-meta{font-size:13px;color:var(--text-dim);margin-top:2px}
 .last-scorer{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)}
 .pass-card{display:flex;align-items:center;gap:14px;padding:16px;border-radius:26px;background:linear-gradient(135deg,#3A2F0E,#1A1608);border:1px solid rgba(240,190,69,0.35);text-decoration:none;color:var(--text)}
+.page-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-1.4px;line-height:1.1}
+.count-pill{padding:6px 12px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);font-size:12px;color:var(--text-dim);white-space:nowrap}
+#page-players .filter-row input,#page-players .filter-row select{height:50px;border-radius:18px;background-color:rgba(255,255,255,0.07);font-size:15px}
+#page-players .filter-row input{padding-left:44px;background-repeat:no-repeat;background-position:16px center;background-size:20px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238D919B' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6.5'/%3E%3Cpath d='M16 16l4.5 4.5'/%3E%3C/svg%3E")}
+#page-players .filter-row select{flex:0 0 auto;width:auto;max-width:44%}
+.player-list{padding:6px;border-radius:28px}
+.player-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:20px;cursor:pointer;transition:background .15s ease}
+.player-row:active{background:var(--glass-strong)}
+.player-row input[type=checkbox],.player-selectall input[type=checkbox]{width:22px;height:22px;padding:0;flex-shrink:0;accent-color:var(--gold)}
+.player-selectall{display:none;align-items:center;gap:10px;padding:4px 14px 10px;font-size:13px;color:var(--text-dim)}
+.player-main{flex:1;min-width:0}
+.player-main .player-name{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.player-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);margin-top:2px}
+.gdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.player-count{font-size:13px;font-weight:500;color:var(--text-dim);white-space:nowrap}
 .pass-icon{width:48px;height:48px;border-radius:16px;background:rgba(240,190,69,0.18);color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
 .tile{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 8px 20px rgba(var(--shadow-tint),0.3);transition:transform 0.1s ease;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
@@ -298,8 +314,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- PLAYERS -->
     <div class="page" id="page-players">
+      <div class="page-title-row"><div class="page-title">Players</div><span class="count-pill" id="player-count"></span></div>
       <div class="filter-row">
-        <input type="text" id="player-search" placeholder="Search..." oninput="renderPlayers()">
+        <input type="text" id="player-search" placeholder="Search players" oninput="renderPlayers()">
         <select id="player-group" onchange="renderPlayers()">
           <option value="">All groups</option>
           <option value="competitive">Competitive</option>
@@ -308,7 +325,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
           <option value="unassigned">Unassigned</option>
         </select>
       </div>
-      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin:-6px 0 14px"><input type="checkbox" id="player-show-archived" onchange="renderPlayers()" style="width:auto">Show archived</label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);margin:-6px 0 14px"><input type="checkbox" id="player-show-archived" onchange="renderPlayers()" style="width:auto">Show archived</label>
       <div class="card" id="bulk-actions-bar" style="display:none">
         <div class="section-head"><span id="bulk-selected-count">0</span> selected</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -322,9 +339,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
           <button class="btn sm" onclick="clearPlayerSelection()">Clear selection</button>
         </div>
       </div>
-      <div class="card" style="padding:0;overflow:hidden">
-        <table><thead><tr><th id="player-select-col-head" style="display:none;width:28px"><input type="checkbox" id="select-all-visible" onchange="toggleSelectAllVisible(this.checked)"></th><th>Player</th><th>Group</th><th class="ranking-ui">ELO</th><th>Games</th></tr></thead>
-        <tbody id="player-body"><tr><td colspan="5" class="loading">Loading...</td></tr></tbody></table>
+      <div class="card player-list">
+        <label class="player-selectall" id="player-select-col-head"><input type="checkbox" id="select-all-visible" onchange="toggleSelectAllVisible(this.checked)">Select all shown</label>
+        <div id="player-body"><div class="loading">Loading...</div></div>
       </div>
     </div>
 
@@ -1121,16 +1138,24 @@ function renderPlayers(){
     if(q&&!p.name.toLowerCase().includes(q))return false;
     if(g&&p.group_name!==g)return false;
     return true;
-  }).sort((a,b)=>b.elo_rating-a.elo_rating);
+  }).sort((a,b)=>RANKINGS_ENABLED?b.elo_rating-a.elo_rating:a.name.localeCompare(b.name));
   const isCommittee=accessLevel==='committee';
-  document.getElementById('player-select-col-head').style.display=isCommittee?'table-cell':'none';
-  document.getElementById('player-body').innerHTML=list.map(p=>`<tr onclick="showPlayerProfile('${p.id}')" style="cursor:pointer">
-    ${isCommittee?`<td onclick="event.stopPropagation()" style="box-shadow:inset 3px 0 0 ${groupEdgeColor(p.group_name)}"><input type="checkbox" ${selectedPlayerIds.has(p.id)?'checked':''} onchange="togglePlayerSelect('${p.id}',this.checked)"></td>`:''}
-    <td ${!isCommittee?`style="box-shadow:inset 3px 0 0 ${groupEdgeColor(p.group_name)}"`:''}><span class="player-name">${p.name}</span>${!p.is_active?'<span class="badge prov" style="margin-left:4px;font-size:10px;padding:1px 5px">Inactive</span>':''}</td>
-    <td><span class="badge ${p.group_name||'unassigned'}">${p.group_name==='unassigned'?'—':(p.group_name||'—')}</span></td>
-    <td class="ranking-ui"><span class="elo-pill ${eloClass(p.elo_rating)}">${p.elo_rating}</span></td>
-    <td style="color:#aaa">${p.games_played||0}</td>
-  </tr>`).join('');
+  // sessions attended = completed, non-archived sessions listing the player
+  const attended={};
+  SESSIONS.forEach(s=>{if(s.status==='completed'&&!s.archived&&Array.isArray(s.attendees))s.attendees.forEach(id=>{attended[id]=(attended[id]||0)+1})});
+  document.getElementById('player-select-col-head').style.display=isCommittee?'flex':'none';
+  document.getElementById('player-count').textContent=`${list.length} player${list.length===1?'':'s'}`;
+  document.getElementById('player-body').innerHTML=list.length?list.map(p=>{
+    const n=attended[p.id]||0;
+    const gl=p.group_name&&p.group_name!=='unassigned'?`<span class="gdot" style="background:${groupEdgeColor(p.group_name)}"></span>${escapeHtml(p.group_name.charAt(0).toUpperCase()+p.group_name.slice(1))} group`:'No group yet';
+    return `<div class="player-row" onclick="showPlayerProfile('${p.id}')">
+      ${isCommittee?`<input type="checkbox" onclick="event.stopPropagation()" ${selectedPlayerIds.has(p.id)?'checked':''} onchange="togglePlayerSelect('${p.id}',this.checked)" aria-label="Select ${escapeHtml(p.name)}">`:''}
+      ${avatarHtml(p.id,p.name,44)}
+      <div class="player-main"><div class="player-name">${escapeHtml(p.name)}${p.is_active===false?' <span class="badge prov" style="font-size:10px;padding:1px 6px">Inactive</span>':''}</div><div class="player-sub">${gl}</div></div>
+      <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
+      <span class="player-count">${n} session${n===1?'':'s'}</span>
+    </div>`;
+  }).join(''):'<div class="empty-state">No players match. Try a different name or group.</div>';
   if(isCommittee)document.getElementById('select-all-visible').checked=list.length>0&&list.every(p=>selectedPlayerIds.has(p.id));
   renderBulkBar();
 }
