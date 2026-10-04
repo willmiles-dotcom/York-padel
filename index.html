@@ -207,6 +207,37 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .profile-date{width:46px;height:50px;border-radius:14px;background:rgba(255,255,255,0.07);display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
 .profile-date b{font-family:var(--font-display);font-size:19px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .profile-date span{font-size:11px;color:var(--text-dim);margin-top:2px}
+.rank-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.07)}
+.rank-row:last-child{border-bottom:none}
+.rank-n{width:22px;flex-shrink:0;font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--text-dim);font-variant-numeric:tabular-nums}
+.rank-n.r1{color:#F0BE45}.rank-n.r2{color:#C9CCD3}.rank-n.r3{color:#D69A6B}
+.rank-name{flex:1;min-width:0;font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-right{font-family:var(--font-display);font-size:17px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.rank-right small{display:block;font-family:var(--font-body);font-size:11px;font-weight:500;color:var(--text-dim)}
+.res-round{display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px}
+.res-pill{padding:4px 10px;border-radius:8px;background:var(--gold-soft);color:var(--gold);font-size:12px;font-weight:600}
+.res-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.06)}
+.res-team{flex:1;min-width:0;font-size:14px;color:var(--text-dim)}
+.res-team.right{text-align:right}
+.res-team.win{color:var(--text);font-weight:600}
+.res-score{display:flex;align-items:center;gap:6px;flex-shrink:0;font-family:var(--font-display);font-size:18px;font-variant-numeric:tabular-nums}
+.res-score b{min-width:22px;text-align:center;font-weight:700;color:var(--text-dim)}
+.res-score b.win{color:var(--gold)}
+.res-score i{color:var(--text-dim);font-style:normal;font-size:12px}
+.res-score small{font-family:var(--font-body);font-size:12px;color:var(--text-dim)}
+.set-input{width:50px;height:50px;padding:0;border-radius:14px;text-align:center;font-size:20px;font-weight:700;background:rgba(255,255,255,0.08)}
+.court-head-row{display:flex;align-items:center;justify-content:space-between}
+.remove-x{color:#FF6B57;font-size:13px;font-weight:500;cursor:pointer;padding:16px 16px 0 0}
+.btn-gold:disabled{opacity:0.4;cursor:not-allowed}
+.podium{display:flex;gap:10px;align-items:flex-end;margin-bottom:12px}
+.pod{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;padding:14px 8px;border-radius:26px;background:rgba(255,255,255,0.07);border:1px solid var(--glass-border);cursor:pointer;min-height:160px;text-align:center}
+.pod.p1{min-height:206px;background:linear-gradient(135deg,#F7CF62,#D9A32A);border:none;color:var(--ink);box-shadow:0 12px 32px rgba(240,190,69,0.25)}
+.pod.p3{min-height:146px}
+.pod-name{font-size:14px;font-weight:700;letter-spacing:-0.2px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pod-elo{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:-0.6px;font-variant-numeric:tabular-nums}
+.pod.p1 .pod-elo{font-size:28px}
+.pod-rank{font-size:13px;font-weight:700;color:var(--text-dim)}
+.pod.p1 .pod-rank{color:#6B5110}.pod.p2 .pod-rank{color:#C9CCD3}.pod.p3 .pod-rank{color:#D69A6B}
 .page-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .page-title{font-family:var(--font-display);font-size:34px;font-weight:700;letter-spacing:-1.4px;line-height:1.1}
 .count-pill{padding:6px 12px;border-radius:14px;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);font-size:12px;color:var(--text-dim);white-space:nowrap}
@@ -400,13 +431,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- LEADERBOARD -->
     <div class="page" id="page-leaderboard">
-      <div class="stat-grid">
-        <div class="stat"><div class="stat-label">Active members</div><div class="stat-val green" id="s-active">—</div></div>
-        <div class="stat"><div class="stat-label">Sessions played</div><div class="stat-val" id="s-sessions">—</div></div>
-        <div class="stat"><div class="stat-label">Upper group</div><div class="stat-val" id="s-upper">—</div></div>
-        <div class="stat"><div class="stat-label">Lower group</div><div class="stat-val" id="s-lower">—</div></div>
-        <div class="stat"><div class="stat-label">Competitive group</div><div class="stat-val" id="s-competitive">—</div></div>
-      </div>
+      <div class="page-title-row"><div class="page-title">Rankings</div><span class="count-pill" id="lb-count"></span></div>
       <div class="tab-pills">
         <button class="active" onclick="setLeaderTab('all',this)">All</button>
         <button onclick="setLeaderTab('competitive',this)">Competitive</button>
@@ -414,7 +439,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <button onclick="setLeaderTab('lower',this)">Lower</button>
       </div>
       <div id="leader-top3"></div>
-      <div class="card" style="padding:0;overflow:hidden" id="leader-rest-card">
+      <div class="card player-list" id="leader-rest-card">
         <div id="leader-rest"></div>
       </div>
     </div>
@@ -712,9 +737,9 @@ let guestNameCount=1;
 
 async function renderGuestJoinScreen(code){
   const el=document.getElementById('guest-screen');
-  el.innerHTML=`<div style="min-height:100vh;background:var(--black);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 20px">
-    <img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px">
-    <div style="font-size:22px;font-weight:700;font-family:var(--font-display);margin-bottom:20px;text-align:center">You're invited</div>
+  el.innerHTML=`<div class="auth-wrap">
+    <img src="/icons/icon-192.png" alt="" class="auth-crest">
+    <div class="auth-title" style="margin-bottom:22px">You're invited</div>
     <div id="guest-body" style="width:100%;max-width:380px"><div class="loading">Loading...</div></div>
   </div>`;
   const{data,error}=await sb.rpc('get_session_by_guest_code',{code});
@@ -736,7 +761,7 @@ function renderGuestSignupForm(session,code){
       </div>
       <button type="button" class="btn sm" id="guest-add-friend-btn" onclick="addGuestFriendField()">+ Add a friend</button>
       <div id="guest-form-error" style="color:#FF6B6B;font-size:13px;display:none;margin:12px 0 0"></div>
-      <button class="btn primary full" style="margin-top:16px" onclick="submitGuestSignup('${code}')">Join session</button>
+      <button class="btn-gold" style="width:100%;margin-top:16px" onclick="submitGuestSignup('${code}')">Join session</button>
     </div>`;
 }
 
@@ -922,9 +947,9 @@ let tasterNameCount=1;
 
 async function renderTasterScreen(){
   const el=document.getElementById('taster-screen');
-  el.innerHTML=`<div style="min-height:100vh;background:var(--black);color:var(--text);display:flex;flex-direction:column;align-items:center;padding:48px 20px">
-    <img src="/icons/icon-192.png" alt="" style="width:72px;height:72px;border-radius:16px;margin-bottom:12px">
-    <div style="font-size:22px;font-weight:700;font-family:var(--font-display);margin-bottom:20px;text-align:center">Try padel</div>
+  el.innerHTML=`<div class="auth-wrap">
+    <img src="/icons/icon-192.png" alt="" class="auth-crest">
+    <div class="auth-title" style="margin-bottom:22px">Try padel</div>
     <div id="taster-body" style="width:100%;max-width:380px"><div class="loading">Loading...</div></div>
     <a href="#" onclick="event.preventDefault();history.replaceState(null,'',window.location.pathname);document.getElementById('taster-screen').style.display='none';handleAuthChange();" style="margin-top:24px;font-size:13px;color:var(--text-dim)">Already a member? Log in</a>
   </div>`;
@@ -948,7 +973,7 @@ function renderTasterSignupForm(session){
       <div style="font-weight:700;font-size:18px;font-family:var(--font-display)">${escapeHtml(session.title)}</div>
       <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${escapeHtml(session.date)} · ${escapeHtml(session.location||'TBC')}</div>
     </div>
-    <a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="btn primary full" style="margin-bottom:12px;text-decoration:none">Buy your ticket</a>
+    <a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="btn-gold" style="width:100%;margin-bottom:12px;text-decoration:none">Buy your ticket</a>
     <div class="card" id="taster-form-card">
       <div id="taster-name-fields">
         <div class="form-row"><label class="form-label">Name</label><input type="text" class="taster-name-input" placeholder="e.g. Will M" minlength="2" maxlength="40"></div>
@@ -959,7 +984,7 @@ function renderTasterSignupForm(session){
         I've bought my ticket
       </label>
       <div id="taster-form-error" style="color:#FF6B6B;font-size:13px;display:none;margin-bottom:8px"></div>
-      <button class="btn primary full" onclick="submitTasterSignup('${session.id}')">Sign up</button>
+      <button class="btn-gold" style="width:100%" onclick="submitTasterSignup('${session.id}')">Sign up</button>
     </div>`;
 }
 
@@ -1264,37 +1289,24 @@ function renderLeaderboard(){
   else if(leaderTab==='lower')list=list.filter(p=>p.group_name==='lower');
   else if(leaderTab==='competitive')list=list.filter(p=>p.group_name==='competitive');
   list.sort((a,b)=>b.elo_rating-a.elo_rating);
-  document.getElementById('s-active').textContent=PLAYERS.filter(p=>p.is_active!==false&&!p.is_guest).length;
-  document.getElementById('s-sessions').textContent=SESSIONS.filter(s=>s.status==='completed').length;
-  document.getElementById('s-upper').textContent=PLAYERS.filter(p=>p.group_name==='upper'&&p.is_active!==false&&!p.is_guest).length;
-  document.getElementById('s-lower').textContent=PLAYERS.filter(p=>p.group_name==='lower'&&p.is_active!==false&&!p.is_guest).length;
-  document.getElementById('s-competitive').textContent=PLAYERS.filter(p=>p.group_name==='competitive'&&p.is_active!==false&&!p.is_guest).length;
   const top3=list.slice(0,3),rest=list.slice(3);
+  document.getElementById('lb-count').textContent=`${list.length} player${list.length===1?'':'s'}`;
 
-  document.getElementById('leader-top3').innerHTML=top3.length?`<div class="card-elevated" style="padding:0;overflow:hidden">
-    ${top3.map((p,i)=>`<div onclick="showPlayerProfile('${p.id}')" style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:${i===0?'18px 16px':'12px 16px'};border-left:3px solid ${groupEdgeColor(p.group_name)};${i<top3.length-1?'border-bottom:1px solid var(--glass-border)':''}">
-      <span style="font-family:var(--font-display);font-variant-numeric:tabular-nums;font-weight:700;color:var(--gold);font-size:${i===0?'28px':'18px'};min-width:${i===0?'34px':'26px'}">${i+1}</span>
-      <span style="flex:1;min-width:0;font-weight:600;font-size:${i===0?'18px':'15px'}">${p.name}</span>
-      <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
-    </div>`).join('')}
-  </div>`:'';
+  const crown='<svg viewBox="0 0 24 20" width="24" height="20" fill="#14110A"><path d="M3 8l4 4 5-7 5 7 4-4-1.5 10h-15z"/></svg>';
+  const pod=(p,rank)=>`<div class="pod p${rank}" onclick="showPlayerProfile('${p.id}')">${rank===1?crown:''}${avatarHtml(p.id,p.name,rank===1?64:52)}<div class="pod-name">${escapeHtml(pFirst(p.id))}</div><div class="pod-elo ranking-ui">${p.elo_rating}</div><div class="pod-rank">#${rank}</div></div>`;
+  document.getElementById('leader-top3').innerHTML=top3.length?`<div class="podium">${top3.length===3?pod(top3[1],2)+pod(top3[0],1)+pod(top3[2],3):top3.map((p,i)=>pod(p,i+1)).join('')}</div>`:'';
 
   document.getElementById('leader-rest-card').style.display=rest.length?'block':(top3.length?'none':'block');
   document.getElementById('leader-rest').innerHTML=rest.length?rest.map((p,i)=>`
-    <div onclick="showPlayerProfile('${p.id}')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px;border-left:3px solid ${groupEdgeColor(p.group_name)};${i<rest.length-1?'border-bottom:1px solid rgba(255,255,255,0.08)':''}">
-      <div style="display:flex;align-items:center;gap:10px;min-width:0">
-        <span class="rank-num">${i+4}</span>
-        <span class="player-name">${p.name}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-        <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
-        <span style="color:var(--text-dim);font-size:12px">${p.matches_won||0}/${p.games_played||0}</span>
-      </div>
+    <div class="rank-row" style="padding:10px 14px;cursor:pointer" onclick="showPlayerProfile('${p.id}')">
+      <span class="rank-n">${i+4}</span>${avatarHtml(p.id,p.name,36)}
+      <span class="rank-name">${escapeHtml(p.name)}</span>
+      <span class="elo-pill ranking-ui ${eloClass(p.elo_rating)}">${p.elo_rating}</span>
     </div>`).join(''):(top3.length?'':'<div class="empty-state">No players yet. They appear here once the committee adds them.</div>');
 }
 function setLeaderTab(tab,btn){
   leaderTab=tab;
-  document.querySelectorAll('.tab-pills button').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#page-leaderboard .tab-pills button').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');renderLeaderboard();
 }
 
@@ -1528,22 +1540,29 @@ function collapsibleHead(sid,key,label,count){
   </div>`;
 }
 
+function teamNames(ids){return (ids||[]).map(id=>pFirst(id)).join(' & ')}
+function rankRow(i,id,right,extra){
+  return `<div class="rank-row"><span class="rank-n r${i<3?i+1:0}">${i+1}</span>${avatarHtml(id,pName(id),34)}<span class="rank-name">${escapeHtml(pName(id))}</span><span class="rank-right">${right}</span>${extra||''}</div>`;
+}
+function scorePair(a,b){return `<b class="${a>b?'win':''}">${a}</b><i>–</i><b class="${b>a?'win':''}">${b}</b>`}
+function resRow(t1,t2,mid,lead1,lead2){
+  return `<div class="res-row"><div class="res-team ${lead1?'win':''}">${escapeHtml(teamNames(t1))}</div><div class="res-score">${mid}</div><div class="res-team right ${lead2?'win':''}">${escapeHtml(teamNames(t2))}</div></div>`;
+}
+
 function renderCompletedSession(s){
   setBackdrop('photo-12');
   viewingCompletedSessionId=s.id;
   const rounds=s.rounds||[];
   const maxR=rounds.length?Math.max(...rounds.map(r=>r.r)):0;
   const isMatchPlay=s.format==='match_play';
-  let html=`<div class="card">
-    <div style="font-size:18px;font-weight:600;margin-bottom:4px">${s.title}</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${sessionDateTime(s)} · ${s.location||'TBC'}${s.max_courts?` · ${s.max_courts} court${s.max_courts>1?'s':''}`:''}${!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts/round`:''}</div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap">
-      <span class="badge ${s.status}">${s.status}</span>
-      ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
-      ${s.elo_applied?'<span class="badge completed ranking-ui">ELO applied</span>':''}
-      ${s.archived?'<span class="badge flag">Deleted</span>':''}
-    </div>
-    ${accessLevel==='committee'?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" onclick="openEditSession('${s.id}')">Edit details</button><button class="btn danger sm" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button></div>`:''}
+  const stLabel=s.archived?'Deleted':s.status==='completed'?'Completed':s.status==='in_progress'?'Live':'Upcoming';
+  const stCls=s.archived?'flag':s.status==='completed'?'completed':s.status==='in_progress'?'live':'upcoming';
+  const metaText=sessionDateTime(s)+' · '+(s.location||'TBC')+(s.max_courts?` · ${s.max_courts} court${s.max_courts>1?'s':''}`:'')+(!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts per round`:'');
+  let html=`<div class="live-head">
+    <div class="live-head-top"><div class="live-title">${escapeHtml(s.title)}</div><span class="badge ${stCls}">${stLabel}</span></div>
+    <div class="live-meta">${escapeHtml(metaText)}</div>
+    ${s.format||s.elo_applied?`<div class="profile-chips">${s.format?`<span class="badge prov">${escapeHtml(FORMAT_LABELS[s.format]||s.format.replace(/_/g,' '))}</span>`:''}${s.elo_applied?'<span class="badge completed ranking-ui">ELO applied</span>':''}</div>`:''}
+    ${accessLevel==='committee'?`<div class="profile-chips" style="margin-top:12px"><button class="btn sm" onclick="openEditSession('${s.id}')">Edit details</button><button class="btn danger sm" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button></div>`:''}
   </div>`;
   if(accessLevel==='committee'){
     const guestIds=(s.attendees||[]).filter(id=>(pMap[id]||{}).is_guest);
@@ -1558,11 +1577,11 @@ function renderCompletedSession(s){
     html+=`<div class="card">
       ${signedUp
         ?`<div style="display:flex;align-items:center;justify-content:space-between"><span class="badge completed">✓ You're signed up</span><button class="btn sm" onclick="toggleMySignup('${s.id}',true,'detail')">Withdraw</button></div>`
-        :`<button class="btn primary full" onclick="toggleMySignup('${s.id}',false,'detail')">Sign up for this session</button>`}
+        :`<button class="btn-gold" style="width:100%" onclick="toggleMySignup('${s.id}',false,'detail')">Sign up for this session</button>`}
     </div>`;
   }
   if(s.attendees&&s.attendees.length){
-    html+=`<div class="card">${collapsibleHead(s.id,'attendees','Attendees',s.attendees.length)}${completedOpen[s.id+':attendees']?`<div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>`<span class="badge prov">${pName(id)}${(pMap[id]||{}).is_guest?' (guest)':''}</span>`).join('')}</div>`:''}</div>`;
+    html+=`<div class="card">${collapsibleHead(s.id,'attendees','Attendees',s.attendees.length)}${completedOpen[s.id+':attendees']?`<div style="display:flex;flex-wrap:wrap;gap:6px">${s.attendees.map(id=>{const gc=(pMap[id]||{}).is_guest?'var(--gold)':groupEdgeColor((pMap[id]||{}).group_name);return `<span class="live-chip" style="cursor:default;margin:0"><i style="background:${gc==='transparent'?'#8D919B':gc}"></i>${escapeHtml(pName(id))}${(pMap[id]||{}).is_guest?' <b>(guest)</b>':''}</span>`}).join('')}</div>`:''}</div>`;
   }
   if(s.elo_changes&&s.elo_changes.length){
     const sc=[...s.elo_changes].sort((a,b)=>b.change-a.change);
@@ -1590,20 +1609,13 @@ function renderCompletedSession(s){
       });
     });
     const ranked=Object.entries(stats).sort((a,b)=>b[1].w-a[1].w||b[1].g-a[1].g);
-    html+=`<div class="card"><div class="section-head">Match Play standings</div>${ranked.map(([id,st],i)=>`
-      <div class="elo-result-row"><div style="display:flex;align-items:center;gap:10px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pName(id)}</span></div><span style="font-weight:600;color:#1D9E75;font-size:14px">${st.w}W ${st.l}L · ${st.g} games</span></div>`).join('')}</div>`;
+    html+=`<div class="card"><div class="section-head">Standings</div>${ranked.map(([id,st],i)=>rankRow(i,id,`${st.w}W ${st.l}L<small>${st.g} games</small>`)).join('')}</div>`;
     let rh='<div class="card"><div class="section-head">Match results</div>';
     for(let r=1;r<=maxR;r++){
-      const ms=rounds.filter(x=>x.r===r);
-      rh+=`<div style="font-size:11px;font-weight:600;color:#aaa;letter-spacing:0;padding:8px 0 4px">Round ${r}</div>`;
-      ms.forEach(m=>{
-        const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(', ');
-        const w1=m.winner==='t1';
-        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px">
-          <div style="flex:1;font-weight:${w1?'700':'400'}">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
-          <div style="font-size:12px;color:#888">${setsText}</div>
-          <div style="flex:1;text-align:right;font-weight:${!w1?'700':'400'}">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
-        </div>`;
+      rh+=`<div class="res-round"><span class="res-pill">Round ${r}</span></div>`;
+      rounds.filter(x=>x.r===r).forEach(m=>{
+        const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(' · ');
+        rh+=resRow(m.t1,m.t2,`<small>${escapeHtml(setsText)}</small>`,m.winner==='t1',m.winner==='t2');
       });
     }
     rh+='</div>';
@@ -1615,28 +1627,23 @@ function renderCompletedSession(s){
       (round.t2||[]).forEach(id=>{if(!scores[id])scores[id]=0;scores[id]+=(round.s2||0)});
     });
     const ranked=Object.entries(scores).sort((a,b)=>b[1]-a[1]);
-    html+=`<div class="card"><div class="section-head">Americano standings</div>${ranked.map(([id,pts],i)=>`
-      <div class="elo-result-row"><div style="display:flex;align-items:center;gap:10px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pName(id)}</span></div><span style="font-weight:600;color:#1D9E75;font-size:15px">${pts}</span></div>`).join('')}</div>`;
+    html+=`<div class="card"><div class="section-head">Standings</div>${ranked.map(([id,pts],i)=>rankRow(i,id,`${pts}<small>points</small>`)).join('')}</div>`;
     let rh='<div class="card"><div class="section-head">Round results</div>';
     for(let r=1;r<=maxR;r++){
       const ms=rounds.filter(x=>x.r===r);
       const isEditing=accessLevel==='committee'&&editingCompletedRoundNum===r;
-      rh+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px">
-        <span style="font-size:11px;font-weight:600;color:#aaa;letter-spacing:0">Round ${r}</span>
+      rh+=`<div class="res-round"><span class="res-pill">Round ${r}</span>
         ${accessLevel==='committee'?(isEditing?`<button class="btn sm" onclick="cancelEditCompletedRound()">Cancel</button>`:`<button class="btn sm" onclick="startEditCompletedRound(${r})">Edit</button>`):''}
       </div>`;
       ms.forEach((m,mi)=>{
-        const w1=(m.s1||0)>(m.s2||0),w2=(m.s2||0)>(m.s1||0);
-        rh+=`<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px">
-          <div style="flex:1">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
-          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s1-${r}-${mi}" value="${m.s1||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w1?'#1D9E75':'#E5E5E5'}">${m.s1||0}</span>`}
-          <span style="color:#aaa;font-size:11px">—</span>
-          ${isEditing?`<input type="number" class="score-input" style="width:50px;font-size:15px;padding:6px" id="completed-edit-s2-${r}-${mi}" value="${m.s2||0}">`:`<span style="font-weight:600;font-size:15px;min-width:24px;text-align:center;color:${w2?'#1D9E75':'#E5E5E5'}">${m.s2||0}</span>`}
-          <div style="flex:1;text-align:right">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
-        </div>`;
+        const a=m.s1||0,b=m.s2||0;
+        const mid=isEditing
+          ?`<input type="number" class="score-input" style="width:50px;font-size:16px;padding:6px" id="completed-edit-s1-${r}-${mi}" value="${a}"><i>–</i><input type="number" class="score-input" style="width:50px;font-size:16px;padding:6px" id="completed-edit-s2-${r}-${mi}" value="${b}">`
+          :scorePair(a,b);
+        rh+=resRow(m.t1,m.t2,mid,a>b,b>a);
       });
       if(isEditing){
-        rh+=`<button class="btn primary sm full" style="margin:8px 0" onclick="saveEditedCompletedRound(${r})">Save round ${r}</button>`;
+        rh+=`<button class="btn-gold" style="width:100%;height:48px;margin:10px 0 4px;font-size:15px" onclick="saveEditedCompletedRound(${r})">Save round ${r}</button>`;
       }
     }
     rh+='</div>';
@@ -1946,16 +1953,7 @@ function renderLiveSession(){
         <span>Standings after ${roundsPlayed} round${roundsPlayed>1?'s':''}</span>
         <span style="font-size:10px;letter-spacing:normal;text-transform:none;color:var(--text-dim)">${collapsed?'▸ Show':'▾ Hide'}</span>
       </div>
-      ${collapsed?'':ranked.map(([id,pts],i)=>`<div class="elo-result-row">
-        <div style="display:flex;align-items:center;gap:8px">
-          <span class="rank-num ${i<3?'top':''}">${i+1}</span>
-          <span style="font-weight:500">${pFirst(id)}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-weight:600;color:#1D9E75">${pts} pts</span>
-          <span class="elo-pill ranking-ui ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>
-        </div>
-      </div>`).join('')}
+      ${collapsed?'':ranked.map(([id,pts],i)=>rankRow(i,id,`${pts}<small>points</small>`,`<span class="elo-pill ranking-ui ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>`)).join('')}
     </div>`;
   }
 
@@ -1966,20 +1964,18 @@ function renderLiveSession(){
       ${roundNumsDesc.map(rn=>{
         const matches=sessionRounds.filter(r=>r.r===rn);
         const isEditing=editingRoundNum===rn;
-        return`<div style="padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.08);${isEditing?'':'opacity:0.6'}">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span style="font-weight:600;font-size:13px">Round ${rn}</span>
+        return`<div style="${isEditing?'':'opacity:0.85'}">
+          <div class="res-round"><span class="res-pill">Round ${rn}</span>
             ${isEditing?`<button class="btn sm" onclick="cancelEditRound()">Cancel</button>`:`<button class="btn sm" onclick="startEditRound(${rn})">Edit</button>`}
           </div>
-          ${matches.map((m,mi)=>`
-            <div style="display:flex;align-items:center;gap:6px;padding:4px 0;font-size:13px">
-              <div style="flex:1">${m.t1.map(id=>pFirst(id)).join(' & ')}</div>
-              ${isEditing?`<input type="number" class="score-input" style="width:44px;font-size:14px;padding:4px" id="edit-s1-${rn}-${mi}" value="${m.s1||0}">`:`<span style="font-weight:600;min-width:20px;text-align:center">${m.s1||0}</span>`}
-              <span style="color:#aaa">–</span>
-              ${isEditing?`<input type="number" class="score-input" style="width:44px;font-size:14px;padding:4px" id="edit-s2-${rn}-${mi}" value="${m.s2||0}">`:`<span style="font-weight:600;min-width:20px;text-align:center">${m.s2||0}</span>`}
-              <div style="flex:1;text-align:right">${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
-            </div>`).join('')}
-          ${isEditing?`<button class="btn primary sm full" style="margin-top:8px" onclick="saveEditedRound(${rn})">Save round ${rn}</button>`:''}
+          ${matches.map((m,mi)=>{
+            const a=m.s1||0,b=m.s2||0;
+            const mid=isEditing
+              ?`<input type="number" class="score-input" style="width:46px;font-size:15px;padding:5px" id="edit-s1-${rn}-${mi}" value="${a}"><i>–</i><input type="number" class="score-input" style="width:46px;font-size:15px;padding:5px" id="edit-s2-${rn}-${mi}" value="${b}">`
+              :scorePair(a,b);
+            return resRow(m.t1,m.t2,mid,a>b,b>a);
+          }).join('')}
+          ${isEditing?`<button class="btn-gold" style="width:100%;height:48px;margin-top:10px;font-size:15px" onclick="saveEditedRound(${rn})">Save round ${rn}</button>`:''}
         </div>`;
       }).join('')}
     </div>`;
@@ -2016,28 +2012,17 @@ function renderLiveSession(){
           <span>Standings after ${roundsPlayed} round${roundsPlayed>1?'s':''}</span>
           <span style="font-size:10px;letter-spacing:normal;text-transform:none;color:var(--text-dim)">${collapsed?'▸ Show':'▾ Hide'}</span>
         </div>
-        ${collapsed?'':ranked.map(([id,st],i)=>`<div class="elo-result-row">
-          <div style="display:flex;align-items:center;gap:8px"><span class="rank-num ${i<3?'top':''}">${i+1}</span><span style="font-weight:500">${pFirst(id)}</span></div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#888">${st.w}W ${st.l}L · ${st.g} games</span>
-            <span class="elo-pill ranking-ui ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>
-          </div>
-        </div>`).join('')}
+        ${collapsed?'':ranked.map(([id,st],i)=>rankRow(i,id,`${st.w}W ${st.l}L<small>${st.g} games</small>`,`<span class="elo-pill ranking-ui ${eloClass(sessionEloState[id]||1000)}">${sessionEloState[id]||1000}</span>`)).join('')}
       </div>`;
 
       const roundNumsDesc=[...new Set(sessionRounds.map(r=>r.r))].sort((a,b)=>b-a);
       html+=`<div class="card"><div class="section-head">Past rounds</div>
         ${roundNumsDesc.map(rn=>{
           const matches=sessionRounds.filter(r=>r.r===rn);
-          let rh=`<div style="font-weight:600;font-size:13px;padding:8px 0 4px">Round ${rn}</div>`;
+          let rh=`<div class="res-round"><span class="res-pill">Round ${rn}</span></div>`;
           matches.forEach(m=>{
-            const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(', ');
-            const w1=m.winner==='t1';
-            rh+=`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:13px">
-              <div style="flex:1;font-weight:${w1?'700':'400'}">${(m.t1||[]).map(id=>pFirst(id)).join(' & ')}</div>
-              <div style="font-size:12px;color:#888">${setsText}</div>
-              <div style="flex:1;text-align:right;font-weight:${!w1?'700':'400'}">${(m.t2||[]).map(id=>pFirst(id)).join(' & ')}</div>
-            </div>`;
+            const setsText=(m.sets||[]).map(x=>`${x.s1}-${x.s2}`).join(' · ');
+            rh+=resRow(m.t1,m.t2,`<small>${escapeHtml(setsText)}</small>`,m.winner==='t1',m.winner==='t2');
           });
           return rh;
         }).join('')}
@@ -2049,11 +2034,11 @@ function renderLiveSession(){
       const assignedIds=new Set(matchPlayDraft.flatMap(m=>[...m.t1,...m.t2]));
       const pool=sessionPlayers.filter(id=>!assignedIds.has(id));
       const canStart=matchPlayDraft.some(m=>m.t1.length===2&&m.t2.length===2);
-      html+=`<div class="card">
-        <div class="section-head">Round ${roundNum} — build matches</div>
+      html+=`<div class="round-card">
+        <div class="round-head"><div class="round-title">Round ${roundNum}</div><span class="round-pts">Build matches</span></div>
         ${matchPlayDraft.map((m,mi)=>`
           <div class="court-block" style="margin-bottom:10px">
-            <div class="court-header">Court ${mi+1}<span style="cursor:pointer;color:#c0392b" onclick="removeDraftMatch(${mi})">Remove ✕</span></div>
+            <div class="court-head-row"><span class="court-header">Court ${mi+1}</span><span class="remove-x" onclick="removeDraftMatch(${mi})">Remove ✕</span></div>
             <div class="court-match">
               <div class="team-row"><div class="team-names">${m.t1.length?m.t1.map((id,idx)=>`${pFirst(id)} <span class="chip-remove" style="cursor:pointer" onclick="removeMatchPlayerFromDraft(${mi},'t1',${idx})">×</span>`).join(' & '):'<span style="color:#aaa">Tap players below</span>'}</div></div>
               <div class="vs-divider">vs</div>
@@ -2062,11 +2047,11 @@ function renderLiveSession(){
           </div>`).join('')}
         ${matchPlayDraft.length<maxM?`<p style="font-size:12px;color:#888;margin:10px 0">Tap players to fill the next open court (up to ${maxM} court${maxM===1?'':'s'} at once).</p>
         <div>${pool.map(id=>`<span class="player-chip" onclick="tapMatchPlayerChip('${id}')">${pFirst(id)}</span>`).join('')}</div>`:''}
-        <button class="btn primary full" style="margin-top:12px" ${canStart?'':'disabled'} onclick="startMatchPlayRound()">Start round ${roundNum}</button>
+        <button class="btn-gold" style="width:100%;height:58px;font-size:18px;border-radius:22px;margin-top:12px" ${canStart?'':'disabled'} onclick="startMatchPlayRound()">Start round ${roundNum}</button>
       </div>`;
     }else{
-      html+=`<div class="card">
-        <div class="section-head">Round ${roundNum} — enter set scores</div>
+      html+=`<div class="round-card">
+        <div class="round-head"><div class="round-title">Round ${roundNum}</div><span class="round-pts">Set scores</span></div>
         ${matchPlayLockedMatches.map((m,mi)=>`
           <div class="court-block" style="margin-bottom:12px">
             <div class="court-header">Court ${mi+1}</div>
@@ -2082,24 +2067,24 @@ function renderLiveSession(){
               <div class="team-row">
                 <div class="team-names">${m.t1.map(id=>pFirst(id)).join(' & ')}</div>
                 <div style="display:flex;gap:6px">
-                  <input type="number" class="score-input" style="width:44px;font-size:20px;padding:8px 4px" id="mp-s1-${mi}-0" min="0" max="7" placeholder="–">
-                  <input type="number" class="score-input" style="width:44px;font-size:20px;padding:8px 4px" id="mp-s1-${mi}-1" min="0" max="7" placeholder="–">
-                  <input type="number" class="score-input mp-set3-${mi}" hidden style="width:44px;font-size:20px;padding:8px 4px" id="mp-s1-${mi}-2" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input set-input" id="mp-s1-${mi}-0" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input set-input" id="mp-s1-${mi}-1" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input set-input mp-set3-${mi}" hidden id="mp-s1-${mi}-2" min="0" max="7" placeholder="–">
                 </div>
               </div>
               <div class="vs-divider">vs</div>
               <div class="team-row" style="margin-bottom:0">
                 <div class="team-names">${m.t2.map(id=>pFirst(id)).join(' & ')}</div>
                 <div style="display:flex;gap:6px">
-                  <input type="number" class="score-input" style="width:44px;font-size:20px;padding:8px 4px" id="mp-s2-${mi}-0" min="0" max="7" placeholder="–">
-                  <input type="number" class="score-input" style="width:44px;font-size:20px;padding:8px 4px" id="mp-s2-${mi}-1" min="0" max="7" placeholder="–">
-                  <input type="number" class="score-input mp-set3-${mi}" hidden style="width:44px;font-size:20px;padding:8px 4px" id="mp-s2-${mi}-2" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input set-input" id="mp-s2-${mi}-0" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input set-input" id="mp-s2-${mi}-1" min="0" max="7" placeholder="–">
+                  <input type="number" class="score-input set-input mp-set3-${mi}" hidden id="mp-s2-${mi}-2" min="0" max="7" placeholder="–">
                 </div>
               </div>
               <div style="text-align:right;margin-top:8px"><button class="btn sm" onclick="document.querySelectorAll('.mp-set3-${mi}').forEach(el=>el.hidden=false);this.hidden=true">+ Set 3 (if 1-1)</button></div>
             </div>
           </div>`).join('')}
-        <button class="btn primary full" style="margin-top:8px" onclick="submitMatchPlayRound(${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
+        <button class="btn-gold" style="width:100%;height:58px;font-size:18px;border-radius:22px;margin-top:8px" onclick="submitMatchPlayRound(${roundNum})">Save round ${roundNum}${RANKINGS_ENABLED?' & apply ELO':''}</button>
         <button class="btn sm full" style="margin-top:8px" onclick="editMatchPlayRound()">← Back to match building</button>
       </div>`;
     }
