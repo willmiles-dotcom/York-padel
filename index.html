@@ -465,6 +465,29 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
   </div>
 </div>
 
+<!-- EDIT SESSION MODAL -->
+<div class="modal-overlay" id="edit-session-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Edit session</h3>
+    <input type="hidden" id="es-id">
+    <div class="form-row"><label class="form-label">Title</label><input type="text" id="es-title"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label class="form-label">Date</label><input type="date" id="es-date"></div>
+      <div class="form-row"><label class="form-label">Time</label><input type="time" id="es-time"></div>
+    </div>
+    <div class="form-row"><label class="form-label">Location</label><input type="text" id="es-location"></div>
+    <div id="es-live-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="es-max-courts" min="1"></div>
+      <div class="form-row" id="es-points-wrap"><label class="form-label">Points per round</label><input type="number" id="es-points" min="1"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px">
+      <button class="btn full" onclick="closeModal('edit-session-modal')">Cancel</button>
+      <button class="btn primary full" onclick="saveSessionEdits()">Save changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- EDIT PLAYER MODAL -->
 <div class="modal-overlay" id="edit-player-modal">
   <div class="modal">
@@ -1371,14 +1394,14 @@ function renderCompletedSession(s){
   const isMatchPlay=s.format==='match_play';
   let html=`<div class="card">
     <div style="font-size:18px;font-weight:600;margin-bottom:4px">${s.title}</div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${sessionDateTime(s)} · ${s.location||'TBC'}${!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts/round`:''}</div>
+    <div style="font-size:13px;color:#aaa;margin-bottom:10px">${sessionDateTime(s)} · ${s.location||'TBC'}${s.max_courts?` · ${s.max_courts} court${s.max_courts>1?'s':''}`:''}${!isMatchPlay&&s.format!=='king_of_the_court'?` · ${s.points_to_play||16} pts/round`:''}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       <span class="badge ${s.status}">${s.status}</span>
       ${s.format?`<span class="badge prov">${s.format.replace(/_/g,' ')}</span>`:''}
       ${s.elo_applied?'<span class="badge completed ranking-ui">ELO applied</span>':''}
       ${s.archived?'<span class="badge flag">Deleted</span>':''}
     </div>
-    ${accessLevel==='committee'?`<button class="btn danger sm" style="margin-top:10px" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button>`:''}
+    ${accessLevel==='committee'?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" onclick="openEditSession('${s.id}')">Edit details</button><button class="btn danger sm" onclick="toggleSessionArchived('${s.id}',${s.archived?'false':'true'})">${s.archived?'Restore session':'Delete session'}</button></div>`:''}
   </div>`;
   if(accessLevel==='committee'){
     const guestIds=(s.attendees||[]).filter(id=>(pMap[id]||{}).is_guest);
@@ -1638,17 +1661,6 @@ function toggleFormatPicker(){
   renderLiveSession();
 }
 
-async function updatePointsPerRound(val){
-  const pts=parseInt(val)||16;
-  const{error}=await sb.from('sessions').update({points_to_play:pts}).eq('id',activeSessionId);
-  if(error){showToast('Error: '+error.message);return;}
-  const idx=SESSIONS.findIndex(x=>x.id===activeSessionId);
-  if(idx>=0)SESSIONS[idx].points_to_play=pts;
-  pointsPerRound=pts;
-  collapsedSections.pointsEdit=false;
-  renderLiveSession();
-}
-
 function renderLiveSession(){
   const s=SESSIONS.find(x=>x.id===activeSessionId);if(!s)return;
   setBackdrop('photo-12');
@@ -1663,13 +1675,12 @@ function renderLiveSession(){
       <div style="font-size:18px;font-weight:600">${s.title}</div>
       <span class="session-live-badge">● Live</span>
     </div>
-    <div style="font-size:13px;color:#aaa;margin-bottom:${collapsedSections.pointsEdit?'8px':'12px'};display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-      <span>${sessionDateTime(s)}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</span>
-      ${s.format&&!isMatchPlay&&!isKotc&&roundsPlayed===0?`<button onclick="toggleSection('pointsEdit')" style="background:none;border:none;color:var(--text-dim);font-size:11px;text-decoration:underline;cursor:pointer;padding:0">${collapsedSections.pointsEdit?'Cancel':'Edit'}</button>`:''}
+    <div style="font-size:13px;color:#aaa;margin-bottom:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span>${sessionDateTime(s)}${s.max_courts?` · ${s.max_courts} court${s.max_courts>1?'s':''}`:''}${!isMatchPlay&&!isKotc?` · ${s.points_to_play||16} pts/round`:''}</span>
     </div>
-    ${collapsedSections.pointsEdit?`<div class="form-row" style="margin:0 0 12px"><label class="form-label">Points per round</label><input type="number" id="live-points-per-round" value="${s.points_to_play||16}" min="1" onchange="updatePointsPerRound(this.value)"></div>`:''}
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn sm" onclick="openModal('add-to-session-modal');renderSessionPlayerSearch()">+ / − Players</button>
+      <button class="btn sm" onclick="openEditSession('${s.id}')">Edit details</button>
       <button class="btn sm" onclick="toggleGuestSignupOpen('${s.id}',${!!s.guest_signup_open})">Guest sign-up: ${s.guest_signup_open?'On':'Off'}</button>
       <button class="btn sm" ${s.guest_signup_open?'':'disabled'} onclick="shareGuestLink('${s.id}')">${s.guest_signup_open?'Share guest link':'Turn on guest sign-up first'}</button>
       ${TASTER_ENABLED?`<button class="btn sm" onclick="toggleTasterSignup('${s.id}',${!!s.taster_signup_open})">Taster sign-up: ${s.taster_signup_open?'On':'Off'}</button>`:''}
@@ -2454,6 +2465,69 @@ async function addPlayer(){
   PLAYERS.push(player);pMap[player.id]=player;
   document.getElementById('new-name').value='';
   showToast(name+' added!');renderCommitteeStats();renderLeaderboard();renderPlayers();
+}
+
+function openEditSession(sid){
+  const s=SESSIONS.find(x=>x.id===sid);
+  if(!s||accessLevel!=='committee')return;
+  const completed=s.status==='completed';
+  document.getElementById('es-id').value=s.id;
+  document.getElementById('es-title').value=s.title||'';
+  document.getElementById('es-date').value=s.date||'';
+  document.getElementById('es-time').value=s.time||'';
+  document.getElementById('es-location').value=s.location||'';
+  document.getElementById('es-max-courts').value=s.max_courts||'';
+  document.getElementById('es-points').value=s.points_to_play||16;
+  // courts and points only matter while rounds are still being made
+  document.getElementById('es-live-fields').style.display=completed?'none':'grid';
+  document.getElementById('es-points-wrap').style.display=(s.format==='match_play'||s.format==='king_of_the_court')?'none':'';
+  openModal('edit-session-modal');
+}
+
+async function saveSessionEdits(){
+  const s=SESSIONS.find(x=>x.id===document.getElementById('es-id').value);
+  if(!s)return;
+  const completed=s.status==='completed';
+  const title=document.getElementById('es-title').value.trim();
+  const date=document.getElementById('es-date').value;
+  if(!title||!date){showToast('Title and date required');return;}
+  const time=document.getElementById('es-time').value;
+  const location=document.getElementById('es-location').value.trim();
+  const updates={};
+  if(title!==(s.title||''))updates.title=title;
+  if(date!==(s.date||''))updates.date=date;
+  if(time!==(s.time||''))updates.time=time;
+  if(location!==(s.location||''))updates.location=location;
+  if(!completed){
+    const courtsRaw=document.getElementById('es-max-courts').value.trim();
+    const courts=courtsRaw?parseInt(courtsRaw,10):null;
+    if(courtsRaw&&!(courts>=1)){showToast('Courts must be a whole number, 1 or more');return;}
+    if(!courtsRaw&&s.max_courts){showToast('Number of courts is required');return;}
+    if(courts&&courts!==(s.max_courts||null))updates.max_courts=courts;
+    if(document.getElementById('es-points-wrap').style.display!=='none'){
+      const pts=parseInt(document.getElementById('es-points').value,10);
+      if(!(pts>=1)){showToast('Points per round must be 1 or more');return;}
+      if(pts!==(s.points_to_play||16))updates.points_to_play=pts;
+    }
+  }
+  if(!Object.keys(updates).length){closeModal('edit-session-modal');return;}
+  // Warn only when the change has knock-on effects; cosmetic edits save straight away.
+  const isActive=s.id===activeSessionId;
+  const roundsPlayed=new Set((isActive?sessionRounds:(s.rounds||[])).map(r=>r.r)).size;
+  const warnings=[];
+  if(updates.points_to_play!==undefined&&roundsPlayed>0)warnings.push(`${roundsPlayed} round${roundsPlayed>1?'s':''} already played keep their scores. The new limit (${updates.points_to_play}) applies to the next rounds, and to any later score edits on earlier rounds.`);
+  if(updates.max_courts!==undefined&&isActive&&currentRoundDraft)warnings.push(`Round ${currentRoundDraft.roundNum} is already set up and won't change. The new court count (${updates.max_courts}) applies from the next round.`);
+  if(updates.date!==undefined&&completed&&s.elo_applied&&RANKINGS_ENABLED)warnings.push('Ratings from this session were calculated in date order. Changing the date can change the order later sessions are replayed in.');
+  if(warnings.length&&!confirm(warnings.join('\n\n')+'\n\nSave these changes?'))return;
+  const{error}=await sb.from('sessions').update(updates).eq('id',s.id);
+  if(error){showToast('Error: '+error.message);return;}
+  Object.assign(s,updates);
+  if(isActive){maxCourts=s.max_courts||null;pointsPerRound=s.points_to_play||16;}
+  closeModal('edit-session-modal');
+  if(completed)renderCompletedSession(s);
+  else if(isActive)renderLiveSession();
+  renderSessions();renderHome();
+  showToast('Session updated');
 }
 
 async function saveNewSession(){
