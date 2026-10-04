@@ -181,6 +181,9 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .round-card .score-stepper{gap:6px;flex-shrink:0}
 .round-card .stepper-btn{width:44px;height:44px;border-radius:22px;background:rgba(255,255,255,0.1);font-size:22px}
 .round-card .stepper-btn.plus{background:var(--gold-soft);border-color:rgba(240,190,69,0.5);color:var(--gold)}
+/* hide the desktop browsers' tiny up/down arrows on score boxes (phones don't show them) */
+.score-input::-webkit-outer-spin-button,.score-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.score-input{-moz-appearance:textfield;appearance:textfield}
 .score-input.score-big{width:54px;height:48px;padding:0;border:none;border-radius:0;background:transparent;font-size:44px;font-weight:700;letter-spacing:-1.5px;line-height:48px;color:var(--text);font-variant-numeric:tabular-nums}
 .score-input.score-big::placeholder{color:rgba(255,255,255,0.28)}
 .score-input.score-big.lead{color:var(--gold)}
