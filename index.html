@@ -465,8 +465,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
       <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label class="form-label">Start time</label><input type="time" id="ns-time" oninput="syncEndTime('ns')" onchange="syncEndTime('ns')"></div>
-      <div class="form-row"><label class="form-label">End time</label><input type="time" id="ns-end-time" oninput="this.dataset.touched='1'"></div>
+      <div class="form-row"><label class="form-label">Start time</label><select id="ns-time" onchange="syncEndTime('ns')"><option value="">Select</option><option value="06:00">6am</option><option value="06:30">6:30am</option><option value="07:00">7am</option><option value="07:30">7:30am</option><option value="08:00">8am</option><option value="08:30">8:30am</option><option value="09:00">9am</option><option value="09:30">9:30am</option><option value="10:00">10am</option><option value="10:30">10:30am</option><option value="11:00">11am</option><option value="11:30">11:30am</option><option value="12:00">12pm</option><option value="12:30">12:30pm</option><option value="13:00">1pm</option><option value="13:30">1:30pm</option><option value="14:00">2pm</option><option value="14:30">2:30pm</option><option value="15:00">3pm</option><option value="15:30">3:30pm</option><option value="16:00">4pm</option><option value="16:30">4:30pm</option><option value="17:00">5pm</option><option value="17:30">5:30pm</option><option value="18:00">6pm</option><option value="18:30">6:30pm</option><option value="19:00">7pm</option><option value="19:30">7:30pm</option><option value="20:00">8pm</option><option value="20:30">8:30pm</option><option value="21:00">9pm</option><option value="21:30">9:30pm</option><option value="22:00">10pm</option><option value="22:30">10:30pm</option><option value="23:00">11pm</option><option value="23:30">11:30pm</option></select></div>
+      <div class="form-row"><label class="form-label">End time</label><select id="ns-end-time" onchange="this.dataset.touched='1'"><option value="">Select</option><option value="06:00">6am</option><option value="06:30">6:30am</option><option value="07:00">7am</option><option value="07:30">7:30am</option><option value="08:00">8am</option><option value="08:30">8:30am</option><option value="09:00">9am</option><option value="09:30">9:30am</option><option value="10:00">10am</option><option value="10:30">10:30am</option><option value="11:00">11am</option><option value="11:30">11:30am</option><option value="12:00">12pm</option><option value="12:30">12:30pm</option><option value="13:00">1pm</option><option value="13:30">1:30pm</option><option value="14:00">2pm</option><option value="14:30">2:30pm</option><option value="15:00">3pm</option><option value="15:30">3:30pm</option><option value="16:00">4pm</option><option value="16:30">4:30pm</option><option value="17:00">5pm</option><option value="17:30">5:30pm</option><option value="18:00">6pm</option><option value="18:30">6:30pm</option><option value="19:00">7pm</option><option value="19:30">7:30pm</option><option value="20:00">8pm</option><option value="20:30">8:30pm</option><option value="21:00">9pm</option><option value="21:30">9:30pm</option><option value="22:00">10pm</option><option value="22:30">10:30pm</option><option value="23:00">11pm</option><option value="23:30">11:30pm</option></select></div>
     </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" value="York St. John Sports Fields" placeholder="e.g. York Sport Centre"></div>
     <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" value="3" placeholder="e.g. 3" min="1"></div>
@@ -486,9 +486,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
     <div class="form-row"><label class="form-label">Title</label><input type="text" id="es-title"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Date</label><input type="date" id="es-date"></div>
-      <div class="form-row"><label class="form-label">Start time</label><input type="time" id="es-time" oninput="syncEndTime('es')" onchange="syncEndTime('es')"></div>
+      <div class="form-row"><label class="form-label">Start time</label><select id="es-time" onchange="syncEndTime('es')"><option value="">Select</option><option value="06:00">6am</option><option value="06:30">6:30am</option><option value="07:00">7am</option><option value="07:30">7:30am</option><option value="08:00">8am</option><option value="08:30">8:30am</option><option value="09:00">9am</option><option value="09:30">9:30am</option><option value="10:00">10am</option><option value="10:30">10:30am</option><option value="11:00">11am</option><option value="11:30">11:30am</option><option value="12:00">12pm</option><option value="12:30">12:30pm</option><option value="13:00">1pm</option><option value="13:30">1:30pm</option><option value="14:00">2pm</option><option value="14:30">2:30pm</option><option value="15:00">3pm</option><option value="15:30">3:30pm</option><option value="16:00">4pm</option><option value="16:30">4:30pm</option><option value="17:00">5pm</option><option value="17:30">5:30pm</option><option value="18:00">6pm</option><option value="18:30">6:30pm</option><option value="19:00">7pm</option><option value="19:30">7:30pm</option><option value="20:00">8pm</option><option value="20:30">8:30pm</option><option value="21:00">9pm</option><option value="21:30">9:30pm</option><option value="22:00">10pm</option><option value="22:30">10:30pm</option><option value="23:00">11pm</option><option value="23:30">11:30pm</option></select></div>
     </div>
-    <div class="form-row"><label class="form-label">End time</label><input type="time" id="es-end-time" oninput="this.dataset.touched='1'"></div>
+    <div class="form-row"><label class="form-label">End time</label><select id="es-end-time" onchange="this.dataset.touched='1'"><option value="">Select</option><option value="06:00">6am</option><option value="06:30">6:30am</option><option value="07:00">7am</option><option value="07:30">7:30am</option><option value="08:00">8am</option><option value="08:30">8:30am</option><option value="09:00">9am</option><option value="09:30">9:30am</option><option value="10:00">10am</option><option value="10:30">10:30am</option><option value="11:00">11am</option><option value="11:30">11:30am</option><option value="12:00">12pm</option><option value="12:30">12:30pm</option><option value="13:00">1pm</option><option value="13:30">1:30pm</option><option value="14:00">2pm</option><option value="14:30">2:30pm</option><option value="15:00">3pm</option><option value="15:30">3:30pm</option><option value="16:00">4pm</option><option value="16:30">4:30pm</option><option value="17:00">5pm</option><option value="17:30">5:30pm</option><option value="18:00">6pm</option><option value="18:30">6:30pm</option><option value="19:00">7pm</option><option value="19:30">7:30pm</option><option value="20:00">8pm</option><option value="20:30">8:30pm</option><option value="21:00">9pm</option><option value="21:30">9:30pm</option><option value="22:00">10pm</option><option value="22:30">10:30pm</option><option value="23:00">11pm</option><option value="23:30">11:30pm</option></select></div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="es-location"></div>
     <div id="es-live-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="es-max-courts" min="1"></div>
@@ -1102,7 +1102,7 @@ function addHour(t){
   const m=/^(\d{1,2}):(\d{2})/.exec(String(t||''));
   if(!m)return '';
   const h=parseInt(m[1],10);
-  return h>=23?'23:59':String(h+1).padStart(2,'0')+':'+m[2];
+  return h>=23?'23:30':String(h+1).padStart(2,'0')+':'+m[2];
 }
 // "6:30-7:30pm" when both are pm/am, "11:30am-12:30pm" when they differ
 function formatTimeRange(start,end){
@@ -2510,6 +2510,15 @@ async function addPlayer(){
   showToast(name+' added!');renderCommitteeStats();renderLeaderboard();renderPlayers();
 }
 
+// Time dropdowns only list 30-minute slots. A saved time that isn't one of
+// them (older sessions) is added as an extra option so editing never wipes it.
+function setTimeSelect(sel,val){
+  if(val&&![...sel.options].some(o=>o.value===val)){
+    const o=document.createElement('option');o.value=val;o.textContent=formatTime(val);sel.appendChild(o);
+  }
+  sel.value=val;
+}
+
 function openEditSession(sid){
   const s=SESSIONS.find(x=>x.id===sid);
   if(!s||accessLevel!=='committee')return;
@@ -2517,9 +2526,10 @@ function openEditSession(sid){
   document.getElementById('es-id').value=s.id;
   document.getElementById('es-title').value=s.title||'';
   document.getElementById('es-date').value=s.date||'';
-  document.getElementById('es-time').value=s.time||'';
+  const esStart=document.getElementById('es-time');
   const esEnd=document.getElementById('es-end-time');
-  esEnd.value=s.end_time||'';
+  setTimeSelect(esStart,s.time||'');
+  setTimeSelect(esEnd,s.end_time||'');
   esEnd.dataset.touched=s.end_time?'1':'';
   document.getElementById('es-location').value=s.location||'';
   document.getElementById('es-max-courts').value=s.max_courts||'';
