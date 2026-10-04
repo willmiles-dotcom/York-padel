@@ -90,7 +90,7 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .home-head a,.home-link{font-size:14px;font-weight:500;color:var(--gold);cursor:pointer;text-decoration:none}
 .hero-card{position:relative;overflow:hidden;border-radius:32px;padding:22px;background:linear-gradient(135deg,#1F5C47,#0C1A15);border:1px solid rgba(255,255,255,0.14);box-shadow:0 14px 36px rgba(var(--shadow-tint),0.5);cursor:pointer}
 .hero-card::before{content:'';position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;background:rgba(240,190,69,0.4);filter:blur(60px);pointer-events:none}
-.hero-court{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hero-court{position:absolute;left:20px;top:50%;transform:translateY(-50%);width:calc(100% - 40px);height:auto;aspect-ratio:2/1;pointer-events:none}
 .hero-card>*:not(.hero-court){position:relative;z-index:1}
 .hero-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 10px;border-radius:20px;background:rgba(255,255,255,0.12);font-size:12px;font-weight:600}
 .hero-chip i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
@@ -99,6 +99,7 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .hero-day{font-family:var(--font-display);font-size:104px;font-weight:700;line-height:1;letter-spacing:-6px;color:var(--gold);font-variant-numeric:tabular-nums}
 .hero-dow{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.6px;line-height:1.15}
 .hero-mon{font-family:var(--font-display);font-size:22px;font-weight:500;letter-spacing:-0.6px;color:#9FB9AE;line-height:1.15}
+.hero-time{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:10px;background:rgba(240,190,69,0.18);color:var(--gold);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
 .hero-title{font-size:17px;font-weight:600;margin-top:2px}
 .hero-meta{font-size:14px;color:#A9BDB4;margin-top:2px}
 .hero-actions{display:flex;align-items:center;gap:12px;margin-top:16px}
@@ -141,6 +142,7 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .sess-card.done .sess-date{background:rgba(255,255,255,0.06)}
 .sess-card.done .sess-date b{color:var(--text)}
 .sess-card.done .sess-date span{color:var(--text-dim)}
+.sess-time{color:var(--text);font-weight:600}
 .sess-info{flex:1;min-width:0}
 .sess-title{font-size:16px;font-weight:600;letter-spacing:-0.2px}
 .sess-meta{font-size:13px;color:var(--text-dim);margin-top:2px}
@@ -454,8 +456,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
       <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
     </div>
-    <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" placeholder="e.g. York Sport Centre"></div>
-    <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" placeholder="e.g. 3" min="1"></div>
+    <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" value="York St. John Sports Fields" placeholder="e.g. York Sport Centre"></div>
+    <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" value="3" placeholder="e.g. 3" min="1"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
       <button class="btn full" onclick="closeModal('new-session-modal')">Cancel</button>
       <button class="btn primary full" onclick="saveNewSession()">Create</button>
@@ -1053,7 +1055,18 @@ async function persistRoundDraft(){
 function eloClass(e){return e>=1075?'elo-high':e<=925?'elo-low':'elo-mid'}
 function groupEdgeColor(g){return g==='competitive'?'var(--competitive)':g==='upper'?'var(--upper)':g==='lower'?'var(--lower)':'transparent'}
 function pName(id){return pMap[id]?pMap[id].name:id.slice(-4)}
-function sessionDateTime(s){return s.time?`${s.date} · ${s.time}`:s.date}
+function formatTime(t){
+  const m=/^(\d{1,2}):(\d{2})/.exec(String(t||''));
+  if(!m)return t?String(t):'';
+  let h=parseInt(m[1],10);const mins=m[2];
+  const ap=h>=12?'pm':'am';h=h%12||12;
+  return mins==='00'?`${h}${ap}`:`${h}:${mins}${ap}`;
+}
+function sessionDateTime(s){
+  const d=parseSessionDate(s.date);
+  const ds=isNaN(d)?String(s.date):d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  return s.time?`${ds} · ${formatTime(s.time)}`:ds;
+}
 // "Will M" rather than just "Will" everywhere inside a session, so two
 // players sharing a first name are still told apart on a court/chip.
 function pFirst(id){
@@ -1293,7 +1306,7 @@ function renderSessions(){
     const done=s.status==='completed';
     const n=Array.isArray(s.attendees)?s.attendees.length:0;
     const statusChip=live?'<span class="badge live">Live now</span>':`<span class="badge ${s.status}">${s.status==='upcoming'?'Upcoming':s.status==='completed'?'Completed':escapeHtml(s.status)}</span>`;
-    const meta=[s.time,s.location||'TBC'].filter(Boolean).map(escapeHtml).join(' · ');
+    const meta=[d.toLocaleDateString('en-GB',{weekday:'short'}),s.time?`<b class="sess-time">${escapeHtml(formatTime(s.time))}</b>`:'',escapeHtml(s.location||'TBC')].filter(Boolean).join(' · ');
     return `<div class="card session-card sess-card ${live?'live':done?'done':''}" onclick="showSessionDetail('${s.id}')" style="${s.archived?'opacity:0.6':''}">
       <div class="sess-date"><b>${d.getDate()}</b><span>${d.toLocaleDateString('en-GB',{month:'short'})}</span></div>
       <div class="sess-info">
@@ -2579,7 +2592,7 @@ function avatarHtml(id,name,size){
 function parseSessionDate(d){const [y,m,day]=String(d).split('-').map(Number);return new Date(y,(m||1)-1,day||1)}
 function daysUntil(d){const t=new Date();t.setHours(0,0,0,0);return Math.round((parseSessionDate(d)-t)/86400000)}
 function relDays(n){return n<=0?'today':n===1?'tomorrow':`in ${n} days`}
-const HERO_COURT='<svg class="hero-court" viewBox="0 0 358 290" preserveAspectRatio="none" fill="none" aria-hidden="true"><g stroke="#fff" stroke-opacity="0.13" stroke-width="2"><rect x="20" y="20" width="318" height="250" rx="6"/><line x1="179" y1="20" x2="179" y2="270"/><line x1="20" y1="145" x2="338" y2="145" stroke-opacity="0.2"/><line x1="100" y1="20" x2="100" y2="270"/><line x1="258" y1="20" x2="258" y2="270"/></g></svg>';
+const HERO_COURT='<svg class="hero-court" viewBox="0 0 200 100" preserveAspectRatio="xMidYMid meet" fill="none" aria-hidden="true"><g stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke" stroke-linecap="round"><rect x="1" y="1" width="198" height="98" rx="8" stroke-opacity="0.16"/><line x1="100" y1="1" x2="100" y2="99" stroke-opacity="0.26"/><line x1="69.5" y1="1" x2="69.5" y2="99" stroke-opacity="0.16"/><line x1="130.5" y1="1" x2="130.5" y2="99" stroke-opacity="0.16"/><line x1="69.5" y1="50" x2="130.5" y2="50" stroke-opacity="0.16"/></g></svg>';
 
 function renderHome(){
   if(document.getElementById('page-home').classList.contains('active'))setBackdrop('photo-03');
@@ -2620,10 +2633,10 @@ function renderHome(){
       <span class="hero-chip ${live?'live':''}"><i></i>${live?'Happening now':`Next session · ${relDays(daysUntil(upcoming.date))}`}</span>
       <div class="hero-date">
         <div class="hero-day">${d.getDate()}</div>
-        <div><div class="hero-dow">${d.toLocaleDateString('en-GB',{weekday:'long'})}</div><div class="hero-mon">${d.toLocaleDateString('en-GB',{month:'long'})}</div></div>
+        <div><div class="hero-dow">${d.toLocaleDateString('en-GB',{weekday:'long'})}</div><div class="hero-mon">${d.toLocaleDateString('en-GB',{month:'long'})}</div>${upcoming.time?`<div class="hero-time">${escapeHtml(formatTime(upcoming.time))}</div>`:''}</div>
       </div>
       <div class="hero-title">${escapeHtml(upcoming.title)}</div>
-      <div class="hero-meta">${[upcoming.time,upcoming.location||'TBC',upcoming.format?FORMAT_LABELS[upcoming.format]:''].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+      <div class="hero-meta">${[upcoming.location||'TBC',upcoming.format?FORMAT_LABELS[upcoming.format]:''].filter(Boolean).map(escapeHtml).join(' · ')}</div>
       <div class="hero-actions">${action}
         <div class="hero-going">${shown.length?`<span class="avatar-stack">${shown.map(id=>avatarHtml(id,(pMap[id]||{}).name||'?',32)).join('')}</span>`:''}<span>${goers.length?(extra>0?`+${extra} going`:`${goers.length} going`):'Be the first in'}</span></div>
       </div>
@@ -2631,25 +2644,30 @@ function renderHome(){
     <div style="text-align:center;margin-top:-10px"><a class="home-link" onclick="showPage('signup',null,true);renderSignupScreen()">See all upcoming sessions</a></div>`;
   }
 
-  const last=[...SESSIONS].filter(x=>!x.archived&&x.status==='completed').sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
-  if(last){
-    const rounds=Array.isArray(last.rounds)?last.rounds:[];
+  const ordinal=n=>{const v=n%100;return n+(['th','st','nd','rd'][(v-20)%10]||['th','st','nd','rd'][v]||'th')};
+  const mine=myPlayerId?[...SESSIONS].filter(x=>!x.archived&&x.status==='completed'&&((Array.isArray(x.attendees)&&x.attendees.includes(myPlayerId))||(Array.isArray(x.rounds)&&x.rounds.some(r=>(r.t1||[]).includes(myPlayerId)||(r.t2||[]).includes(myPlayerId))))).sort((a,b)=>new Date(b.date)-new Date(a.date))[0]:null;
+  if(mine){
+    const rounds=Array.isArray(mine.rounds)?mine.rounds:[];
     const roundCount=new Set(rounds.map(r=>r.r)).size;
-    let scorer=null;
-    if(last.format==='doubles_americano'||last.format==='paired_americano'){
+    let stat=null;
+    if(mine.format==='doubles_americano'||mine.format==='paired_americano'){
       const pts={};
       rounds.forEach(r=>{(r.t1||[]).forEach(id=>{pts[id]=(pts[id]||0)+(r.s1||0)});(r.t2||[]).forEach(id=>{pts[id]=(pts[id]||0)+(r.s2||0)});});
-      const top=Object.entries(pts).sort((a,b)=>b[1]-a[1])[0];
-      if(top)scorer={id:top[0],pts:top[1]};
+      if(pts[myPlayerId]!==undefined){
+        const all=Object.values(pts);
+        stat={big:`${pts[myPlayerId]} pts`,label:'Your score',side:`${ordinal(1+all.filter(v=>v>pts[myPlayerId]).length)} of ${all.length}`};
+      }
+    }else if(mine.format==='match_play'){
+      let w=0,l=0;
+      rounds.forEach(m=>{const in1=(m.t1||[]).includes(myPlayerId),in2=(m.t2||[]).includes(myPlayerId);if(!in1&&!in2)return;if((in1&&m.winner==='t1')||(in2&&m.winner==='t2'))w++;else if(m.winner==='t1'||m.winner==='t2')l++;});
+      if(w+l>0)stat={big:`${w} won`,label:'Your matches',side:`${l} lost`};
     }
-    const att=Array.isArray(last.attendees)?last.attendees.length:0;
-    const meta=[parseSessionDate(last.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}),last.format?FORMAT_LABELS[last.format]:'',roundCount?`${roundCount} round${roundCount>1?'s':''}`:''].filter(Boolean).join(' · ');
+    const meta=[parseSessionDate(mine.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}),mine.format?FORMAT_LABELS[mine.format]:'',roundCount?`${roundCount} round${roundCount>1?'s':''}`:''].filter(Boolean).join(' · ');
     html+=`<div>
-      <div class="home-head"><h2>Last session</h2><a onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">All sessions</a></div>
-      <div class="card last-card" style="margin:0;cursor:pointer" onclick="showSessionDetail('${last.id}')">
-        <div class="last-top"><div style="flex:1;min-width:0"><div class="last-title">${escapeHtml(last.title)}</div><div class="last-meta">${escapeHtml(meta)}</div></div><span class="badge completed">Completed</span></div>
-        ${scorer?`<div class="last-scorer">${avatarHtml(scorer.id,(pMap[scorer.id]||{}).name||'?',34)}<div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text-dim)">Top scorer</div><div style="font-size:15px;font-weight:600">${escapeHtml((pMap[scorer.id]||{}).name||'Unknown')}</div></div><div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums">${scorer.pts} pts</div></div>`
-          :att?`<div class="last-scorer"><div style="font-size:14px;color:var(--text-dim)">${att} player${att>1?'s':''} took part</div></div>`:''}
+      <div class="home-head"><h2>Your last session</h2><a onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">All sessions</a></div>
+      <div class="card last-card" style="margin:0;cursor:pointer" onclick="showSessionDetail('${mine.id}')">
+        <div class="last-top"><div style="flex:1;min-width:0"><div class="last-title">${escapeHtml(mine.title)}</div><div class="last-meta">${escapeHtml(meta)}</div></div><span class="badge completed">Completed</span></div>
+        ${stat?`<div class="last-scorer"><div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text-dim)">${stat.label}</div><div style="font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--gold);letter-spacing:-0.8px;font-variant-numeric:tabular-nums">${stat.big}</div></div><div style="font-size:15px;font-weight:600">${stat.side}</div></div>`:''}
       </div>
     </div>`;
   }
