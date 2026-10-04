@@ -77,6 +77,23 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .nav button.active::after{background:var(--gold);box-shadow:0 0 8px rgba(240,190,69,0.7)}
 .content{padding:16px;flex:1;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
 .page{display:none}.page.active{display:block}
+@keyframes pageInRight{from{opacity:0;transform:translate3d(36px,0,0)}to{opacity:1;transform:none}}
+@keyframes pageInLeft{from{opacity:0;transform:translate3d(-36px,0,0)}to{opacity:1;transform:none}}
+@keyframes pageInUp{from{opacity:0;transform:translate3d(0,16px,0)}to{opacity:1;transform:none}}
+@keyframes tabInRight{from{opacity:0;transform:translate3d(18px,0,0)}to{opacity:1;transform:none}}
+@keyframes tabInLeft{from{opacity:0;transform:translate3d(-18px,0,0)}to{opacity:1;transform:none}}
+@keyframes sheetUp{from{opacity:0;transform:translate3d(0,48px,0)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes dotPop{from{transform:scale(0)}60%{transform:scale(1.5)}to{transform:scale(1)}}
+.page.active.from-right{animation:pageInRight .3s cubic-bezier(.2,.8,.2,1) both}
+.page.active.from-left{animation:pageInLeft .3s cubic-bezier(.2,.8,.2,1) both}
+.page.active.from-up{animation:pageInUp .3s cubic-bezier(.2,.8,.2,1) both}
+.tab-swap.from-right{animation:tabInRight .26s cubic-bezier(.2,.8,.2,1) both}
+.tab-swap.from-left{animation:tabInLeft .26s cubic-bezier(.2,.8,.2,1) both}
+.modal-overlay.open{animation:fadeIn .2s ease both}
+.modal-overlay.open .modal{animation:sheetUp .32s cubic-bezier(.2,.8,.2,1) both}
+.nav button.active::after{animation:dotPop .35s ease both}
+.content{overflow-x:clip}
 .card{background:var(--glass-whisper);border:1px solid var(--glass-border);border-radius:18px;padding:16px;margin-bottom:12px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 24px rgba(var(--shadow-tint),0.35)}
 .card-elevated{background:var(--glass-elevated);border:1px solid var(--glass-border);border-top-color:rgba(255,255,255,0.35);border-left-color:rgba(255,255,255,0.22);border-radius:20px;padding:16px;margin-bottom:12px;backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);box-shadow:0 10px 30px rgba(var(--shadow-tint),0.4),inset 0 1px 0 rgba(255,255,255,0.08)}
 .stat-grid-3{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
@@ -1089,7 +1106,8 @@ let matchPlayDraft=[];
 let matchPlayLockedMatches=null;
 let showFormatPicker=false;
 let liveTab='score'; // 'score' | 'session' on the live session screen
-function setLiveTab(t){liveTab=t;renderLiveSession();}
+let liveTabAnim='';
+function setLiveTab(t){liveTabAnim=t==='session'?'from-right':'from-left';liveTab=t;renderLiveSession();}
 // The next Americano round's draw used to be recomputed (reshuffled)
 // on every render, so any unrelated re-render - someone else logging
 // in, a guest being admitted, etc. - silently swapped the matches out
@@ -1883,7 +1901,8 @@ function renderLiveSession(){
     const pending=sessionPendingGuestIds.length;
     const tabs=`<div class="live-tabs"><button class="${liveTab==='score'?'active':''}" onclick="setLiveTab('score')">Scoring</button><button class="${liveTab==='session'?'active':''}" onclick="setLiveTab('session')">Session${pending?`<span class="live-dot">${pending}</span>`:''}</button></div>`;
     const scoreBody=html.trim()?html:`<div class="empty-state">${isKotc?'King of the Court has no scores to enter. Players are tracked by attendance.':!s.format?'Pick a format on the Session tab to start recording rounds.':isPaired?'Pair up at least 2 pairs on the Session tab to start scoring.':'Add at least 4 players on the Session tab to start scoring.'}<div style="margin-top:14px"><button class="btn-gold" style="height:46px;font-size:15px" onclick="setLiveTab('session')">Go to Session</button></div></div>`;
-    document.getElementById('session-detail-content').innerHTML=head+tabs+(liveTab==='score'?scoreBody:tiles+sess+bottom);
+    const anim=liveTabAnim;liveTabAnim='';
+    document.getElementById('session-detail-content').innerHTML=head+tabs+`<div class="tab-swap ${anim}">${liveTab==='score'?scoreBody:tiles+sess+bottom}</div>`;
   };
 
   // Current players
@@ -2992,9 +3011,19 @@ function setBackdrop(photoId){
 }
 
 // ── NAVIGATION ───────────────────────────────────────────────
+// Tabs sit left to right in this order; any other screen (session, profile, sign-up)
+// counts as one level deeper, so opening it slides in from the right and Back slides out left.
+const PAGE_ORDER={home:0,leaderboard:1,sessions:2,players:3,committee:4};
 function showPage(id,btn,noNav){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
+  const prev=document.querySelector('.page.active');
+  const prevId=prev?prev.id.replace('page-',''):null;
+  const rank=x=>x in PAGE_ORDER?PAGE_ORDER[x]:10;
+  let dir='none';
+  if(prevId&&prevId!==id)dir=rank(id)>rank(prevId)?'right':rank(id)<rank(prevId)?'left':'up';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active','from-right','from-left','from-up'));
+  const target=document.getElementById('page-'+id);
+  target.classList.add('active');
+  if(dir!=='none'){target.classList.add('from-'+dir);window.scrollTo(0,0);}
   if(!noNav){document.querySelectorAll('#main-nav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');}
   // Only Home, Leaderboard and live session-detail get a real photo
   // backdrop - session-detail's own render functions decide (live vs
