@@ -2926,6 +2926,16 @@ function adjustScore(inputId,delta){
   const max=el.max!==''?parseInt(el.max):Infinity;
   const next=Math.max(min,Math.min(max,(parseInt(el.value)||0)+delta));
   el.value=next;
+  // A court's two scores share the round's points. If this + would push the
+  // total over the limit, take the overflow off the other side instead.
+  if(delta>0){
+    const [side,mi]=inputId.split('-');
+    const other=document.getElementById((side==='s1'?'s2':'s1')+'-'+mi);
+    if(other){
+      const over=next+(parseInt(other.value)||0)-pointsPerRound;
+      if(over>0)other.value=Math.max(0,(parseInt(other.value)||0)-over);
+    }
+  }
   markLeader(parseInt(inputId.split('-')[1]));
 }
 
