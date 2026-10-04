@@ -462,13 +462,12 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
     <div class="form-row"><label class="form-label">Title</label><input type="text" id="ns-title" placeholder="e.g. Wednesday Training — Upper"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
-      <div class="form-row"><label class="form-label">Start time</label><input type="time" id="ns-time" oninput="syncEndTime('ns')" onchange="syncEndTime('ns')"></div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
       <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
     </div>
-    <div class="form-row"><label class="form-label">End time</label><input type="time" id="ns-end-time" oninput="this.dataset.touched='1'"><div style="font-size:12px;color:var(--text-dim);margin-top:5px">Fills in an hour after the start. Change it if the session runs differently.</div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="form-row"><label class="form-label">Start time</label><input type="time" id="ns-time" oninput="syncEndTime('ns')" onchange="syncEndTime('ns')"></div>
+      <div class="form-row"><label class="form-label">End time</label><input type="time" id="ns-end-time" oninput="this.dataset.touched='1'"></div>
+    </div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" value="York St. John Sports Fields" placeholder="e.g. York Sport Centre"></div>
     <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" value="3" placeholder="e.g. 3" min="1"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -2591,7 +2590,7 @@ async function saveNewSession(){
   const endTime=document.getElementById('ns-end-time').value;
   if(endTime&&!time){showToast('Add a start time first');return;}
   if(endTime&&endTime<=time){showToast('End time must be after the start time');return;}
-  const session={id:'s-'+Date.now(),title,date,time,end_time:endTime,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
+  const session={id:'s-'+Date.now(),title,date,time,end_time:endTime,type:'training',format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
   const{error}=await sb.from('sessions').insert([session]);
   if(error){showToast('Error: '+error.message);return;}
   SESSIONS.push(session);document.getElementById('ns-end-time').dataset.touched='';closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
