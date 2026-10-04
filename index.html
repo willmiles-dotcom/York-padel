@@ -462,12 +462,13 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
     <div class="form-row"><label class="form-label">Title</label><input type="text" id="ns-title" placeholder="e.g. Wednesday Training — Upper"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Date</label><input type="date" id="ns-date"></div>
-      <div class="form-row"><label class="form-label">Time</label><input type="time" id="ns-time"></div>
+      <div class="form-row"><label class="form-label">Start time</label><input type="time" id="ns-time" oninput="syncEndTime('ns')" onchange="syncEndTime('ns')"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Type</label><select id="ns-type"><option value="training">Training</option><option value="inter_uni">Inter-uni</option><option value="social">Social</option><option value="tournament">Tournament</option></select></div>
       <div class="form-row"><label class="form-label">Format</label><select id="ns-format"><option value="">Not set yet</option><option value="doubles_americano">Singles Americano</option><option value="paired_americano">Doubles Americano</option><option value="match_play">Match Play</option><option value="king_of_the_court">King of the Court</option></select></div>
     </div>
+    <div class="form-row"><label class="form-label">End time</label><input type="time" id="ns-end-time" oninput="this.dataset.touched='1'"><div style="font-size:12px;color:var(--text-dim);margin-top:5px">Fills in an hour after the start. Change it if the session runs differently.</div></div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="ns-location" value="York St. John Sports Fields" placeholder="e.g. York Sport Centre"></div>
     <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" value="3" placeholder="e.g. 3" min="1"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
@@ -486,8 +487,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
     <div class="form-row"><label class="form-label">Title</label><input type="text" id="es-title"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Date</label><input type="date" id="es-date"></div>
-      <div class="form-row"><label class="form-label">Time</label><input type="time" id="es-time"></div>
+      <div class="form-row"><label class="form-label">Start time</label><input type="time" id="es-time" oninput="syncEndTime('es')" onchange="syncEndTime('es')"></div>
     </div>
+    <div class="form-row"><label class="form-label">End time</label><input type="time" id="es-end-time" oninput="this.dataset.touched='1'"></div>
     <div class="form-row"><label class="form-label">Location</label><input type="text" id="es-location"></div>
     <div id="es-live-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="es-max-courts" min="1"></div>
@@ -1097,10 +1099,32 @@ function formatTime(t){
   const ap=h>=12?'pm':'am';h=h%12||12;
   return mins==='00'?`${h}${ap}`:`${h}:${mins}${ap}`;
 }
+function addHour(t){
+  const m=/^(\d{1,2}):(\d{2})/.exec(String(t||''));
+  if(!m)return '';
+  const h=parseInt(m[1],10);
+  return h>=23?'23:59':String(h+1).padStart(2,'0')+':'+m[2];
+}
+// "6:30-7:30pm" when both are pm/am, "11:30am-12:30pm" when they differ
+function formatTimeRange(start,end){
+  if(!start)return '';
+  if(!end)return formatTime(start);
+  const a=formatTime(start),b=formatTime(end);
+  const sa=/(am|pm)$/.exec(a),sb=/(am|pm)$/.exec(b);
+  return (sa&&sb&&sa[1]===sb[1]?a.replace(/(am|pm)$/,''):a)+'\u2013'+b;
+}
+function sessionTimeText(s){return formatTimeRange(s.time,s.end_time)}
+// Until the user types their own end time, keep it one hour after the start.
+function syncEndTime(prefix){
+  const start=document.getElementById(prefix+'-time').value;
+  const end=document.getElementById(prefix+'-end-time');
+  if(end.dataset.touched==='1')return;
+  end.value=start?addHour(start):'';
+}
 function sessionDateTime(s){
   const d=parseSessionDate(s.date);
   const ds=isNaN(d)?String(s.date):d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  return s.time?`${ds} · ${formatTime(s.time)}`:ds;
+  return s.time?`${ds} · ${sessionTimeText(s)}`:ds;
 }
 // "Will M" rather than just "Will" everywhere inside a session, so two
 // players sharing a first name are still told apart on a court/chip.
@@ -1341,7 +1365,7 @@ function renderSessions(){
     const done=s.status==='completed';
     const n=Array.isArray(s.attendees)?s.attendees.length:0;
     const statusChip=live?'<span class="badge live">Live now</span>':`<span class="badge ${s.status}">${s.status==='upcoming'?'Upcoming':s.status==='completed'?'Completed':escapeHtml(s.status)}</span>`;
-    const meta=[d.toLocaleDateString('en-GB',{weekday:'short'}),s.time?`<b class="sess-time">${escapeHtml(formatTime(s.time))}</b>`:'',escapeHtml(s.location||'TBC')].filter(Boolean).join(' · ');
+    const meta=[d.toLocaleDateString('en-GB',{weekday:'short'}),s.time?`<b class="sess-time">${escapeHtml(sessionTimeText(s))}</b>`:'',escapeHtml(s.location||'TBC')].filter(Boolean).join(' · ');
     return `<div class="card session-card sess-card ${live?'live':done?'done':''}" onclick="showSessionDetail('${s.id}')" style="${s.archived?'opacity:0.6':''}">
       <div class="sess-date"><b>${d.getDate()}</b><span>${d.toLocaleDateString('en-GB',{month:'short'})}</span></div>
       <div class="sess-info">
@@ -2495,6 +2519,9 @@ function openEditSession(sid){
   document.getElementById('es-title').value=s.title||'';
   document.getElementById('es-date').value=s.date||'';
   document.getElementById('es-time').value=s.time||'';
+  const esEnd=document.getElementById('es-end-time');
+  esEnd.value=s.end_time||'';
+  esEnd.dataset.touched=s.end_time?'1':'';
   document.getElementById('es-location').value=s.location||'';
   document.getElementById('es-max-courts').value=s.max_courts||'';
   document.getElementById('es-points').value=s.points_to_play||16;
@@ -2512,11 +2539,15 @@ async function saveSessionEdits(){
   const date=document.getElementById('es-date').value;
   if(!title||!date){showToast('Title and date required');return;}
   const time=document.getElementById('es-time').value;
+  const endTime=document.getElementById('es-end-time').value;
+  if(endTime&&!time){showToast('Add a start time first');return;}
+  if(endTime&&endTime<=time){showToast('End time must be after the start time');return;}
   const location=document.getElementById('es-location').value.trim();
   const updates={};
   if(title!==(s.title||''))updates.title=title;
   if(date!==(s.date||''))updates.date=date;
   if(time!==(s.time||''))updates.time=time;
+  if(endTime!==(s.end_time||''))updates.end_time=endTime;
   if(location!==(s.location||''))updates.location=location;
   if(!completed){
     const courtsRaw=document.getElementById('es-max-courts').value.trim();
@@ -2557,10 +2588,13 @@ async function saveNewSession(){
   const maxCourtsVal=parseInt(document.getElementById('ns-max-courts').value)||null;
   if(!maxCourtsVal){showToast('Number of courts is required');return;}
   const time=document.getElementById('ns-time').value;
-  const session={id:'s-'+Date.now(),title,date,time,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
+  const endTime=document.getElementById('ns-end-time').value;
+  if(endTime&&!time){showToast('Add a start time first');return;}
+  if(endTime&&endTime<=time){showToast('End time must be after the start time');return;}
+  const session={id:'s-'+Date.now(),title,date,time,end_time:endTime,type:document.getElementById('ns-type').value,format:document.getElementById('ns-format').value,location:document.getElementById('ns-location').value,points_to_play:16,max_courts:maxCourtsVal,status:'upcoming',elo_applied:false,attendees:[],elo_changes:[],rounds:[],pairs:[],archived:false};
   const{error}=await sb.from('sessions').insert([session]);
   if(error){showToast('Error: '+error.message);return;}
-  SESSIONS.push(session);closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
+  SESSIONS.push(session);document.getElementById('ns-end-time').dataset.touched='';closeModal('new-session-modal');showToast('Session created!');renderSessions();renderCommitteeStats();
 }
 
 // ── ROSTER IMPORT ───────────────────────────────────────────
@@ -2727,7 +2761,7 @@ function renderHome(){
       <span class="hero-chip ${live?'live':''}"><i></i>${live?'Happening now':`Next session · ${relDays(daysUntil(upcoming.date))}`}</span>
       <div class="hero-date">
         <div class="hero-day">${d.getDate()}</div>
-        <div><div class="hero-dow">${d.toLocaleDateString('en-GB',{weekday:'long'})}</div><div class="hero-mon">${d.toLocaleDateString('en-GB',{month:'long'})}</div>${upcoming.time?`<div class="hero-time">${escapeHtml(formatTime(upcoming.time))}</div>`:''}</div>
+        <div><div class="hero-dow">${d.toLocaleDateString('en-GB',{weekday:'long'})}</div><div class="hero-mon">${d.toLocaleDateString('en-GB',{month:'long'})}</div>${upcoming.time?`<div class="hero-time">${escapeHtml(sessionTimeText(upcoming))}</div>`:''}</div>
       </div>
       <div class="hero-title">${escapeHtml(upcoming.title)}</div>
       <div class="hero-meta">${[upcoming.location||'TBC',upcoming.format?FORMAT_LABELS[upcoming.format]:''].filter(Boolean).map(escapeHtml).join(' · ')}</div>
