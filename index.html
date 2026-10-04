@@ -119,6 +119,16 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .last-title{font-size:16px;font-weight:600}
 .last-meta{font-size:13px;color:var(--text-dim);margin-top:2px}
 .last-scorer{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)}
+.insight{margin:0 0 10px}
+.insight .admin-section{border-top:1px solid rgba(255,255,255,0.08)}
+.insight-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;font-size:14px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.insight-row:last-child{border-bottom:none}
+.insight-row small{color:var(--text-dim);font-size:12px;white-space:nowrap}
+.insight-note{font-size:12px;color:var(--text-dim);margin:0 0 6px;line-height:1.45}
+.turnout-bars{display:flex;align-items:flex-end;gap:5px;height:64px;margin-top:10px}
+.turnout-bars div{flex:1;border-radius:6px 6px 3px 3px;background:linear-gradient(180deg,#F7CF62,#C48A00);min-height:4px}
+.turnout-labels{display:flex;gap:5px;margin-top:4px}
+.turnout-labels span{flex:1;text-align:center;font-size:10px;color:var(--text-dim)}
 .admin-tools{border:1px solid var(--glass-border);border-radius:20px;background:rgba(255,255,255,0.04);margin-top:4px}
 .admin-tools summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;font-size:14px;font-weight:500;color:var(--text-dim);cursor:pointer;list-style:none}
 .admin-tools summary::-webkit-details-marker{display:none}
@@ -383,8 +393,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <button class="active" onclick="setSessionsFilter('all',this)">All</button>
         <button onclick="setSessionsFilter('upcoming',this)">Upcoming</button>
         <button onclick="setSessionsFilter('completed',this)">Completed</button>
+        <button id="sessions-deleted-pill" style="display:none" onclick="setSessionsFilter('deleted',this)">Deleted</button>
       </div>
-      <label id="sessions-show-archived-row" style="display:none;align-items:center;gap:6px;font-size:13px;color:var(--text-dim);margin-bottom:14px"><input type="checkbox" id="sessions-show-archived" onchange="renderSessions()" style="width:auto">Show deleted</label>
       <div id="sessions-list"><div class="loading">Loading...</div></div>
     </div>
 
@@ -412,8 +422,9 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
       <div class="stat-grid stat-grid-3">
         <div class="stat"><div class="stat-label">Active members</div><div class="stat-val green" id="c-active">—</div></div>
         <div class="stat"><div class="stat-label">Sessions run</div><div class="stat-val" id="c-sess">—</div></div>
-        <div class="stat"><div class="stat-label">Guests</div><div class="stat-val" id="c-guests">—</div></div>
+        <div class="stat" style="cursor:pointer" onclick="openInsight('insight-guests')"><div class="stat-label">Guests</div><div class="stat-val" id="c-guests">—</div></div>
       </div>
+      <div id="committee-insights"></div>
       <div class="card">
         <div class="section-head" style="display:flex;align-items:center;justify-content:space-between"><span>Edit players</span><button class="btn sm" id="add-player-toggle" onclick="toggleAddPlayer()">+ Add player</button></div>
         <div id="add-player-form" style="display:none;margin:4px 0 16px;padding:14px;border-radius:16px;background:rgba(255,255,255,0.04)">
@@ -1353,12 +1364,18 @@ function setSessionsFilter(f,btn){
   renderSessions();
 }
 function renderSessions(){
-  const showArchived=document.getElementById('sessions-show-archived').checked;
-  const isOpen=s=>s.status==='upcoming'||s.status==='in_progress';
-  let sorted=[...SESSIONS].filter(s=>showArchived||!s.archived);
-  if(sessionsFilter==='upcoming')sorted=sorted.filter(isOpen).sort((a,b)=>new Date(a.date)-new Date(b.date));
-  else if(sessionsFilter==='completed')sorted=sorted.filter(s=>s.status==='completed').sort((a,b)=>new Date(b.date)-new Date(a.date));
-  else sorted.sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const isOpen=x=>x.status==='upcoming'||x.status==='in_progress';
+  // newest first by date, then start time; Upcoming is the one exception (soonest first)
+  const newest=(a,b)=>String(b.date||'').localeCompare(String(a.date||''))||String(b.time||'').localeCompare(String(a.time||''));
+  const soonest=(a,b)=>newest(b,a);
+  let sorted;
+  if(sessionsFilter==='deleted')sorted=SESSIONS.filter(x=>x.archived).sort(newest);
+  else{
+    sorted=SESSIONS.filter(x=>!x.archived);
+    if(sessionsFilter==='upcoming')sorted=sorted.filter(isOpen).sort(soonest);
+    else if(sessionsFilter==='completed')sorted=sorted.filter(x=>x.status==='completed').sort(newest);
+    else sorted.sort(newest);
+  }
   document.getElementById('sessions-list').innerHTML=sorted.length?sorted.map(s=>{
     const d=parseSessionDate(s.date);
     const live=s.status==='in_progress';
@@ -1380,7 +1397,7 @@ function renderSessions(){
         </div>
       </div>
     </div>`;
-  }).join(''):`<div class="empty-state">${sessionsFilter==='upcoming'?'No upcoming sessions. New ones appear here once the committee posts them.':sessionsFilter==='completed'?'No completed sessions yet.':'No sessions yet. Sessions appear here once the committee creates one.'}</div>`;
+  }).join(''):`<div class="empty-state">${sessionsFilter==='upcoming'?'No upcoming sessions. New ones appear here once the committee posts them.':sessionsFilter==='completed'?'No completed sessions yet.':sessionsFilter==='deleted'?'No deleted sessions.':'No sessions yet. Sessions appear here once the committee creates one.'}</div>`;
 }
 
 // ── SESSION DETAIL ───────────────────────────────────────────
@@ -2415,22 +2432,136 @@ function sameGuestName(a,b){
   }
   return Math.min(a.length,b.length)>=8&&editDistance(a,b)<=1;
 }
-function countUniqueNames(names){
+function groupGuests(entries){
+  // entries: [{name, sessions:Set}] -> one group per apparent person
   const groups=[];
-  names.map(normalizeName).filter(Boolean).forEach(n=>{
-    if(!groups.some(g=>g.some(x=>sameGuestName(x,n))))groups.push([n]);
-    else groups.find(g=>g.some(x=>sameGuestName(x,n))).push(n);
+  entries.forEach(e=>{
+    const n=normalizeName(e.name);if(!n)return;
+    const g=groups.find(gr=>gr.norms.some(x=>sameGuestName(x,n)));
+    if(g){g.norms.push(n);g.names.push(e.name);e.sessions.forEach(x=>g.sessions.add(x));}
+    else groups.push({norms:[n],names:[e.name],sessions:new Set(e.sessions)});
   });
-  return groups.length;
+  // show the tidiest spelling: single spaces, and proper capitals if it was typed all lower/upper case
+  const tidy=n=>{const t=n.replace(/\s+/g,' ').trim();return t===t.toLowerCase()||t===t.toUpperCase()?t.toLowerCase().replace(/(^|\s|-)([a-z])/g,(m,a,b)=>a+b.toUpperCase()):t};
+  return groups.map(g=>({name:g.names.map(tidy).reduce((a,b)=>b.length>a.length?b:a),sessions:g.sessions.size}));
 }
+function countUniqueNames(names){return groupGuests(names.map(n=>({name:n,sessions:new Set()}))).length}
 // Guests who actually played: admitted at the door (or in a round) in a session that still exists.
-function guestNames(){
-  const seen=new Set();
+function guestEntries(){
+  const per={};
   SESSIONS.filter(x=>!x.archived).forEach(x=>{
-    (Array.isArray(x.attendees)?x.attendees:[]).forEach(id=>seen.add(id));
-    (Array.isArray(x.rounds)?x.rounds:[]).forEach(r=>[...(r.t1||[]),...(r.t2||[])].forEach(id=>seen.add(id)));
+    const ids=new Set(Array.isArray(x.attendees)?x.attendees:[]);
+    (Array.isArray(x.rounds)?x.rounds:[]).forEach(r=>[...(r.t1||[]),...(r.t2||[])].forEach(id=>ids.add(id)));
+    ids.forEach(id=>{(per[id]=per[id]||new Set()).add(x.id)});
   });
-  return PLAYERS.filter(p=>p.is_guest&&seen.has(p.id)&&p.door_verified!==false).map(p=>p.name);
+  return PLAYERS.filter(p=>p.is_guest&&per[p.id]&&p.door_verified!==false).map(p=>({name:p.name,sessions:per[p.id]}));
+}
+
+// ---- Committee insights -------------------------------------------------
+function openInsight(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.open=true;
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function daysAgoText(d){
+  const days=Math.max(0,Math.floor((new Date().setHours(0,0,0,0)-parseSessionDate(d))/86400000));
+  if(days<14)return `${days} day${days===1?'':'s'} ago`;
+  if(days<60)return `${Math.floor(days/7)} weeks ago`;
+  return `${Math.round(days/30)} months ago`;
+}
+function insightBlock(id,title,badge,body){
+  return `<details class="admin-tools insight" id="${id}"><summary><span>${title}</span><span class="admin-attn">${badge}</span></summary><div class="admin-section">${body}</div></details>`;
+}
+function renderCommitteeInsights(){
+  const el=document.getElementById('committee-insights');
+  if(!el)return;
+  const todayD=new Date();todayD.setHours(0,0,0,0);
+  const todayStr=`${todayD.getFullYear()}-${String(todayD.getMonth()+1).padStart(2,'0')}-${String(todayD.getDate()).padStart(2,'0')}`;
+  const live=SESSIONS.filter(x=>!x.archived);
+  const done=live.filter(x=>x.status==='completed').sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const members=PLAYERS.filter(p=>!p.is_guest&&p.is_active!==false);
+  const isMember=id=>pMap[id]&&!pMap[id].is_guest;
+  // who played each completed session (attendees plus anyone in a round)
+  const played=x=>{
+    const ids=new Set(Array.isArray(x.attendees)?x.attendees:[]);
+    (Array.isArray(x.rounds)?x.rounds:[]).forEach(r=>[...(r.t1||[]),...(r.t2||[])].forEach(id=>ids.add(id)));
+    return [...ids].filter(id=>!(pMap[id]&&pMap[id].is_guest&&pMap[id].door_verified===false));
+  };
+  let html='';
+
+  // 1. Next session sign-ups
+  const next=live.filter(x=>x.status==='upcoming'&&x.date>=todayStr).sort((a,b)=>String(a.date).localeCompare(String(b.date))||String(a.time||'').localeCompare(String(b.time||'')))[0];
+  if(next){
+    const ids=Array.isArray(next.attendees)?next.attendees:[];
+    const g={upper:0,lower:0,competitive:0,other:0,guests:0};
+    ids.forEach(id=>{const p=pMap[id];if(!p)return;if(p.is_guest)g.guests++;else if(g[p.group_name]!==undefined)g[p.group_name]++;else g.other++;});
+    const parts=[['Upper',g.upper],['Lower',g.lower],['Competitive',g.competitive],['Other',g.other],['Guests',g.guests]].filter(x=>x[1]>0).map(x=>x[0]==='Guests'&&x[1]===1?'1 guest':`${x[1]} ${x[0].toLowerCase()}`);
+    html+=`<div class="card" style="cursor:pointer" onclick="showSessionDetail('${next.id}')">
+      <div class="section-head">Next session</div>
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+        <div style="min-width:0"><div style="font-weight:600;font-size:15px">${escapeHtml(next.title)}</div><div style="font-size:13px;color:var(--text-dim);margin-top:2px">${escapeHtml(sessionDateTime(next))}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div style="font-family:var(--font-display);font-size:32px;font-weight:700;color:var(--gold);line-height:1;letter-spacing:-1px">${ids.length}</div><div style="font-size:12px;color:var(--text-dim)">going</div></div>
+      </div>
+      ${parts.length?`<div style="font-size:13px;color:var(--text-dim);margin-top:10px">${parts.join(' · ')}</div>`:''}
+    </div>`;
+  }
+
+  // 2. Turnout over the last 8 completed sessions
+  const recent=done.slice(-8);
+  if(recent.length){
+    const counts=recent.map(x=>played(x).length);
+    const avg=counts.reduce((a,b)=>a+b,0)/counts.length;
+    const max=Math.max(...counts,1);
+    html+=`<div class="card">
+      <div class="section-head">Turnout</div>
+      <div style="display:flex;align-items:baseline;gap:8px"><span style="font-family:var(--font-display);font-size:32px;font-weight:700;letter-spacing:-1px">${(Math.round(avg*10)/10).toString()}</span><span style="font-size:13px;color:var(--text-dim)">players per session, last ${recent.length}</span></div>
+      <div class="turnout-bars">${counts.map((c,i)=>`<div style="height:${Math.max(6,Math.round(c/max*100))}%" title="${escapeHtml(recent[i].title)}: ${c}"></div>`).join('')}</div>
+      <div class="turnout-labels">${counts.map(c=>`<span>${c}</span>`).join('')}</div>
+    </div>`;
+  }
+
+  // attendance per member
+  const last={},first={},count90={};
+  const cut90=new Date(todayD.getTime()-90*86400000);
+  done.forEach(x=>{
+    played(x).filter(isMember).forEach(id=>{
+      if(!first[id]||x.date<first[id])first[id]=x.date;
+      if(!last[id]||x.date>last[id])last[id]=x.date;
+      if(parseSessionDate(x.date)>=cut90)count90[id]=(count90[id]||0)+1;
+    });
+  });
+
+  // 3. Haven't played in a while (30+ days)
+  const cut30=new Date(todayD.getTime()-30*86400000);
+  const lapsed=members.filter(p=>last[p.id]&&parseSessionDate(last[p.id])<cut30).sort((a,b)=>last[a.id].localeCompare(last[b.id]));
+  const never=members.filter(p=>!last[p.id]).sort((a,b)=>a.name.localeCompare(b.name));
+  html+=insightBlock('insight-lapsed',"Haven't played in a while",lapsed.length?`${lapsed.length}`:'None',
+    (lapsed.length?`<div class="insight-note">Members whose last session was over 30 days ago.</div>`+lapsed.slice(0,40).map(p=>`<div class="insight-row"><span>${escapeHtml(p.name)}</span><small>${daysAgoText(last[p.id])}</small></div>`).join(''):'<div class="insight-note">Everyone who has played has been in the last 30 days.</div>')
+    +(never.length?`<div class="insight-note" style="margin-top:12px">Not played a session yet (${never.length})</div>`+never.slice(0,40).map(p=>`<div class="insight-row"><span>${escapeHtml(p.name)}</span></div>`).join(''):''));
+
+  // 4. Most regular, last 90 days
+  const regular=members.filter(p=>count90[p.id]).sort((a,b)=>count90[b.id]-count90[a.id]||a.name.localeCompare(b.name)).slice(0,8);
+  html+=insightBlock('insight-regular','Most regular','',
+    regular.length?`<div class="insight-note">Sessions played in the last 90 days.</div>`+regular.map((p,i)=>`<div class="insight-row"><span>${i+1}. ${escapeHtml(p.name)}</span><small>${count90[p.id]} session${count90[p.id]===1?'':'s'}</small></div>`).join(''):'<div class="insight-note">No completed sessions in the last 90 days.</div>');
+
+  // 5. New faces: first ever session in the last 30 days (only meaningful with over a month of history)
+  const hasHistory=done.length&&parseSessionDate(done[0].date)<cut30;
+  const fresh=hasHistory?members.filter(p=>first[p.id]&&parseSessionDate(first[p.id])>=cut30).sort((a,b)=>first[b.id].localeCompare(first[a.id])):[];
+  html+=insightBlock('insight-new','New faces',hasHistory?`${fresh.length}`:'—',
+    !hasHistory?'<div class="insight-note">Needs over a month of session history to work out. It fills in by itself as sessions are completed.</div>'
+    :fresh.length?`<div class="insight-note">Members whose first session was in the last 30 days.</div>`+fresh.map(p=>`<div class="insight-row"><span>${escapeHtml(p.name)}</span><small>first played ${daysAgoText(first[p.id])}</small></div>`).join('')
+    :'<div class="insight-note">No first-time players in the last 30 days.</div>');
+
+  // 6. Guests
+  const gs=groupGuests(guestEntries()).sort((a,b)=>b.sessions-a.sessions||a.name.localeCompare(b.name));
+  const repeat=gs.filter(x=>x.sessions>1).length;
+  html+=insightBlock('insight-guests','Guests',`${gs.length}`,
+    gs.length?`<div class="insight-note">Similar spellings are counted as one person, so this is an estimate.${repeat?` ${repeat} have come more than once, so they could be worth inviting to join.`:''}</div>`+gs.map(x=>`<div class="insight-row"><span>${escapeHtml(x.name)}</span><small>${x.sessions} session${x.sessions===1?'':'s'}</small></div>`).join(''):'<div class="insight-note">No guests have played yet.</div>');
+
+  const wasOpen=[...el.querySelectorAll('details[open]')].map(d=>d.id);
+  el.innerHTML=html;
+  wasOpen.forEach(id=>{const d=document.getElementById(id);if(d)d.open=true;});
 }
 
 function toggleAddPlayer(){
@@ -2444,10 +2575,11 @@ function toggleAddPlayer(){
 function renderCommitteeStats(){
   document.getElementById('c-active').textContent=PLAYERS.filter(p=>!p.is_guest&&p.is_active!==false).length;
   document.getElementById('c-sess').textContent=SESSIONS.filter(x=>x.status==='completed'&&!x.archived).length;
-  document.getElementById('c-guests').textContent=countUniqueNames(guestNames());
+  document.getElementById('c-guests').textContent=groupGuests(guestEntries()).length;
   const fl=PLAYERS.filter(p=>p.flagged);
   document.getElementById('flagged-list').innerHTML=fl.length?fl.map(p=>`<div class="elo-result-row"><span>${p.name}</span><span class="badge flag">${p.flag_type}</span></div>`).join(''):'<div style="font-size:13px;color:#aaa">No players flagged.</div>';
   renderCommitteePlayerList();
+  renderCommitteeInsights();
   renderPendingClaims();
 }
 
@@ -2753,7 +2885,8 @@ function applyAccess(level){
   }
   document.getElementById('nav-committee').style.display=level==='committee'?'':'none';
   document.getElementById('new-session-btn').style.display=level==='committee'?'':'none';
-  document.getElementById('sessions-show-archived-row').style.display=level==='committee'?'flex':'none';
+  document.getElementById('sessions-deleted-pill').style.display=level==='committee'?'':'none';
+  if(level!=='committee'&&sessionsFilter==='deleted'){sessionsFilter='all';document.querySelectorAll('#sessions-filter button').forEach((b,i)=>b.classList.toggle('active',i===0));}
   if(level!=='committee')selectedPlayerIds=new Set();
   renderPlayers();
   renderHome();
