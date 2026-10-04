@@ -81,6 +81,43 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .card-elevated{background:var(--glass-elevated);border:1px solid var(--glass-border);border-top-color:rgba(255,255,255,0.35);border-left-color:rgba(255,255,255,0.22);border-radius:20px;padding:16px;margin-bottom:12px;backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);box-shadow:0 10px 30px rgba(var(--shadow-tint),0.4),inset 0 1px 0 rgba(255,255,255,0.08)}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.home-stack{display:flex;flex-direction:column;gap:22px}
+.home-greet-name{font-family:var(--font-display);font-size:32px;font-weight:600;letter-spacing:-1.2px;line-height:1.1}
+.home-greet-sub{font-size:15px;color:var(--text-dim);margin-top:3px}
+.home-greet-sub.ok{color:#3DDC97;font-weight:500}
+.home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.home-head h2{font-family:var(--font-display);font-size:20px;font-weight:600;letter-spacing:-0.4px}
+.home-head a,.home-link{font-size:14px;font-weight:500;color:var(--gold);cursor:pointer;text-decoration:none}
+.hero-card{position:relative;overflow:hidden;border-radius:32px;padding:22px;background:linear-gradient(135deg,#1F5C47,#0C1A15);border:1px solid rgba(255,255,255,0.14);box-shadow:0 14px 36px rgba(var(--shadow-tint),0.5);cursor:pointer}
+.hero-card::before{content:'';position:absolute;right:-60px;top:-80px;width:220px;height:220px;border-radius:50%;background:rgba(240,190,69,0.4);filter:blur(60px);pointer-events:none}
+.hero-court{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.hero-card>*:not(.hero-court){position:relative;z-index:1}
+.hero-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 10px;border-radius:20px;background:rgba(255,255,255,0.12);font-size:12px;font-weight:600}
+.hero-chip i{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+.hero-chip.live i{background:#3DDC97;box-shadow:0 0 8px #3DDC97}
+.hero-date{display:flex;align-items:center;gap:14px;margin:8px 0 4px}
+.hero-day{font-family:var(--font-display);font-size:104px;font-weight:700;line-height:1;letter-spacing:-6px;color:var(--gold);font-variant-numeric:tabular-nums}
+.hero-dow{font-family:var(--font-display);font-size:22px;font-weight:600;letter-spacing:-0.6px;line-height:1.15}
+.hero-mon{font-family:var(--font-display);font-size:22px;font-weight:500;letter-spacing:-0.6px;color:#9FB9AE;line-height:1.15}
+.hero-title{font-size:17px;font-weight:600;margin-top:2px}
+.hero-meta{font-size:14px;color:#A9BDB4;margin-top:2px}
+.hero-actions{display:flex;align-items:center;gap:12px;margin-top:16px}
+.btn-gold{display:inline-flex;align-items:center;justify-content:center;height:54px;padding:0 28px;border:none;border-radius:20px;background:linear-gradient(135deg,#F7CF62,#E0A92A);color:var(--ink);font-family:var(--font-body);font-size:17px;font-weight:700;cursor:pointer;white-space:nowrap;transition:transform .12s ease}
+.btn-gold:active{transform:scale(0.97)}
+.btn-gold.in{background:rgba(255,255,255,0.14);border:1.5px solid rgba(61,220,151,0.7);color:#3DDC97}
+.hero-going{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px;color:#A9BDB4;white-space:nowrap}
+.avatar{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:600;flex-shrink:0;letter-spacing:0}
+.avatar-stack{display:inline-flex}
+.avatar-stack .avatar{border:2px solid #12241D}
+.avatar-stack .avatar+.avatar{margin-left:-10px}
+.last-card{padding:18px;border-radius:28px}
+.last-top{display:flex;align-items:center;gap:12px}
+.last-title{font-size:16px;font-weight:600}
+.last-meta{font-size:13px;color:var(--text-dim);margin-top:2px}
+.last-scorer{display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08)}
+.pass-card{display:flex;align-items:center;gap:14px;padding:16px;border-radius:26px;background:linear-gradient(135deg,#3A2F0E,#1A1608);border:1px solid rgba(240,190,69,0.35);text-decoration:none;color:var(--text)}
+.pass-icon{width:48px;height:48px;border-radius:16px;background:rgba(240,190,69,0.18);color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
 .tile{background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;padding:22px 12px;text-align:center;font-weight:600;font-size:14px;cursor:pointer;text-decoration:none;color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:96px;box-shadow:0 8px 20px rgba(var(--shadow-tint),0.3);transition:transform 0.1s ease;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur)}
 .tile svg{color:var(--gold)}
 .tile:active{background:var(--glass-strong);transform:scale(0.97)}
@@ -235,7 +272,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- HOME -->
     <div class="page active" id="page-home">
-      <div class="tile-grid" id="home-tiles"></div>
+      <div class="home-stack" id="home-tiles"></div>
     </div>
 
     <!-- LEADERBOARD -->
@@ -2473,6 +2510,18 @@ const HOME_ICONS={
   external:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></svg>'
 };
 
+const FORMAT_LABELS={doubles_americano:'Singles Americano',paired_americano:'Doubles Americano',match_play:'Match play',king_of_the_court:'King of the court'};
+const AVATAR_GRADS=[['#8B5CF6','#4C2A9E'],['#22D3EE','#0E7490'],['#F0BE45','#9A6B00'],['#FF8A65','#B23C1F'],['#3DDC97','#127A50'],['#F472B6','#9D2A69']];
+function avatarHtml(id,name,size){
+  let h=0;for(const c of String(id||name))h=(h*31+c.charCodeAt(0))>>>0;
+  const g=AVATAR_GRADS[h%AVATAR_GRADS.length];
+  return `<span class="avatar" style="width:${size}px;height:${size}px;font-size:${Math.round(size*0.36)}px;background:linear-gradient(135deg,${g[0]},${g[1]})">${escapeHtml(initials(name||'?'))}</span>`;
+}
+function parseSessionDate(d){const [y,m,day]=String(d).split('-').map(Number);return new Date(y,(m||1)-1,day||1)}
+function daysUntil(d){const t=new Date();t.setHours(0,0,0,0);return Math.round((parseSessionDate(d)-t)/86400000)}
+function relDays(n){return n<=0?'today':n===1?'tomorrow':`in ${n} days`}
+const HERO_COURT='<svg class="hero-court" viewBox="0 0 358 290" preserveAspectRatio="none" fill="none" aria-hidden="true"><g stroke="#fff" stroke-opacity="0.13" stroke-width="2"><rect x="20" y="20" width="318" height="250" rx="6"/><line x1="179" y1="20" x2="179" y2="270"/><line x1="20" y1="145" x2="338" y2="145" stroke-opacity="0.2"/><line x1="100" y1="20" x2="100" y2="270"/><line x1="258" y1="20" x2="258" y2="270"/></g></svg>';
+
 function renderHome(){
   if(document.getElementById('page-home').classList.contains('active'))setBackdrop('photo-03');
   const myName=myPlayerId&&pMap[myPlayerId]?pMap[myPlayerId].name.split(' ')[0]:null;
@@ -2487,44 +2536,79 @@ function renderHome(){
     return new Date(a.date)-new Date(b.date);
   })[0];
   const topPlayer=[...PLAYERS].filter(p=>p.is_active!==false&&!p.is_guest).sort((a,b)=>b.elo_rating-a.elo_rating)[0];
+  const hr=now.getHours();
+  const greeting=hr<12?'Good morning':hr<18?'Good afternoon':'Good evening';
+  const signedUp=!!(upcoming&&myPlayerId&&Array.isArray(upcoming.attendees)&&upcoming.attendees.includes(myPlayerId));
+  const live=!!(upcoming&&upcoming.status==='in_progress');
 
-  const tiles=[
-    {label:'Rankings',icon:HOME_ICONS.rankings,cls:'ranking-ui',action:"showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))"},
-    {label:'Players',icon:HOME_ICONS.players,action:"showPage('players',document.querySelector('#main-nav button:nth-child(3)'))"},
-    {label:'Sessions',icon:HOME_ICONS.sessions,action:"showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))"},
-    {label:'Sign up',icon:HOME_ICONS.checkin,action:"showPage('signup',null,true);renderSignupScreen()"},
-  ];
-  if(accessLevel==='committee'){
-    tiles.push({label:'Committee',icon:HOME_ICONS.committee,action:"showPage('committee',document.querySelector('#main-nav button:nth-child(5)'))"});
-  }
-
-  let html=`<div style="grid-column:1/-1;margin-bottom:6px">
-      <div style="font-size:22px;font-weight:700;font-family:var(--font-display)">${myName?`Welcome back, ${myName}`:'Welcome'}</div>
-    </div>`;
+  let html=`<div>
+    <div class="home-greet-name">${myName?`${greeting}, ${escapeHtml(myName)}`:'Welcome'}</div>
+    <div class="home-greet-sub ${signedUp?'ok':''}">${!upcoming?'No upcoming sessions yet':live?'A session is happening now':signedUp?`You're signed up for ${parseSessionDate(upcoming.date).toLocaleDateString('en-GB',{weekday:'long'})}`:`Next session is ${relDays(daysUntil(upcoming.date))}`}</div>
+  </div>`;
 
   if(upcoming){
-    html+=`<div class="card-elevated" style="grid-column:1/-1;cursor:pointer" onclick="showSessionDetail('${upcoming.id}')">
-      <div class="section-head" style="margin-bottom:4px">${upcoming.status==='in_progress'?'Happening now':'Next session'}</div>
-      <div style="font-weight:600;font-size:16px">${upcoming.title}</div>
-      <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${sessionDateTime(upcoming)} · ${upcoming.location||'TBC'}</div>
-    </div>`;
+    const d=parseSessionDate(upcoming.date);
+    const goers=(Array.isArray(upcoming.attendees)?upcoming.attendees:[]);
+    const shown=goers.slice(0,4);
+    const extra=goers.length-shown.length;
+    let action='';
+    if(live)action=`<button class="btn-gold" onclick="event.stopPropagation();showSessionDetail('${upcoming.id}')">Open session</button>`;
+    else if(myPlayerId&&signedUp)action=`<button class="btn-gold in" onclick="event.stopPropagation();toggleMySignup('${upcoming.id}',true,'home')" aria-label="You're signed up. Tap to withdraw">✓ You're in</button>`;
+    else if(myPlayerId)action=`<button class="btn-gold" onclick="event.stopPropagation();toggleMySignup('${upcoming.id}',false,'home')">I'm in</button>`;
+    else action=`<button class="btn-gold" onclick="event.stopPropagation();showSessionDetail('${upcoming.id}')">View session</button>`;
+    html+=`<div class="hero-card" onclick="showSessionDetail('${upcoming.id}')">
+      ${HERO_COURT}
+      <span class="hero-chip ${live?'live':''}"><i></i>${live?'Happening now':`Next session · ${relDays(daysUntil(upcoming.date))}`}</span>
+      <div class="hero-date">
+        <div class="hero-day">${d.getDate()}</div>
+        <div><div class="hero-dow">${d.toLocaleDateString('en-GB',{weekday:'long'})}</div><div class="hero-mon">${d.toLocaleDateString('en-GB',{month:'long'})}</div></div>
+      </div>
+      <div class="hero-title">${escapeHtml(upcoming.title)}</div>
+      <div class="hero-meta">${[upcoming.time,upcoming.location||'TBC',upcoming.format?FORMAT_LABELS[upcoming.format]:''].filter(Boolean).map(escapeHtml).join(' · ')}</div>
+      <div class="hero-actions">${action}
+        <div class="hero-going">${shown.length?`<span class="avatar-stack">${shown.map(id=>avatarHtml(id,(pMap[id]||{}).name||'?',32)).join('')}</span>`:''}<span>${goers.length?(extra>0?`+${extra} going`:`${goers.length} going`):'Be the first in'}</span></div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:-10px"><a class="home-link" onclick="showPage('signup',null,true);renderSignupScreen()">See all upcoming sessions</a></div>`;
   }
 
-  html+=tiles.map(t=>`<div class="tile ${t.cls||''}" onclick="${t.action}">${t.icon}<span>${t.label}</span></div>`).join('');
-  html+=`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="tile external">${HOME_ICONS.external}<span>York Padel Club</span></a>`;
-
-  if(topPlayer){
-    html+=`<div class="card-elevated ranking-ui" style="grid-column:1/-1;cursor:pointer" onclick="showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))">
-      <div style="display:flex;align-items:center;gap:12px">
-        <img src="assets/img/photo-08-thumb.webp" alt="" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0">
-        <div style="flex:1;min-width:0">
-          <div class="section-head" style="margin-bottom:2px">Top of the table</div>
-          <div style="font-weight:600;font-size:16px">${topPlayer.name}</div>
-        </div>
-        <span class="elo-pill ${eloClass(topPlayer.elo_rating)}">${topPlayer.elo_rating}</span>
+  const last=[...SESSIONS].filter(x=>!x.archived&&x.status==='completed').sort((a,b)=>new Date(b.date)-new Date(a.date))[0];
+  if(last){
+    const rounds=Array.isArray(last.rounds)?last.rounds:[];
+    const roundCount=new Set(rounds.map(r=>r.r)).size;
+    let scorer=null;
+    if(last.format==='doubles_americano'||last.format==='paired_americano'){
+      const pts={};
+      rounds.forEach(r=>{(r.t1||[]).forEach(id=>{pts[id]=(pts[id]||0)+(r.s1||0)});(r.t2||[]).forEach(id=>{pts[id]=(pts[id]||0)+(r.s2||0)});});
+      const top=Object.entries(pts).sort((a,b)=>b[1]-a[1])[0];
+      if(top)scorer={id:top[0],pts:top[1]};
+    }
+    const att=Array.isArray(last.attendees)?last.attendees.length:0;
+    const meta=[parseSessionDate(last.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}),last.format?FORMAT_LABELS[last.format]:'',roundCount?`${roundCount} round${roundCount>1?'s':''}`:''].filter(Boolean).join(' · ');
+    html+=`<div>
+      <div class="home-head"><h2>Last session</h2><a onclick="showPage('sessions',document.querySelector('#main-nav button:nth-child(4)'))">All sessions</a></div>
+      <div class="card last-card" style="margin:0;cursor:pointer" onclick="showSessionDetail('${last.id}')">
+        <div class="last-top"><div style="flex:1;min-width:0"><div class="last-title">${escapeHtml(last.title)}</div><div class="last-meta">${escapeHtml(meta)}</div></div><span class="badge completed">Completed</span></div>
+        ${scorer?`<div class="last-scorer">${avatarHtml(scorer.id,(pMap[scorer.id]||{}).name||'?',34)}<div style="flex:1;min-width:0"><div style="font-size:12px;color:var(--text-dim)">Top scorer</div><div style="font-size:15px;font-weight:600">${escapeHtml((pMap[scorer.id]||{}).name||'Unknown')}</div></div><div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums">${scorer.pts} pts</div></div>`
+          :att?`<div class="last-scorer"><div style="font-size:14px;color:var(--text-dim)">${att} player${att>1?'s':''} took part</div></div>`:''}
       </div>
     </div>`;
   }
+
+  if(topPlayer){
+    html+=`<div class="ranking-ui">
+      <div class="home-head"><h2>Top of the table</h2><a onclick="showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))">Rankings</a></div>
+      <div class="card last-card" style="margin:0;cursor:pointer;display:flex;align-items:center;gap:12px" onclick="showPage('leaderboard',document.querySelector('#main-nav button:nth-child(2)'))">
+        ${avatarHtml(topPlayer.id,topPlayer.name,44)}<div style="flex:1;min-width:0;font-weight:600;font-size:16px">${escapeHtml(topPlayer.name)}</div><span class="elo-pill ${eloClass(topPlayer.elo_rating)}">${topPlayer.elo_rating}</span>
+      </div>
+    </div>`;
+  }
+
+  html+=`<a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="pass-card">
+    <span class="pass-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 9a2 2 0 0 0 0 6v3h18v-3a2 2 0 0 1 0-6V6H3z"/><path d="M14 6v12" stroke-dasharray="2 2"/></svg></span>
+    <span style="flex:1;min-width:0"><span style="display:block;font-size:16px;font-weight:600">Get your pass</span><span style="display:block;font-size:13px;color:#C9B472;margin-top:1px">Membership and single sessions</span></span>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </a>`;
 
   document.getElementById('home-tiles').innerHTML=html;
 }
@@ -2561,6 +2645,7 @@ async function toggleMySignup(sessionId,alreadySignedUp,refreshSource){
   }
   if(refreshSource==='signup')renderSignupScreen();
   renderSessions();
+  renderHome();
   if(viewingCompletedSessionId===sessionId)renderCompletedSession(SESSIONS.find(x=>x.id===sessionId));
 }
 
