@@ -2637,10 +2637,11 @@ function sameGuestName(a,b){
   const ta=a.split(' '),tb=b.split(' ');
   if([...ta].sort().join(' ')===[...tb].sort().join(' '))return true;
   if(ta.length<2||tb.length<2)return false;
-  if(ta[0]===tb[0]){
-    const la=ta[ta.length-1],lb=tb[tb.length-1];
-    if((la.length===1&&lb.startsWith(la))||(lb.length===1&&la.startsWith(lb)))return true;
-  }
+  // "Leo H" / "Leo H." against a full name: the first names agree (or one is a start of the other, e.g.
+  // Leo / Leonard) and the initial begins any later word, so double-barrelled and middle names still match.
+  const firstOk=(x,y)=>x===y||(Math.min(x.length,y.length)>=3&&(x.startsWith(y)||y.startsWith(x)));
+  const initialOf=(init,full)=>init.length===2&&init[1].length===1&&firstOk(init[0],full[0])&&full.slice(1).some(w=>w.startsWith(init[1]));
+  if(initialOf(ta,tb)||initialOf(tb,ta))return true;
   return Math.min(a.length,b.length)>=8&&editDistance(a,b)<=1;
 }
 function groupGuests(entries){
