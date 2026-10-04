@@ -647,6 +647,8 @@ const SUPABASE_URL='https://kzqbukjcimuqliwdhpsd.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6cWJ1a2pjaW11cWxpd2RocHNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMjA4ODUsImV4cCI6MjA5Nzc5Njg4NX0.0t_ZS9JImubHWvsKQjm-9EFFCd0efJVr-jzlXZyvcEA';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 const MEMBERSHIP_PURCHASE_URL='https://yorksu.org/activities/view/padel-club';
+// One season-long product on the SU shop: the same link works for every session.
+const SINGLE_SESSION_PASS_URL='https://yorksu.org/shop/product/17618-singlesession-padel2627';
 
 const K=16;
 const MATCH_PLAY_K=45;
@@ -762,6 +764,7 @@ function renderGuestSignupForm(session,code){
       <button type="button" class="btn sm" id="guest-add-friend-btn" onclick="addGuestFriendField()">+ Add a friend</button>
       <div id="guest-form-error" style="color:#FF6B6B;font-size:13px;display:none;margin:12px 0 0"></div>
       <button class="btn-gold" style="width:100%;margin-top:16px" onclick="submitGuestSignup('${code}')">Join session</button>
+      <div style="font-size:13px;color:var(--text-dim);text-align:center;margin-top:12px;line-height:1.45">Next you'll get a link to buy your single session pass.</div>
     </div>`;
 }
 
@@ -776,6 +779,7 @@ function addGuestFriendField(){
 }
 
 async function submitGuestSignup(code){
+  const n=[...document.querySelectorAll('.guest-name-input')].filter(i=>i.value.trim().length>0).length;
   await submitGuestNames({
     nameSelector:'.guest-name-input',
     errElId:'guest-form-error',
@@ -783,9 +787,12 @@ async function submitGuestSignup(code){
     rpcFn:'redeem_guest_pass',
     rpcTargetKey:'code',
     rpcTargetValue:code,
-    confirmationHtml:`<div style="text-align:center;padding:8px 0">
-      <div style="font-size:18px;font-weight:700;font-family:var(--font-display);margin-bottom:8px">You're signed up!</div>
-      <div style="font-size:14px;color:var(--text-dim)">See you on the court.</div>
+    confirmationHtml:`<div style="text-align:center;padding:4px 0 2px">
+      <div style="width:56px;height:56px;margin:0 auto 14px;border-radius:50%;background:rgba(61,220,151,0.16);color:#3DDC97;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <div style="font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-0.6px;margin-bottom:6px">You're signed up!</div>
+      <div style="font-size:15px;color:var(--text-dim);margin-bottom:18px">Your place is saved. One last step:</div>
+      <a href="${SINGLE_SESSION_PASS_URL}" target="_blank" rel="noopener" class="btn-gold" style="width:100%;text-decoration:none">Buy your single session pass</a>
+      <div style="font-size:13px;color:var(--text-dim);margin-top:14px;line-height:1.5">${n>1?`One pass per person, so ${n} in total. `:''}Show your order confirmation email at the door.</div>
     </div>`
   });
 }
@@ -867,6 +874,22 @@ function openGuestQrOverlay(session,code){
   overlay.style.display='block';
   document.getElementById('guest-qr-backdrop').onclick=function(e){if(e.target===this)closeGuestQrOverlay();};
   renderGuestQrImage(link);
+}
+
+// Walk-up with no pass: show them this QR and they can buy one on the spot.
+function openPassQrOverlay(){
+  const overlay=document.getElementById('guest-qr-overlay');
+  overlay.innerHTML=`
+    <button onclick="closeGuestQrOverlay()" aria-label="Close" style="position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;width:44px;height:44px;border-radius:50%;border:none;background:#f0f0f0;color:#111;font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1">×</button>
+    <div id="guest-qr-backdrop" style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:14px;text-align:center">
+      <div style="font-size:20px;font-weight:700;color:#111;font-family:var(--font-display)">Single session pass</div>
+      <div style="font-size:14px;color:#555;max-width:280px">Scan to buy your pass, then show the confirmation email.</div>
+      <img id="guest-qr-img" src="" alt="QR code to buy a single session pass" style="width:min(80vw,360px);height:min(80vw,360px)">
+      <div style="font-size:12px;color:#777;word-break:break-all;max-width:320px">${escapeHtml(SINGLE_SESSION_PASS_URL)}</div>
+    </div>`;
+  overlay.style.display='block';
+  document.getElementById('guest-qr-backdrop').onclick=function(e){if(e.target===this)closeGuestQrOverlay();};
+  renderGuestQrImage(SINGLE_SESSION_PASS_URL);
 }
 
 function closeGuestQrOverlay(){
@@ -973,7 +996,7 @@ function renderTasterSignupForm(session){
       <div style="font-weight:700;font-size:18px;font-family:var(--font-display)">${escapeHtml(session.title)}</div>
       <div style="font-size:13px;color:var(--text-dim);margin-top:2px">${escapeHtml(session.date)} · ${escapeHtml(session.location||'TBC')}</div>
     </div>
-    <a href="${MEMBERSHIP_PURCHASE_URL}" target="_blank" rel="noopener" class="btn-gold" style="width:100%;margin-bottom:12px;text-decoration:none">Buy your ticket</a>
+    <a href="${SINGLE_SESSION_PASS_URL}" target="_blank" rel="noopener" class="btn-gold" style="width:100%;margin-bottom:12px;text-decoration:none">Buy your ticket</a>
     <div class="card" id="taster-form-card">
       <div id="taster-name-fields">
         <div class="form-row"><label class="form-label">Name</label><input type="text" class="taster-name-input" placeholder="e.g. Will M" minlength="2" maxlength="40"></div>
@@ -1842,6 +1865,7 @@ function renderLiveSession(){
     link:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>',
     share:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 8l4-4 4 4M5 14v5h14v-5"/></svg>',
     swap:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
+    qr:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><path d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/></svg>',
     flag:'<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4M5 5h12l-2 4 2 4H5"/></svg>'
   };
   const tiles=`<div class="live-tiles">
@@ -1849,6 +1873,7 @@ function renderLiveSession(){
     ${tile('Edit details',LI.edit,`openEditSession('${s.id}')`)}
     ${tile('Guest sign-up',LI.link,`toggleGuestSignupOpen('${s.id}',${!!s.guest_signup_open})`,{badge:s.guest_signup_open?'On':'Off',badgeCls:s.guest_signup_open?'on':''})}
     ${s.guest_signup_open?tile('Share guest link',LI.share,`shareGuestLink('${s.id}')`):''}
+    ${tile('Show pass QR',LI.qr,'openPassQrOverlay()')}
     ${TASTER_ENABLED?tile('Taster sign-up',LI.link,`toggleTasterSignup('${s.id}',${!!s.taster_signup_open})`,{badge:s.taster_signup_open?'On':'Off',badgeCls:s.taster_signup_open?'on':''}):''}
     ${s.format?tile(showFormatPicker?'Cancel change':'Change format',LI.swap,'toggleFormatPicker()'):''}
   </div>`;
@@ -1872,7 +1897,7 @@ function renderLiveSession(){
   </div>`;
 
   {
-    const guestIds=[...new Set([...sessionPlayers,...sessionPendingGuestIds])].filter(id=>(pMap[id]||{}).is_guest);
+    const guestIds=[...new Set([...sessionPlayers,...sessionPendingGuestIds])].filter(id=>(pMap[id]||{}).is_guest).sort((a,b)=>Number(!!(pMap[a]||{}).door_verified)-Number(!!(pMap[b]||{}).door_verified));
     const collapsed=!!collapsedSections.guests;
     // Guests taken off this session by mistake: their player row still
     // exists, so list them (quietly) with a Restore link. Includes anyone
@@ -1895,7 +1920,7 @@ function renderLiveSession(){
           return`<div class="g-row">
             <button class="g-btn ok ${verified?'on':''}" onclick="admitGuest('${id}')" aria-label="Admit">✓</button>
             <button class="g-btn no" onclick="removeFromSession('${id}')" aria-label="Remove">✕</button>
-            <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">${escapeHtml(pName(id))}</div><div style="font-size:12px;color:${verified?'#3DDC97':'var(--text-dim)'}">${verified?'Playing':'Not checked in'}</div></div>
+            <div style="flex:1;min-width:0"><div style="font-size:15px;font-weight:600">${escapeHtml(pName(id))}</div><div style="font-size:12px;color:${verified?'#3DDC97':'var(--text-dim)'}">${verified?'Playing':'Signed up online · check their pass'}</div></div>
           </div>`;
         }).join('')}
         ${removedGuestIds.length?`<div style="margin-top:10px">
