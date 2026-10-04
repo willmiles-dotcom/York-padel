@@ -608,8 +608,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
     <div class="form-row"><label class="form-label">Number of courts</label><input type="number" id="ns-max-courts" value="3" placeholder="e.g. 3" min="1"></div>
     <div id="ns-preview" style="display:none;margin-bottom:12px"></div>
     <div style="display:flex;gap:10px;margin-top:4px">
-      <button class="btn full" onclick="closeModal('new-session-modal')">Cancel</button>
-      <button class="btn primary full" id="ns-create-btn" onclick="saveNewSession()">Create</button>
+      <button class="btn" style="flex:0 0 auto;padding-left:22px;padding-right:22px" onclick="closeModal('new-session-modal')">Cancel</button>
+      <button class="btn primary" id="ns-create-btn" style="flex:1;white-space:nowrap" onclick="saveNewSession()">Create</button>
     </div>
   </div>
 </div>
