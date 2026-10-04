@@ -79,6 +79,9 @@ body{font-family:var(--font-body);font-size:14px;color:var(--text);min-height:10
 .page{display:none}.page.active{display:block}
 .card{background:var(--glass-whisper);border:1px solid var(--glass-border);border-radius:18px;padding:16px;margin-bottom:12px;backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);box-shadow:0 8px 24px rgba(var(--shadow-tint),0.35)}
 .card-elevated{background:var(--glass-elevated);border:1px solid var(--glass-border);border-top-color:rgba(255,255,255,0.35);border-left-color:rgba(255,255,255,0.22);border-radius:20px;padding:16px;margin-bottom:12px;backdrop-filter:blur(24px) saturate(1.2);-webkit-backdrop-filter:blur(24px) saturate(1.2);box-shadow:0 10px 30px rgba(var(--shadow-tint),0.4),inset 0 1px 0 rgba(255,255,255,0.08)}
+.stat-grid-3{grid-template-columns:repeat(3,1fr)!important;gap:8px!important}
+.stat-grid-3 .stat{padding:12px 10px}
+.stat-grid-3 .stat-label{font-size:11px}
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
 .tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .home-stack{display:flex;flex-direction:column;gap:22px}
@@ -406,23 +409,21 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
 
     <!-- COMMITTEE -->
     <div class="page" id="page-committee">
-      <div class="stat-grid">
-        <div class="stat"><div class="stat-label">Total players</div><div class="stat-val" id="c-total">—</div></div>
-        <div class="stat"><div class="stat-label">Active</div><div class="stat-val green" id="c-active">—</div></div>
-        <div class="stat"><div class="stat-label">Sessions</div><div class="stat-val" id="c-sess">—</div></div>
-        <div class="stat"><div class="stat-label">Flagged</div><div class="stat-val" id="c-flagged">—</div></div>
+      <div class="stat-grid stat-grid-3">
+        <div class="stat"><div class="stat-label">Active members</div><div class="stat-val green" id="c-active">—</div></div>
+        <div class="stat"><div class="stat-label">Sessions run</div><div class="stat-val" id="c-sess">—</div></div>
+        <div class="stat"><div class="stat-label">Guests</div><div class="stat-val" id="c-guests">—</div></div>
       </div>
       <div class="card">
-        <div class="section-head">Add new player</div>
-        <div class="form-row"><label class="form-label">Full name</label><input type="text" id="new-name" placeholder="e.g. Jane Smith"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="form-row"><label class="form-label">Gender</label><select id="new-gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
-          <div class="form-row"><label class="form-label">Group</label><select id="new-group"><option value="lower">Lower</option><option value="upper">Upper</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
+        <div class="section-head" style="display:flex;align-items:center;justify-content:space-between"><span>Edit players</span><button class="btn sm" id="add-player-toggle" onclick="toggleAddPlayer()">+ Add player</button></div>
+        <div id="add-player-form" style="display:none;margin:4px 0 16px;padding:14px;border-radius:16px;background:rgba(255,255,255,0.04)">
+          <div class="form-row"><label class="form-label">Full name</label><input type="text" id="new-name" placeholder="e.g. Jane Smith"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-row"><label class="form-label">Gender</label><select id="new-gender"><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></div>
+            <div class="form-row"><label class="form-label">Group</label><select id="new-group"><option value="lower">Lower</option><option value="upper">Upper</option><option value="competitive">Competitive</option><option value="unassigned">Unassigned</option></select></div>
+          </div>
+          <button class="btn primary full" onclick="addPlayer()">Add player</button>
         </div>
-        <button class="btn primary full" onclick="addPlayer()">Add player</button>
-      </div>
-      <div class="card">
-        <div class="section-head">Edit players</div>
         <input type="text" id="committee-search" placeholder="Search players..." oninput="renderCommitteePlayerList()">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin:8px 0 12px"><input type="checkbox" id="committee-show-archived" onchange="renderCommitteePlayerList()" style="width:auto">Show archived</label>
         <div id="committee-player-list"><div class="loading">Loading...</div></div>
@@ -439,7 +440,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <div class="section-head">Pending account requests</div>
         <div id="pending-claims-list"><div style="font-size:13px;color:#aaa">Loading...</div></div>
       </div>
-      <div class="admin-section">
+      <div class="admin-section ranking-ui">
         <div class="section-head">Flagged players</div>
         <div id="flagged-list"><div style="font-size:13px;color:#aaa">No players flagged.</div></div>
       </div>
@@ -2389,12 +2390,62 @@ async function toggleSessionPlayer(pid){
 }
 
 // ── COMMITTEE ────────────────────────────────────────────────
+// ---- Guest counting -------------------------------------------------
+// Guests are typed in by hand per session, so the same person can appear
+// under slightly different spellings. Names are normalised (case, accents,
+// punctuation, spacing) and then matched loosely: same words in any order,
+// a one-letter typo on a longer name, or a surname initial ("Priya S" vs
+// "Priya Shah"). A first name on its own is never merged with anyone.
+function normalizeName(n){
+  return String(n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+}
+function editDistance(a,b){
+  const m=a.length,n=b.length;let prev=Array.from({length:n+1},(_,j)=>j);
+  for(let i=1;i<=m;i++){const cur=[i];for(let j=1;j<=n;j++)cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));prev=cur;}
+  return prev[n];
+}
+function sameGuestName(a,b){
+  if(a===b)return true;
+  const ta=a.split(' '),tb=b.split(' ');
+  if([...ta].sort().join(' ')===[...tb].sort().join(' '))return true;
+  if(ta.length<2||tb.length<2)return false;
+  if(ta[0]===tb[0]){
+    const la=ta[ta.length-1],lb=tb[tb.length-1];
+    if((la.length===1&&lb.startsWith(la))||(lb.length===1&&la.startsWith(lb)))return true;
+  }
+  return Math.min(a.length,b.length)>=8&&editDistance(a,b)<=1;
+}
+function countUniqueNames(names){
+  const groups=[];
+  names.map(normalizeName).filter(Boolean).forEach(n=>{
+    if(!groups.some(g=>g.some(x=>sameGuestName(x,n))))groups.push([n]);
+    else groups.find(g=>g.some(x=>sameGuestName(x,n))).push(n);
+  });
+  return groups.length;
+}
+// Guests who actually played: admitted at the door (or in a round) in a session that still exists.
+function guestNames(){
+  const seen=new Set();
+  SESSIONS.filter(x=>!x.archived).forEach(x=>{
+    (Array.isArray(x.attendees)?x.attendees:[]).forEach(id=>seen.add(id));
+    (Array.isArray(x.rounds)?x.rounds:[]).forEach(r=>[...(r.t1||[]),...(r.t2||[])].forEach(id=>seen.add(id)));
+  });
+  return PLAYERS.filter(p=>p.is_guest&&seen.has(p.id)&&p.door_verified!==false).map(p=>p.name);
+}
+
+function toggleAddPlayer(){
+  const f=document.getElementById('add-player-form');
+  const open=f.style.display==='none';
+  f.style.display=open?'block':'none';
+  document.getElementById('add-player-toggle').textContent=open?'Cancel':'+ Add player';
+  if(open)document.getElementById('new-name').focus();
+}
+
 function renderCommitteeStats(){
-  document.getElementById('c-total').textContent=PLAYERS.length;
-  document.getElementById('c-active').textContent=PLAYERS.filter(p=>p.is_active!==false).length;
-  document.getElementById('c-sess').textContent=SESSIONS.length;
+  document.getElementById('c-active').textContent=PLAYERS.filter(p=>!p.is_guest&&p.is_active!==false).length;
+  document.getElementById('c-sess').textContent=SESSIONS.filter(x=>x.status==='completed'&&!x.archived).length;
+  document.getElementById('c-guests').textContent=countUniqueNames(guestNames());
   const fl=PLAYERS.filter(p=>p.flagged);
-  document.getElementById('c-flagged').textContent=fl.length;
   document.getElementById('flagged-list').innerHTML=fl.length?fl.map(p=>`<div class="elo-result-row"><span>${p.name}</span><span class="badge flag">${p.flag_type}</span></div>`).join(''):'<div style="font-size:13px;color:#aaa">No players flagged.</div>';
   renderCommitteePlayerList();
   renderPendingClaims();
@@ -2507,6 +2558,7 @@ async function addPlayer(){
   if(error){showToast('Error: '+error.message);return;}
   PLAYERS.push(player);pMap[player.id]=player;
   document.getElementById('new-name').value='';
+  toggleAddPlayer();
   showToast(name+' added!');renderCommitteeStats();renderLeaderboard();renderPlayers();
 }
 
