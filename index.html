@@ -3083,13 +3083,18 @@ async function importRoster(){
   if(!entries.length){showToast('Paste at least one player first');return;}
 
   const byName={};
-  PLAYERS.forEach(p=>{byName[p.name.trim().toLowerCase()]=p});
+  // Match on name alone: ignore capitals, accents, punctuation and extra spaces (never gender or group)
+  PLAYERS.forEach(p=>{const k=normalizeName(p.name);if(!byName[k]||(byName[k].is_active===false&&p.is_active!==false))byName[k]=p;});
 
   const upsertRows=[];
   const matchedIds=new Set();
   let updatedCount=0,addedCount=0;
+  const seenNames=new Set();
   entries.forEach(e=>{
-    const existing=byName[e.name.toLowerCase()];
+    const key=normalizeName(e.name);
+    if(seenNames.has(key))return;
+    seenNames.add(key);
+    const existing=byName[key];
     if(existing){
       matchedIds.add(existing.id);
       upsertRows.push({...existing,is_active:true,gender:e.gender||existing.gender,group_name:e.group||existing.group_name});
