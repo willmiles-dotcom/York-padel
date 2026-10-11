@@ -559,8 +559,8 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
       </div>
       <div class="card">
         <div class="section-head">Import roster</div>
-        <p style="font-size:13px;color:#888;margin-bottom:12px">Paste one player per line: <code>Name</code> or <code>Name, gender, group</code>. Anyone already in the system is matched by name (and unarchived if needed) instead of duplicated; anyone active but missing from this list gets archived.</p>
-        <textarea id="import-roster-text" rows="6" placeholder="Jane Smith, female, upper&#10;John Doe" style="resize:vertical"></textarea>
+        <p style="font-size:13px;color:#888;margin-bottom:12px">Paste one player per line: <code>Name</code> or <code>Name, gender</code>. New players start in the lower group; existing players keep their group. Anyone already in the system is matched by name (and unarchived if needed) instead of duplicated; anyone active but missing from this list gets archived.</p>
+        <textarea id="import-roster-text" rows="6" placeholder="Jane Smith, female&#10;John Doe" style="resize:vertical"></textarea>
         <button class="btn full" style="margin-top:10px" onclick="importRoster()">Import roster</button>
       </div>
       <details class="admin-tools" id="admin-tools">
@@ -3086,7 +3086,7 @@ async function importRoster(){
   // Match on name alone: ignore capitals, accents, punctuation and extra spaces (never gender or group)
   PLAYERS.forEach(p=>{const k=normalizeName(p.name);if(!byName[k]||(byName[k].is_active===false&&p.is_active!==false))byName[k]=p;});
 
-  const upsertRows=[];
+  const updateRows=[],newRows=[];
   const matchedIds=new Set();
   let updatedCount=0,addedCount=0;
   const seenNames=new Set();
@@ -3097,10 +3097,11 @@ async function importRoster(){
     const existing=byName[key];
     if(existing){
       matchedIds.add(existing.id);
-      upsertRows.push({...existing,is_active:true,gender:e.gender||existing.gender,group_name:e.group||existing.group_name});
+      // Existing members keep their group; only unarchive and fill in a gender if one was given
+      updateRows.push({...existing,is_active:true,gender:e.gender||existing.gender});
       updatedCount++;
     }else{
-      upsertRows.push({id:crypto.randomUUID(),name:e.name,gender:e.gender,group_name:e.group||'unassigned',elo_rating:1000,games_played:0,matches_won:0,provisional:true,flagged:false,is_active:true});
+      newRows.push({id:crypto.randomUUID(),name:e.name,gender:e.gender,group_name:'lower',elo_rating:1000,games_played:0,matches_won:0,provisional:true,flagged:false,is_active:true});
       addedCount++;
     }
   });
@@ -3108,8 +3109,15 @@ async function importRoster(){
 
   if(!confirm(`${updatedCount} existing player(s) will be updated/unarchived, ${addedCount} new player(s) added, ${idsToArchive.length} player(s) archived. Continue?`))return;
 
-  const{error:upErr}=await sb.from('players').upsert(upsertRows);
-  if(upErr){showToast('Error: '+upErr.message);return;}
+  // Existing and new rows go in separately so new rows get the database defaults for columns they leave out
+  if(updateRows.length){
+    const{error:upErr}=await sb.from('players').upsert(updateRows);
+    if(upErr){showToast('Error: '+upErr.message);return;}
+  }
+  if(newRows.length){
+    const{error:insErr}=await sb.from('players').insert(newRows);
+    if(insErr){showToast('Error: '+insErr.message);return;}
+  }
   if(idsToArchive.length){
     const{error:archErr}=await sb.from('players').update({is_active:false}).in('id',idsToArchive);
     if(archErr){showToast('Error: '+archErr.message);return;}
