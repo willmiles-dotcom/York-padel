@@ -3084,13 +3084,21 @@ async function importRoster(){
 
   const byName={};
   // Match on name alone: ignore capitals, accents, punctuation and extra spaces (never gender or group)
-  // Club roles in brackets and emoji are ignored too ("Emma Withers 👑", "Fraser Mcarthur (Secretary)"); guests are never matched
+  // Club roles in brackets and emoji are ignored too ("Emma Withers 👑", "Fraser Mcarthur (Secretary)"); guests are only used when no member matches
   const importKey=n=>normalizeName(String(n).replace(/\([^)]*\)/g,' '));
   PLAYERS.filter(p=>!p.is_guest).forEach(p=>{const k=importKey(p.name);if(!byName[k]||(byName[k].is_active===false&&p.is_active!==false))byName[k]=p;});
 
+  // A guest with the same name becomes a member (keeps their sessions); if several, the one who attended most
+  const guestByName={};
+  const attendedCount=id=>SESSIONS.filter(s=>Array.isArray(s.attendees)&&s.attendees.includes(id)).length;
+  PLAYERS.filter(p=>p.is_guest).forEach(p=>{
+    const k=importKey(p.name),cur=guestByName[k];
+    if(!cur||attendedCount(p.id)>attendedCount(cur.id)||(attendedCount(p.id)===attendedCount(cur.id)&&cur.is_active===false&&p.is_active!==false))guestByName[k]=p;
+  });
+
   const updateRows=[],newRows=[];
   const matchedIds=new Set();
-  let updatedCount=0,addedCount=0;
+  let updatedCount=0,addedCount=0,convertedCount=0;
   const seenNames=new Set();
   entries.forEach(e=>{
     const key=importKey(e.name);
@@ -3102,6 +3110,11 @@ async function importRoster(){
       // Existing members keep their group; only unarchive and fill in a gender if one was given
       updateRows.push({...existing,is_active:true,gender:e.gender||existing.gender});
       updatedCount++;
+    }else if(guestByName[key]){
+      const g=guestByName[key];
+      matchedIds.add(g.id);
+      updateRows.push({...g,is_guest:false,is_active:true,group_name:'lower',gender:e.gender||g.gender});
+      convertedCount++;
     }else{
       newRows.push({id:crypto.randomUUID(),name:e.name,gender:e.gender,group_name:'lower',elo_rating:1000,games_played:0,matches_won:0,provisional:true,flagged:false,is_active:true});
       addedCount++;
@@ -3109,7 +3122,7 @@ async function importRoster(){
   });
   const idsToArchive=PLAYERS.filter(p=>!p.is_guest&&!p.is_committee&&p.is_active!==false&&!matchedIds.has(p.id)).map(p=>p.id);
 
-  if(!confirm(`${updatedCount} existing player(s) will be updated/unarchived, ${addedCount} new player(s) added, ${idsToArchive.length} player(s) archived. Continue?`))return;
+  if(!confirm(`${updatedCount} existing player(s) will be updated/unarchived, ${convertedCount} guest(s) turned into members, ${addedCount} new player(s) added, ${idsToArchive.length} player(s) archived. Continue?`))return;
 
   // Existing and new rows go in separately so new rows get the database defaults for columns they leave out
   if(updateRows.length){
