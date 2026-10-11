@@ -3084,14 +3084,16 @@ async function importRoster(){
 
   const byName={};
   // Match on name alone: ignore capitals, accents, punctuation and extra spaces (never gender or group)
-  PLAYERS.forEach(p=>{const k=normalizeName(p.name);if(!byName[k]||(byName[k].is_active===false&&p.is_active!==false))byName[k]=p;});
+  // Club roles in brackets and emoji are ignored too ("Emma Withers 👑", "Fraser Mcarthur (Secretary)"); guests are never matched
+  const importKey=n=>normalizeName(String(n).replace(/\([^)]*\)/g,' '));
+  PLAYERS.filter(p=>!p.is_guest).forEach(p=>{const k=importKey(p.name);if(!byName[k]||(byName[k].is_active===false&&p.is_active!==false))byName[k]=p;});
 
   const updateRows=[],newRows=[];
   const matchedIds=new Set();
   let updatedCount=0,addedCount=0;
   const seenNames=new Set();
   entries.forEach(e=>{
-    const key=normalizeName(e.name);
+    const key=importKey(e.name);
     if(seenNames.has(key))return;
     seenNames.add(key);
     const existing=byName[key];
@@ -3105,7 +3107,7 @@ async function importRoster(){
       addedCount++;
     }
   });
-  const idsToArchive=PLAYERS.filter(p=>p.is_active!==false&&!matchedIds.has(p.id)).map(p=>p.id);
+  const idsToArchive=PLAYERS.filter(p=>!p.is_guest&&!p.is_committee&&p.is_active!==false&&!matchedIds.has(p.id)).map(p=>p.id);
 
   if(!confirm(`${updatedCount} existing player(s) will be updated/unarchived, ${addedCount} new player(s) added, ${idsToArchive.length} player(s) archived. Continue?`))return;
 
