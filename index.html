@@ -543,8 +543,10 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <div class="stat" style="cursor:pointer" onclick="openInsight('insight-guests')"><div class="stat-label">Guests</div><div class="stat-val" id="c-guests">—</div></div>
       </div>
       <div id="committee-insights"></div>
-      <div class="card">
-        <div class="section-head" style="display:flex;align-items:center;justify-content:space-between"><span>Edit players</span><button class="btn sm" id="add-player-toggle" onclick="toggleAddPlayer()">+ Add player</button></div>
+      <details class="admin-tools" id="edit-players-tools">
+        <summary><span>Edit players</span></summary>
+      <div class="admin-section">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:8px"><button class="btn sm" id="add-player-toggle" onclick="toggleAddPlayer()">+ Add player</button></div>
         <div id="add-player-form" style="display:none;margin:4px 0 16px;padding:14px;border-radius:16px;background:rgba(255,255,255,0.04)">
           <div class="form-row"><label class="form-label">Full name</label><input type="text" id="new-name" placeholder="e.g. Jane Smith"></div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -557,6 +559,7 @@ input[type=date]::-webkit-date-and-time-value{text-align:left;min-height:1.2em}
         <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#666;margin:8px 0 12px"><input type="checkbox" id="committee-show-archived" onchange="renderCommitteePlayerList()" style="width:auto">Show archived</label>
         <div id="committee-player-list"><div class="loading">Loading...</div></div>
       </div>
+      </details>
       <div class="card">
         <div class="section-head">Import roster</div>
         <p style="font-size:13px;color:#888;margin-bottom:12px">Paste one player per line: <code>Name</code> or <code>Name, gender</code>. New players start in the lower group; existing players keep their group. Anyone already in the system is matched by name (and unarchived if needed) instead of duplicated; anyone active but missing from this list gets archived.</p>
